@@ -1,0 +1,22 @@
+{
+  "common": {
+    "appName": "Fellowa",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close"
+  },
+  "errors": {
+    "unexpectedTitle": "Something went wrong",
+    "unexpectedBody": "The request did not complete. Please try again.",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The address you are looking for does not exist or has moved.",
+    "networkTitle": "No connection",
+    "networkBody": "Check your internet connection and try again."
+  },
+  "home": {
+    "scaffoldTitle": "Project base is ready",
+    "scaffoldBody": "This page is a placeholder. It is replaced when the presentation directory is moved in and refactored."
+  }
+}

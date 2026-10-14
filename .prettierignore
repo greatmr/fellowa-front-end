@@ -1,0 +1,8 @@
+# Agent configuration is authored by hand; keep its formatting.
+.claude/**
+AGENTS.md
+
+# Generated
+.next/
+coverage/
+package-lock.json

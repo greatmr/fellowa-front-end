@@ -1,0 +1,77 @@
+# fellowa-web
+
+Product frontend for Fellowa — the creator-subscription platform whose API lives
+in `../back-end`. This is the **project base only**: packages, conventions,
+app shell, i18n, API layer and the agent configuration under `.claude/`.
+
+No product features are implemented yet. The `../presentation` prototype
+(React 19 + Vite landing page) is **not** part of this project yet; moving and
+refactoring it into here is a separate piece of work.
+
+## Stack
+
+| Concern         | Choice                                                               |
+| --------------- | -------------------------------------------------------------------- |
+| Framework       | Next.js 16 (App Router, Turbopack, Cache Components)                 |
+| UI runtime      | React 19                                                             |
+| Language        | TypeScript 5, `strict`                                               |
+| Styling         | Tailwind CSS v4 (CSS-first config in `src/app/globals.css`)          |
+| Components      | shadcn/ui (new-york, neutral base) + Radix primitives + lucide icons |
+| Server state    | TanStack Query v5                                                    |
+| Client state    | Zustand                                                              |
+| HTTP            | Axios, one instance in `src/lib/api/client.ts`                       |
+| Forms           | react-hook-form + zod (`@hookform/resolvers`)                        |
+| i18n            | next-intl — `fa` (default, RTL) and `en`                             |
+| Toasts          | sonner                                                               |
+| Theme           | next-themes (`class` strategy)                                       |
+| Tests           | Vitest + Testing Library + MSW                                       |
+| Package manager | npm                                                                  |
+
+## Commands
+
+```bash
+npm install
+cp .env.example .env.local     # then fill in NEXT_PUBLIC_API_BASE_URL
+
+npm run dev                    # http://localhost:3000
+npm run typecheck              # tsc --noEmit
+npm run lint                   # eslint
+npm run test                   # vitest run
+npm run build                  # next build
+npm run ui -- button card      # add a shadcn/ui component (needs network)
+```
+
+## Layout
+
+```
+src/
+  app/[locale]/        routes; the locale layout owns <html lang dir>
+  app/globals.css      Tailwind v4 entry + design tokens (the only place colors live)
+  components/ui/       shadcn/ui primitives, kept as the registry generates them
+  components/providers/ app-wide client boundary (query, theme, toaster)
+  features/<feature>/  feature-owned components, hooks, api, schemas, types
+  i18n/                next-intl routing, request config, locale-aware navigation
+  lib/api/             axios instance, error normalization, query client + keys
+  lib/env.ts           zod-validated environment contract
+  stores/              Zustand stores for client state shared across routes
+  proxy.ts             next-intl locale routing (Next 16 proxy convention)
+messages/{fa,en}.json  translations
+test/                  vitest setup and MSW server
+.claude/               agents, skills, rules and references for this project
+```
+
+## Conventions that are not negotiable
+
+- **No invented contracts.** Type backend data from `../back-end/docs/modules/<module>/api.md`
+  and the real controller/DTO. An unverified field is optional and reported.
+- **Money** is integer Toman from the backend. Never compute, scale or round a
+  chargeable amount on the client.
+- **Gated content**: the backend decides the access level. The client renders
+  what it was given and never reconstructs a locked body.
+- **No raw colors or hardcoded user-facing text.** Tokens from `globals.css`,
+  copy through next-intl keys in every locale.
+- **Logical CSS properties** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`) so
+  RTL works without a second stylesheet.
+
+The full rules, the agent roster and the per-topic references are in
+`.claude/` — start at `.claude/CLAUDE.md`.

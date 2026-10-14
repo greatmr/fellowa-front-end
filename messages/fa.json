@@ -1,0 +1,22 @@
+{
+  "common": {
+    "appName": "Fellowa",
+    "loading": "در حال بارگذاری…",
+    "retry": "تلاش دوباره",
+    "cancel": "انصراف",
+    "save": "ذخیره",
+    "close": "بستن"
+  },
+  "errors": {
+    "unexpectedTitle": "مشکلی پیش آمد",
+    "unexpectedBody": "درخواست کامل نشد. لطفاً دوباره تلاش کنید.",
+    "notFoundTitle": "صفحه پیدا نشد",
+    "notFoundBody": "آدرسی که دنبال آن هستید وجود ندارد یا جابه‌جا شده است.",
+    "networkTitle": "ارتباط برقرار نشد",
+    "networkBody": "اتصال شما به اینترنت بررسی شود."
+  },
+  "home": {
+    "scaffoldTitle": "پایهٔ پروژه آماده است",
+    "scaffoldBody": "این صفحه جای‌نگه‌دار است و با انتقال و بازنویسی دایرکتوری presentation جایگزین می‌شود."
+  }
+}
