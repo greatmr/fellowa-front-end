@@ -16,7 +16,7 @@ description: Git history analysis and Git safety for the Fellowa workspace. When
 
 Read it when the task says "previous / old / used to / restore / port / migrate", when the current code's intent is unclear, when matching a convention you cannot see in a sibling, or when a stash or branch is named. Skip it for plain new work.
 
-This project has almost no history of its own yet — it is new. The history that matters is usually in `../back-end` (what the API actually did and when) or in `../presentation` (what the prototype established). Read in the repository that owns the answer.
+This project has no git repository yet (`FE-FND-00`) — it is new. For ported code, the presentation SHA recorded in `../.claude/tasks/frontend/presentation-sync.md` is the provenance; cite it in the commit body (`Ported from presentation@<sha>: <path>`). The history that matters is usually in `../back-end` (what the API actually did and when) or in `../presentation` (what the prototype established). Read in the repository that owns the answer.
 
 ## How (read-only)
 

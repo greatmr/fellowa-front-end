@@ -28,7 +28,7 @@ Hard rules are in `.claude/CLAUDE.md`. These are the shapes this project uses. W
 - URL state (a tab, a filter, a page) belongs in `searchParams` when it should survive a reload or be shareable; use `useRouter`/`usePathname` from `@/i18n/navigation`, never from `next/navigation`.
 
 **Styling**
-- Tailwind utilities in the markup. Design tokens only — `bg-background`, `text-muted-foreground`, `border-border`, `rounded-lg` — never a hex, `rgb()` or `oklch()` outside `src/app/globals.css`.
+- Tailwind utilities in the markup. Design tokens only — `bg-background`, `text-muted-foreground`, `border-border`, `rounded-md`, `text-body` — never a hex, `rgb()` or `oklch()` outside `tailwind.config.ts`, and no arbitrary pixel size where the named scale has one.
 - Logical properties so RTL works: `ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`, `text-start`/`text-end`. `ml-`, `pr-`, `left-`, `text-left` are bugs in `fa` unless the thing really is physically left.
 - Compose classes with `cn()`. No `style={{}}` except for a value that must be computed at runtime (a progress width, a CSS variable).
 - `src/components/ui/**` is vendored from the shadcn registry: keep those files in the registry's shape so `npx shadcn add` can update them. Extend by composing or by adding a `cva` variant, not by rewriting the file.

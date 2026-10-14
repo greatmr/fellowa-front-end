@@ -13,10 +13,77 @@
     "notFoundTitle": "صفحه پیدا نشد",
     "notFoundBody": "آدرسی که دنبال آن هستید وجود ندارد یا جابه‌جا شده است.",
     "networkTitle": "ارتباط برقرار نشد",
-    "networkBody": "اتصال شما به اینترنت بررسی شود."
+    "networkBody": "اتصال شما به اینترنت بررسی شود.",
+    "backHome": "بازگشت به صفحهٔ اصلی"
   },
   "home": {
     "scaffoldTitle": "پایهٔ پروژه آماده است",
     "scaffoldBody": "این صفحه جای‌نگه‌دار است و با انتقال و بازنویسی دایرکتوری presentation جایگزین می‌شود."
+  },
+  "theme": {
+    "label": "ظاهر",
+    "light": "روشن",
+    "dark": "تیره",
+    "system": "سیستم"
+  },
+  "studio": {
+    "mainNav": "منوی اصلی",
+    "openMenu": "باز کردن منو",
+    "newPost": "ایجاد پست",
+    "groups": {
+      "monetization": "درآمدزایی"
+    },
+    "nav": {
+      "dashboard": "داشبورد",
+      "page": "مشاهده صفحه من",
+      "audience": "مخاطبان",
+      "tiers": "پلن‌های عضویت",
+      "posts": "پست‌ها",
+      "payouts": "گزارش‌ها",
+      "payments": "پرداخت‌ها",
+      "settings": "تنظیمات"
+    },
+    "pages": {
+      "dashboard": {
+        "title": "داشبورد استودیو",
+        "category": "استودیو"
+      },
+      "page": {
+        "title": "صفحه عمومی من",
+        "category": "پیش‌نمایش"
+      },
+      "posts": {
+        "title": "پست‌ها و محتوا",
+        "category": "محتوا"
+      },
+      "composer": {
+        "title": "ایجاد پست جدید",
+        "category": "محتوا"
+      },
+      "tiers": {
+        "title": "پلن‌های عضویت",
+        "category": "درآمدزایی"
+      },
+      "audience": {
+        "title": "اعضا و گزارش‌ها",
+        "category": "آمار"
+      },
+      "payouts": {
+        "title": "پرداخت‌ها و تسویه",
+        "category": "مالی"
+      },
+      "payments": {
+        "title": "تاریخچه پرداخت‌ها",
+        "category": "مالی"
+      },
+      "settings": {
+        "title": "تنظیمات حساب",
+        "category": "مدیریت"
+      }
+    },
+    "placeholder": {
+      "title": "این بخش هنوز ساخته نشده است",
+      "body": "این صفحه در مرحله‌های بعدی ساخته می‌شود."
+    }
   }
 }

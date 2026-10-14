@@ -8,16 +8,15 @@ The Fellowa workspace (`..`) holds:
 |---|---|
 | `back-end/` | the NestJS 11 API — the only backend. Has its own `.claude/` for backend work. |
 | `front-end/` | **this project**: the product frontend. |
-| `presentation/` | a separate React 19 + Vite prototype (package name `react-example`) — a landing page, with `@google/genai` and an express server. **Not part of this project.** Moving and refactoring it into here is its own task; do not import from it, and do not copy its patterns (Vite, Tailwind-via-plugin, no router, no i18n). |
-| `docs/` | the generated documentation set: 56 per-story design packages (`design-packages/DP-nn-*.pdf`), `development-task-manager.pdf`, `database-updated-schema.pdf`, `reference/` (handoff, steps, tasks, stories). |
+| `presentation/` | the **design source**: a React 19 + Vite prototype (package `react-example`, "Fellowa creator panel", own git repo, mock data only, changing every few days). Its screens are ported into this project one `FE-…` task at a time (skill `presentation-port`). Never import from it, never edit it, never copy its patterns (Vite, view-state router, no i18n, `localStorage` sessions). |
 | `agents/Frontend-Claude/` | the **Vue-era** agent configuration this one was ported from (a different product). Historical; do not follow it. |
-| `.claude/` | workspace orchestration: `project-manager`, `scrum-master`, `task-manager` agents and the task board. |
+| `.claude/` | workspace orchestration: `project-manager`, `scrum-master`, `task-manager` agents, the task board, the frontend tasks and presentation sync ledger (`tasks/frontend/`), the 56 design packages as Markdown (`stories/DP-nn-*.md`) and the schema report (`reference/database-schema.md`). |
 
-The backlog lives in `../.claude/tasks/board.md` (mirrors `../back-end/docs/tasks/`). Frontend design tasks are the `DS-*` ids.
+Frontend tasks are `FE-*` in `../.claude/tasks/frontend/tasks.md` (authoritative; the board mirrors it), with the plan and route map in `migration-plan.md` beside it. Design-team tasks are the `DS-*` ids in `../back-end/docs/tasks/design/design-tasks.md`; an `FE-*` task cites the `DS-*` states it implements.
 
 ## Stack and commands
 
-Next.js 16.4 (App Router, Turbopack, **Cache Components and Partial Prefetching enabled**), React 19.3, TypeScript 5 strict, Tailwind CSS v4 (CSS-first; no `tailwind.config`), shadcn/ui (new-york, neutral, CSS variables) over Radix primitives, lucide icons, TanStack Query v5, Zustand 5, axios, react-hook-form 7 + zod 4, next-intl 4, next-themes, sonner, Vitest + Testing Library + MSW. npm; Node >= 20.19 (developed on 22).
+Next.js 16.4 (App Router, Turbopack, **Cache Components and Partial Prefetching enabled**), React 19.3, TypeScript 5 strict, Tailwind CSS v4 (brand primitives in `tailwind.config.ts`, loaded with `@config`; semantic tokens in `globals.css`), shadcn/ui (new-york, neutral, CSS variables) over Radix primitives, lucide icons, TanStack Query v5, Zustand 5, axios, react-hook-form 7 + zod 4, next-intl 4, next-themes, sonner, Vitest + Testing Library + MSW. npm; Node >= 20.19 (developed on 22).
 
 `npm run dev` (port 3000) · `build` · `start` · `lint` / `lint:fix` · `format` / `format:check` · `typecheck` · `test` / `test:watch` · `ui -- <component>` (= `shadcn add`).
 
@@ -26,11 +25,13 @@ Next.js 16.4 (App Router, Turbopack, **Cache Components and Partial Prefetching 
 ## Layout
 
 ```
+tailwind.config.ts     brand primitives — the ONLY file with hex values
 src/
   app/[locale]/        layout (owns <html lang dir>), page, error, loading, not-found
-  app/globals.css      Tailwind entry + design tokens — the ONLY place colors are defined
-  components/ui/       shadcn primitives: avatar badge button card dialog dropdown-menu
-                       form input label separator skeleton sonner tabs textarea
+  app/globals.css      Tailwind entry: @config, semantic tokens per theme (via --theme()), utilities
+  components/ui/       shadcn primitives (+ brand deltas): avatar badge button card dialog
+                       dropdown-menu form input label separator sheet skeleton sonner tabs textarea
+  components/common/   app composites: empty-state, error-state
   components/providers/ app-providers (theme + query + toaster), query-provider
   features/<feature>/  api · components · hooks · schemas · types · index.ts   (none yet)
   hooks/               shared hooks (none yet)
@@ -42,7 +43,7 @@ src/
   stores/              Zustand stores (none yet)
   proxy.ts             next-intl locale routing — Next 16's replacement for middleware.ts
 messages/{fa,en}.json  translations
-test/                  setup.ts · msw/{server,handlers}.ts · smoke.test.tsx
+test/                  setup.ts · render.tsx (intl wrapper) · msw/{server,handlers}.ts · smoke.test.tsx
 ```
 
 ## Bootstrap and rendering
@@ -67,7 +68,7 @@ Query defaults (`query-client.ts`): `staleTime` 30 s, `gcTime` 5 min, no refetch
 
 The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 
-- It runs on the **legacy pre-migration schema**; there are **no migrations** and `synchronize: true` outside production. The target schema in `../docs/database-updated-schema.pdf` is the destination, not what is live.
+- It runs on the **legacy pre-migration schema**; there are **no migrations** and `synchronize: true` outside production. The target schema in `../.claude/reference/database-schema.md` is the destination, not what is live.
 - Legacy names are real and will appear in responses: `Tire` is the Tier entity, `BuyTire` a membership purchase, `ChatLine` a chat, `CreatorBill` a payout. Map them to product language at the API boundary; do not propagate `Tire` into UI code, and do not assume a rename has happened.
 - Phase 0 security work is **incomplete**. Known gaps include no content access control implemented, an endpoint returning a full account entity (password hash included) to anonymous callers, and payment amount handling defects. Consequences for this project: do not build gated-content UI that trusts the current responses without checking the endpoint, and report any response that contains more than the view needs.
 - Naming across the workspace is unresolved: the package is `dutupia-nest`, the repo is `Fellowa`, the documents say `Flova`, storage uses a `patreon/` prefix. This project is `fellowa-web`; use "Fellowa" in code and copy until a decision says otherwise.
@@ -78,7 +79,8 @@ The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 - `src/lib/api/query-keys.ts` has only the root key; factories come with their features.
 - `test/msw/handlers.ts` is empty by design — handlers arrive with the endpoints that need them.
 - No git hooks, no commitlint, no CI, no Playwright/e2e layer.
-- No brand design system: the tokens in `globals.css` are shadcn's neutral defaults.
-- Fonts are **not** loaded from Google Fonts (a build-time fetch, and unreliable from Iran). The stack in `globals.css` names Vazirmatn and falls back; self-host it with `next/font/local` when the files exist.
+- **No git.** `front-end/` is not a repository yet (`FE-FND-00`), so there is no diff for `code-reviewer` and no history for ported code.
+- Switch, checkbox and select primitives are missing (`FE-FND-05`, needs packages). `ui/dialog.tsx` has an English sr-only "Close" (`FE-FND-08`).
+- Fonts are **not** loaded from Google Fonts (a build-time fetch, and unreliable from Iran). The stack in `tailwind.config.ts` names `var(--font-brand)`, Ravi, Vazirmatn and falls back (brand face is `FQ-1`); self-host it with `next/font/local` when the files exist.
 - `npm audit`: 5 high-severity advisories, all dev-only and transitive through `eslint-config-next` → `fast-glob` → `micromatch` → `braces`, no fix in range. Do not `npm audit fix --force`.
 - `npx shadcn add` needs network access to `ui.shadcn.com`. If that is blocked, hand-write the component in the registry's shape (`data-slot`, `cn()` last, `cva` for variants) so a later `shadcn add` can still update it.

@@ -13,10 +13,77 @@
     "notFoundTitle": "Page not found",
     "notFoundBody": "The address you are looking for does not exist or has moved.",
     "networkTitle": "No connection",
-    "networkBody": "Check your internet connection and try again."
+    "networkBody": "Check your internet connection and try again.",
+    "backHome": "Back to home"
   },
   "home": {
     "scaffoldTitle": "Project base is ready",
     "scaffoldBody": "This page is a placeholder. It is replaced when the presentation directory is moved in and refactored."
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "studio": {
+    "mainNav": "Main menu",
+    "openMenu": "Open menu",
+    "newPost": "New post",
+    "groups": {
+      "monetization": "Monetization"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "page": "View my page",
+      "audience": "Audience",
+      "tiers": "Membership tiers",
+      "posts": "Posts",
+      "payouts": "Reports",
+      "payments": "Payments",
+      "settings": "Settings"
+    },
+    "pages": {
+      "dashboard": {
+        "title": "Studio dashboard",
+        "category": "Studio"
+      },
+      "page": {
+        "title": "My public page",
+        "category": "Preview"
+      },
+      "posts": {
+        "title": "Posts and content",
+        "category": "Content"
+      },
+      "composer": {
+        "title": "New post",
+        "category": "Content"
+      },
+      "tiers": {
+        "title": "Membership tiers",
+        "category": "Monetization"
+      },
+      "audience": {
+        "title": "Members and reports",
+        "category": "Insights"
+      },
+      "payouts": {
+        "title": "Earnings and payouts",
+        "category": "Finance"
+      },
+      "payments": {
+        "title": "Payment history",
+        "category": "Finance"
+      },
+      "settings": {
+        "title": "Account settings",
+        "category": "Account"
+      }
+    },
+    "placeholder": {
+      "title": "This section isn't built yet",
+      "body": "This page will be built in a later step."
+    }
   }
 }

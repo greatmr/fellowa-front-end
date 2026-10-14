@@ -4,28 +4,29 @@ Product frontend for Fellowa — the creator-subscription platform whose API liv
 in `../back-end`. This is the **project base only**: packages, conventions,
 app shell, i18n, API layer and the agent configuration under `.claude/`.
 
-No product features are implemented yet. The `../presentation` prototype
-(React 19 + Vite landing page) is **not** part of this project yet; moving and
-refactoring it into here is a separate piece of work.
+No product features are implemented yet. The Fellowa design tokens and branded
+primitives are in place, ported from `../presentation` — the design team's
+Vite prototype and this project's **design source**. Its screens are ported in
+one task at a time (`../.claude/tasks/frontend/`), never copied or imported.
 
 ## Stack
 
-| Concern         | Choice                                                               |
-| --------------- | -------------------------------------------------------------------- |
-| Framework       | Next.js 16 (App Router, Turbopack, Cache Components)                 |
-| UI runtime      | React 19                                                             |
-| Language        | TypeScript 5, `strict`                                               |
-| Styling         | Tailwind CSS v4 (CSS-first config in `src/app/globals.css`)          |
-| Components      | shadcn/ui (new-york, neutral base) + Radix primitives + lucide icons |
-| Server state    | TanStack Query v5                                                    |
-| Client state    | Zustand                                                              |
-| HTTP            | Axios, one instance in `src/lib/api/client.ts`                       |
-| Forms           | react-hook-form + zod (`@hookform/resolvers`)                        |
-| i18n            | next-intl — `fa` (default, RTL) and `en`                             |
-| Toasts          | sonner                                                               |
-| Theme           | next-themes (`class` strategy)                                       |
-| Tests           | Vitest + Testing Library + MSW                                       |
-| Package manager | npm                                                                  |
+| Concern         | Choice                                                                      |
+| --------------- | --------------------------------------------------------------------------- |
+| Framework       | Next.js 16 (App Router, Turbopack, Cache Components)                        |
+| UI runtime      | React 19                                                                    |
+| Language        | TypeScript 5, `strict`                                                      |
+| Styling         | Tailwind CSS v4: tokens in `tailwind.config.ts`, semantics in `globals.css` |
+| Components      | shadcn/ui (new-york, neutral base) + Radix primitives + lucide icons        |
+| Server state    | TanStack Query v5                                                           |
+| Client state    | Zustand                                                                     |
+| HTTP            | Axios, one instance in `src/lib/api/client.ts`                              |
+| Forms           | react-hook-form + zod (`@hookform/resolvers`)                               |
+| i18n            | next-intl — `fa` (default, RTL) and `en`                                    |
+| Toasts          | sonner                                                                      |
+| Theme           | next-themes (`class` strategy)                                              |
+| Tests           | Vitest + Testing Library + MSW                                              |
+| Package manager | npm                                                                         |
 
 ## Commands
 
@@ -44,10 +45,12 @@ npm run ui -- button card      # add a shadcn/ui component (needs network)
 ## Layout
 
 ```
+tailwind.config.ts     design tokens: palettes, type scale, radii, shadows, motion
 src/
   app/[locale]/        routes; the locale layout owns <html lang dir>
-  app/globals.css      Tailwind v4 entry + design tokens (the only place colors live)
-  components/ui/       shadcn/ui primitives, kept as the registry generates them
+  app/globals.css      Tailwind v4 entry: @config + semantic tokens per theme
+  components/ui/       shadcn/ui primitives (registry shape + recorded brand deltas)
+  components/common/   app composites (empty-state, error-state)
   components/providers/ app-wide client boundary (query, theme, toaster)
   features/<feature>/  feature-owned components, hooks, api, schemas, types
   i18n/                next-intl routing, request config, locale-aware navigation
@@ -68,7 +71,7 @@ test/                  vitest setup and MSW server
   chargeable amount on the client.
 - **Gated content**: the backend decides the access level. The client renders
   what it was given and never reconstructs a locked body.
-- **No raw colors or hardcoded user-facing text.** Tokens from `globals.css`,
+- **No raw colors or hardcoded user-facing text.** Tokens from `tailwind.config.ts` / `globals.css`,
   copy through next-intl keys in every locale.
 - **Logical CSS properties** (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`) so
   RTL works without a second stylesheet.

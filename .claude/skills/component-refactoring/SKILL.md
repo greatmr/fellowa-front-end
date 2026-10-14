@@ -22,9 +22,12 @@ A refactor changes structure and keeps behavior. Anything that changes behavior 
 
 ## Porting from `../presentation`
 
+Use skill **`presentation-port`** — it is the procedure, and `.claude/references/presentation-mapping.md` is the lookup table. The points below are the short version.
+
+
 The prototype is React 19 + Vite with no router, no i18n, no API layer and Tailwind wired through a Vite plugin. When a task brings code across — which is its own task, not a side effect of another one:
 
-- Treat it as **material, not precedent.** The target shapes are this project's: `features/`, logical CSS properties, next-intl keys, tokens from `globals.css`, `apiClient` for requests, server components where possible.
+- Treat it as **material, not precedent.** The target shapes are this project's: `features/`, logical CSS properties, next-intl keys, tokens from `tailwind.config.ts` / `globals.css`, `apiClient` for requests, server components where possible.
 - Its hardcoded copy becomes message keys in **both** locales; its hardcoded colors become tokens; its physical CSS properties become logical ones; its `@google/genai` and express pieces are out of scope unless a task says otherwise.
 - Port one surface at a time, verified, rather than copying the tree and fixing it afterwards.
 

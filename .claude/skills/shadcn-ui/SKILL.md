@@ -15,22 +15,22 @@ Facts about what is installed, the token list and the theme architecture are in 
 
 ## Tokens, not values
 
-- Colors come from the semantic tokens only: `bg-background`, `text-foreground`, `bg-card`, `text-muted-foreground`, `bg-primary`, `text-primary-foreground`, `bg-secondary`, `bg-accent`, `bg-destructive`, `border-border`, `ring-ring`, `bg-popover`, `chart-1..5`. Radii from `rounded-sm|md|lg|xl` (derived from `--radius`).
-- **A hex, `rgb()` or `oklch()` anywhere outside `src/app/globals.css` is a bug.** The tokens there are shadcn's neutral defaults standing in for a Fellowa brand palette; a hardcoded color is a pixel that will not change when the brand lands.
-- Tailwind v4 is CSS-first: there is no `tailwind.config.*`. A new token is a CSS variable in `:root`, its dark value in `.dark`, and a mapping in `@theme inline` — all three, or it will not work in one of the modes.
-- Tailwind's default spacing and type scales are intact (unlike some design-system presets), so `p-4`, `gap-6`, `text-sm` behave as you expect. Arbitrary values (`max-w-[42ch]`) only where no token fits and for a reason you can state.
+- Colors come from the semantic tokens first: `bg-background`, `text-foreground`, `bg-card`, `text-muted-foreground`, `bg-primary`, `text-primary-foreground`, `bg-secondary`, `bg-accent`, `bg-destructive`, `bg-success`, `bg-warning`, `bg-inverse`, `text-link`, `border-border`, `border-input`, `ring-ring`, `bg-popover`, `chart-1..5`. Brand palette utilities (`brand-*`, `violet-*`, `money-*`, `amber-*`, `red-*`, `ink-*`) for accents and status tints. Radii from `rounded-sm|md|lg|xl` (derived from `--radius`; `rounded-md` = 8px) and `rounded-card`. Full table and contrast: `.claude/references/ui-and-theme.md`.
+- **A hex, `rgb()` or `oklch()` anywhere outside `tailwind.config.ts` is a bug** (the gradient and shadow definitions there included). `globals.css` holds no literals either: it derives every semantic token with `--theme(--color-…)`.
+- A new **raw value** goes in `tailwind.config.ts`. A new **semantic token** is three edits in `globals.css`: `:root`, `.dark`, and its `--color-*` line in `@theme inline`. JS-config values are not emitted as CSS variables — in CSS use `--theme(--color-x)`, never `var(--color-x)`.
+- Tailwind's default spacing scale is intact. For type, use the named roles (`text-label`, `text-body`, `text-subtitle`, `text-title`, …); defaults like `text-sm` still work but new code uses the roles. Arbitrary values (`max-w-[42ch]`) only where no token fits and for a reason you can state.
 - `.numeric` (in `globals.css`) gives tabular numerals; use it for money columns and counts, never globally.
 - Styling lives in utilities. `style={{}}` is for a value computed at runtime (a progress width, a CSS custom property), not for anything a class can express.
 
 ## Dark mode
 
-`next-themes`, `attribute="class"`, `defaultTheme="light"`, `enableSystem`, in `app-providers.tsx`. **There is no toggle UI yet** — do not assume one exists and do not add one unless the task asks.
+`next-themes`, `attribute="class"`, `defaultTheme="light"`, `enableSystem`, in `app-providers.tsx`. The toggle UI is task `FE-FND-04`; reuse it, do not build a second one.
 
 Write every surface so it survives the class flip: semantic tokens only, no fixed `text-black` / `bg-white`, no assumption about what colour the background is, and check contrast in both modes. A section that must stay dark regardless is a deliberate exception — say so where you write it.
 
 ## Persian typography and RTL
 
-- The font stack in `globals.css` names Vazirmatn and falls back to other Persian faces then the system stack. It is **not** fetched from Google Fonts, on purpose. To ship the real face, add woff2 files under `public/fonts/` and load them with `next/font/local` in the locale layout, setting `--font-vazirmatn`. Do not switch to `next/font/google`.
+- The font stack in `tailwind.config.ts` is `var(--font-brand, Ravi)`, Ravi, Vazirmatn, other Persian faces, then the system stack. It is **not** fetched from Google Fonts, on purpose. To ship the real face (`FE-FND-03`, choice is `FQ-1`), add woff2 files under `public/fonts/` and load them with `next/font/local` in the locale layout, setting `--font-brand`. Do not switch to `next/font/google`.
 - `fa` renders RTL; `<html dir>` is set by the locale layout. Correct RTL comes from **logical properties**: `ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`, `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s`/`rounded-e`. `ml-`, `pr-`, `left-`, `text-left` are bugs in `fa` unless the thing genuinely is physically left.
 - Mirror directional glyphs (`rtl:rotate-180` on chevrons, arrows, back buttons). Progress fills, carousels, sliders, drag handles and anything with a direction must be **looked at** in `fa`, not reasoned about.
 - Mixed-direction runs (a Latin handle in a Persian sentence, a URL, an amount with a unit) reorder unless isolated. Check them.
