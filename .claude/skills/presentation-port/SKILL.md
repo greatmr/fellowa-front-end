@@ -13,11 +13,12 @@ Inputs: the `FE-…` task in `../.claude/tasks/frontend/tasks.md` · its row(s) 
 
 1. **Gate.** The task must be `Ready` (not `Ready after X` with X open, not `Blocked`). Its basis (story / `DS-…` / Phase-1 story) is named. Anything the task lists under "must not port" stays out. If the presentation file contains a feature the task does not cover (goals, wallets, interests…), leave it out and say so.
 
-2. **Read the source at the ledger's SHA**, not at whatever `HEAD` is:
+2. **Read the source at the ledger's SHA**, not at the current upstream tip:
    ```
-   git -C ../presentation show <sha>:src/components/<File>.tsx
-   git -C ../presentation log --oneline <sha>..HEAD -- src/components/<File>.tsx   # moved since? tell the user
+   git -C .. show <sha>:src/components/<File>.tsx
+   git -C .. log --oneline <sha>..presentation/main -- src/components/<File>.tsx   # moved since? tell the user
    ```
+   Fetch upstream objects first from the workspace root with `bash scripts/git-sync.sh fetch presentation`; these commands inspect original upstream SHAs, while local prototype files reflect the last subtree import.
    Inventory it before writing anything: every visual **state** (normal, loading, empty, error, disabled, locked/teaser, pending), every interaction, every string, every color/size literal.
 
 3. **Map, then build in this project's shape.**

@@ -16,7 +16,7 @@ description: Git history analysis and Git safety for the Fellowa workspace. When
 
 Read it when the task says "previous / old / used to / restore / port / migrate", when the current code's intent is unclear, when matching a convention you cannot see in a sibling, or when a stash or branch is named. Skip it for plain new work.
 
-This project has no git repository yet (`FE-FND-00`) — it is new. For ported code, the presentation SHA recorded in `../.claude/tasks/frontend/presentation-sync.md` is the provenance; cite it in the commit body (`Ported from presentation@<sha>: <path>`). The history that matters is usually in `../back-end` (what the API actually did and when) or in `../presentation` (what the prototype established). Read in the repository that owns the answer.
+`front-end/` is tracked in the root `agentic-fellowa` repository and published to `fellowa-front-end/main` with `git subtree split`. Do not run `git init` here. From the workspace root use `git log -- front-end/` for product history and `git log -- back-end/` for imported backend changes. For original backend or presentation SHAs, fetch history with `bash scripts/git-sync.sh fetch back-end` or `fetch presentation`, then inspect `back-end/develop` or `presentation/main`. From this directory use `git -C ..` for upstream `show <sha>:<path>` commands. For ported code, cite the presentation SHA from `../.claude/tasks/frontend/presentation-sync.md` (`Ported from presentation@<sha>: <path>`). See `../README.md` for sync and publishing commands.
 
 ## How (read-only)
 
