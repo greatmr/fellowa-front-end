@@ -1,15 +1,15 @@
-import type { ReactElement } from "react";
-import { render, type RenderOptions } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from 'react'
+import { render, type RenderOptions } from '@testing-library/react'
+import { NextIntlClientProvider } from 'next-intl'
 
-import en from "../messages/en.json";
-import fa from "../messages/fa.json";
+import en from '../messages/en.json'
+import fa from '../messages/fa.json'
 
-const messages = { fa, en } as const;
+const messages = { fa, en } as const
 
-type Options = Omit<RenderOptions, "wrapper"> & {
-  locale?: keyof typeof messages;
-};
+type Options = Omit<RenderOptions, 'wrapper'> & {
+  locale?: keyof typeof messages
+}
 
 /**
  * Render with the real translations (default `fa`). Use this for anything that
@@ -18,7 +18,7 @@ type Options = Omit<RenderOptions, "wrapper"> & {
  */
 export function renderWithIntl(
   ui: ReactElement,
-  { locale = "fa", ...options }: Options = {},
+  { locale = 'fa', ...options }: Options = {}
 ) {
   return render(ui, {
     wrapper: ({ children }) => (
@@ -27,5 +27,5 @@ export function renderWithIntl(
       </NextIntlClientProvider>
     ),
     ...options,
-  });
+  })
 }

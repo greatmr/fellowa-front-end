@@ -1,4 +1,4 @@
-import { defineRouting } from "next-intl/routing";
+import { defineRouting } from 'next-intl/routing'
 
 /**
  * Fellowa is a Persian-first product: `fa` is the default locale and renders
@@ -9,16 +9,16 @@ import { defineRouting } from "next-intl/routing";
  * prefixes the others (`/en/creator/x`).
  */
 export const routing = defineRouting({
-  locales: ["fa", "en"],
-  defaultLocale: "fa",
-  localePrefix: "as-needed",
-});
+  locales: ['fa', 'en'],
+  defaultLocale: 'fa',
+  localePrefix: 'as-needed',
+})
 
-export type Locale = (typeof routing.locales)[number];
+export type Locale = (typeof routing.locales)[number]
 
 /** Locales that render right-to-left. */
-export const rtlLocales: readonly Locale[] = ["fa"];
+export const rtlLocales: readonly Locale[] = ['fa']
 
-export function getDirection(locale: string): "rtl" | "ltr" {
-  return rtlLocales.includes(locale as Locale) ? "rtl" : "ltr";
+export function getDirection(locale: string): 'rtl' | 'ltr' {
+  return rtlLocales.includes(locale as Locale) ? 'rtl' : 'ltr'
 }

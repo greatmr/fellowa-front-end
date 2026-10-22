@@ -17,7 +17,7 @@
  * keys for endpoints that do not exist yet.
  */
 export const queryKeys = {
-  all: ["fellowa"] as const,
-} as const;
+  all: ['fellowa'] as const,
+} as const
 
-export type QueryKey = readonly unknown[];
+export type QueryKey = readonly unknown[]

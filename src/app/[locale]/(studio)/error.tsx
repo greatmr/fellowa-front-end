@@ -1,3 +1,3 @@
-"use client";
+'use client'
 
-export { RouteError as default } from "@/components/layout/route-error";
+export { RouteError as default } from '@/components/layout/route-error'

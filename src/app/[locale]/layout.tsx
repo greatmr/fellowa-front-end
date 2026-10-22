@@ -1,36 +1,36 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { hasLocale, NextIntlClientProvider } from 'next-intl'
+import { setRequestLocale } from 'next-intl/server'
 
-import { AppProviders } from "@/components/providers/app-providers";
-import { getDirection, routing } from "@/i18n/routing";
+import { AppProviders } from '@/components/providers/app-providers'
+import { getDirection, routing } from '@/i18n/routing'
 
-import "../globals.css";
+import '../globals.css'
 
 export const metadata: Metadata = {
-  title: "Fellowa",
-  description: "Creator subscription platform",
-};
+  title: 'Fellowa',
+  description: 'Creator subscription platform',
+}
 
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return routing.locales.map((locale) => ({ locale }))
 }
 
 export default async function LocaleLayout({
   children,
   params,
 }: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params;
+  const { locale } = await params
 
   if (!hasLocale(routing.locales, locale)) {
-    notFound();
+    notFound()
   }
 
-  setRequestLocale(locale);
+  setRequestLocale(locale)
 
   return (
     <html
@@ -45,5 +45,5 @@ export default async function LocaleLayout({
         </NextIntlClientProvider>
       </body>
     </html>
-  );
+  )
 }

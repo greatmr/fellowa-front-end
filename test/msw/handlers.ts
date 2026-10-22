@@ -1,4 +1,4 @@
-import type { RequestHandler } from "msw";
+import type { RequestHandler } from 'msw'
 
 /**
  * Default request handlers.
@@ -10,4 +10,4 @@ import type { RequestHandler } from "msw";
  * Never invent a response shape here. A fixture is a claim about the contract,
  * and a wrong one makes the tests certify the wrong thing.
  */
-export const handlers: RequestHandler[] = [];
+export const handlers: RequestHandler[] = []

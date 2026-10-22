@@ -1,12 +1,12 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 /*
  * Brand primitives (palettes, type scale, radii, shadows, gradients, motion)
  * live in tailwind.config.ts — the only file that may contain a hex value.
  * This file maps them onto semantic tokens per theme.
  */
-@config "../../tailwind.config.ts";
+@config '../../tailwind.config.ts';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -246,7 +246,7 @@ html .toaster[data-sonner-toaster] {
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
     text-rendering: optimizeLegibility;
   }
 

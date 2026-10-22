@@ -1,6 +1,6 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from 'next-intl/server'
 
-import { AppLayout } from "@/components/layout/app-layout";
+import { AppLayout } from '@/components/layout/app-layout'
 
 /**
  * Creator studio frame (FE-SHELL-01; presentation Sidebar/Header @fdb5f6c).
@@ -11,11 +11,11 @@ export default async function StudioLayout({
   children,
   params,
 }: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
+  const { locale } = await params
+  setRequestLocale(locale)
 
-  return <AppLayout>{children}</AppLayout>;
+  return <AppLayout>{children}</AppLayout>
 }
