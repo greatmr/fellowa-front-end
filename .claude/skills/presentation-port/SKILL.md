@@ -15,10 +15,10 @@ Inputs: the `FE-…` task in `../.claude/tasks/frontend/tasks.md` · its row(s) 
 
 2. **Read the source at the ledger's SHA**, not at the current upstream tip:
    ```
-   git -C .. show <sha>:src/components/<File>.tsx
-   git -C .. log --oneline <sha>..presentation/main -- src/components/<File>.tsx   # moved since? tell the user
+   git -C ../presentation show <sha>:src/components/<File>.tsx
+   git -C ../presentation log --oneline <sha>..origin/main -- src/components/<File>.tsx   # moved since? tell the user
    ```
-   Fetch upstream objects first from the workspace root with `bash scripts/git-sync.sh fetch presentation`; these commands inspect original upstream SHAs, while local prototype files reflect the last subtree import.
+   Fetch upstream objects first from the workspace root with `bash scripts/git-sync.sh fetch presentation`; these commands inspect the presentation repository's original SHAs. `origin/main` may be newer than its pinned local `HEAD`.
    Inventory it before writing anything: every visual **state** (normal, loading, empty, error, disabled, locked/teaser, pending), every interaction, every string, every color/size literal.
 
 3. **Map, then build in this project's shape.**

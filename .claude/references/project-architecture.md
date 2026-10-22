@@ -8,7 +8,7 @@ The Fellowa workspace (`..`) holds:
 |---|---|
 | `back-end/` | the NestJS 11 API — the only backend. Has its own `.claude/` for backend work. |
 | `front-end/` | **this project**: the product frontend. |
-| `presentation/` | the **design source**: a React 19 + Vite prototype (package `react-example`, "Fellowa creator panel", subtree from its separate upstream, mock data only, changing every few days). Its screens are ported into this project one `FE-…` task at a time (skill `presentation-port`). Never import from it, never edit it, never copy its patterns (Vite, view-state router, no i18n, `localStorage` sessions). |
+| `presentation/` | the **design source**: a React 19 + Vite prototype (package `react-example`, "Fellowa creator panel", Git submodule with its own origin, mock data only, changing every few days). Its screens are ported into this project one `FE-…` task at a time (skill `presentation-port`). Never import from it, never edit it, never copy its patterns (Vite, view-state router, no i18n, `localStorage` sessions). |
 | `agents/Frontend-Claude/` | the **Vue-era** agent configuration this one was ported from (a different product). Historical; do not follow it. |
 | `.claude/` | workspace orchestration: `project-manager`, `scrum-master`, `task-manager` agents, the task board, the frontend tasks and presentation sync ledger (`tasks/frontend/`), the 56 design packages as Markdown (`stories/DP-nn-*.md`) and the schema report (`reference/database-schema.md`). |
 
