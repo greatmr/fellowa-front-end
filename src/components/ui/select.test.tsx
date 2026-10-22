@@ -38,6 +38,26 @@ function LanguageOptions() {
 }
 
 describe('Select', () => {
+  it('validates a required selection and submits the chosen option', async () => {
+    const user = userEvent.setup()
+    render(
+      <form aria-label="Language preference">
+        <Select required name="language">
+          <LanguageOptions />
+        </Select>
+      </form>
+    )
+
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Language preference',
+    })
+    expect(form.checkValidity()).toBe(false)
+    await user.click(screen.getByRole('combobox', { name: 'Language' }))
+    await user.click(await screen.findByRole('option', { name: 'Persian' }))
+    expect(form.checkValidity()).toBe(true)
+    expect(new FormData(form).get('language')).toBe('fa')
+  })
+
   it('selects with the keyboard, skips disabled items, and submits a value', async () => {
     const user = userEvent.setup()
     render(

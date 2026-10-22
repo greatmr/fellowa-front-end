@@ -2,15 +2,21 @@
 
 import * as React from 'react'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { useDirection } from '@radix-ui/react-direction'
 
 import { cn } from '@/lib/utils'
 
 function Tabs({
   className,
+  dir,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  // Older Radix primitives use a separate direction context internally.
+  const direction = useDirection(dir)
+
   return (
     <TabsPrimitive.Root
+      dir={direction}
       data-slot="tabs"
       className={cn('flex flex-col gap-2', className)}
       {...props}

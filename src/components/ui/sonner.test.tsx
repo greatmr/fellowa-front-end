@@ -11,9 +11,53 @@ import { renderWithIntl } from '../../../test/render'
 
 afterEach(() => {
   toast.dismiss()
+  localStorage.removeItem('theme')
+  document.documentElement.classList.remove('light', 'dark', 'custom')
 })
 
 describe('branded notifications', () => {
+  it.each([
+    { theme: 'dark', resolved: 'dark' },
+    { theme: 'system', resolved: 'light' },
+    { theme: 'custom', resolved: 'light' },
+  ])(
+    'renders $theme using a supported Sonner theme',
+    async ({ theme, resolved }) => {
+      renderWithIntl(
+        <ThemeProvider
+          attribute="class"
+          defaultTheme={theme}
+          themes={['light', 'dark', 'custom']}
+          enableSystem
+        >
+          <Toaster />
+        </ThemeProvider>
+      )
+      await act(async () => {
+        toast.error('Could not save', { duration: Infinity })
+      })
+
+      const notification = await screen.findByText('Could not save')
+      expect(notification.closest('ol')).toHaveAttribute(
+        'data-sonner-theme',
+        resolved
+      )
+    }
+  )
+
+  it('uses the system fallback when no theme provider is mounted', async () => {
+    renderWithIntl(<Toaster />)
+    await act(async () => {
+      toast.info('Information', { duration: Infinity })
+    })
+
+    const notification = await screen.findByText('Information')
+    expect(notification.closest('ol')).toHaveAttribute(
+      'data-sonner-theme',
+      'light'
+    )
+  })
+
   it.each([
     { locale: 'fa', messages: fa, direction: 'rtl' },
     { locale: 'en', messages: en, direction: 'ltr' },

@@ -6,6 +6,25 @@ import { describe, expect, it } from 'vitest'
 import { Switch } from '@/components/ui/switch'
 
 describe('Switch', () => {
+  it('enforces required form consent until it is enabled', async () => {
+    const user = userEvent.setup()
+    render(
+      <form aria-label="Required preferences">
+        <Switch aria-label="Enable notifications" required name="notify" />
+      </form>
+    )
+
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Required preferences',
+    })
+    expect(form.checkValidity()).toBe(false)
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable notifications' })
+    )
+    expect(form.checkValidity()).toBe(true)
+    expect(new FormData(form).get('notify')).toBe('on')
+  })
+
   it('updates controlled state with the keyboard and submits its form value', async () => {
     const user = userEvent.setup()
 

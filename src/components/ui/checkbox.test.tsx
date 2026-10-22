@@ -6,6 +6,28 @@ import { describe, expect, it } from 'vitest'
 import { Checkbox } from '@/components/ui/checkbox'
 
 describe('Checkbox', () => {
+  it('validates a required checkbox and restores its default on form reset', async () => {
+    const user = userEvent.setup()
+    render(
+      <form aria-label="Agreement">
+        <Checkbox aria-label="Terms" required name="terms" defaultChecked />
+        <button type="reset">Reset agreement</button>
+      </form>
+    )
+
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Agreement',
+    })
+    const terms = screen.getByRole('checkbox', { name: 'Terms' })
+    expect(form.checkValidity()).toBe(true)
+    await user.click(terms)
+    expect(form.checkValidity()).toBe(false)
+    await user.click(screen.getByRole('button', { name: 'Reset agreement' }))
+    expect(terms).toBeChecked()
+    expect(form.checkValidity()).toBe(true)
+    expect(new FormData(form).get('terms')).toBe('on')
+  })
+
   it('moves from indeterminate to checked with Space and participates in a form', async () => {
     const user = userEvent.setup()
 

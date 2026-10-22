@@ -27,11 +27,43 @@ configuration in [the workspace tasks](../TASKS.md) and
 [migration report](../MIGRATION_PROGRESS.md). Interactive tests use guarded
 browser-API polyfills in `test/setup.ts`; no mock backend was added.
 
-Use a runtime supported by the installed test dependencies (Node 20.19+, Node
-22.13+, or Node 24+). This stage was verified using Node 22.23.4; the machine's
+Use Node 22.13 or later on the 22.x line, or Node 24+. The coverage toolchain
+requires Node 22 or later. This stage was verified using Node 22.23.4; the machine's
 default Node 22.12 is too old for some dependencies. For production smoke checks
 on this Next.js version, run `npm run start -- --hostname localhost` so the bind
 host matches the internal locale rewrite origin.
+
+## Formatting and test infrastructure
+
+The shared tooling policy is adapted from the `tripmentor` reference project
+(reference commit `db81b9048`). This frontend keeps the installed React/Next.js
+flat ESLint configuration and TypeScript/Query checks. Vue parsers, Vue rules,
+and application-specific restrictions from the reference are not applicable.
+
+Prettier uses single quotes, no semicolons, ES5 trailing commas, two spaces,
+80 columns, and LF line endings. `.editorconfig` shares the editor defaults;
+Markdown retains intentional trailing spaces. The Tailwind plugin reads the
+actual v4 stylesheet and sorts classes in `cn`, `clsx`, and `cva` calls.
+`eslint-config-prettier` disables conflicting formatting rules; lint rejects
+warnings. This explicitly requested policy supersedes the older formatting
+description in the read-only `.claude` instructions.
+
+`.browserslistrc` adapts the reference's popular/maintained browser selection
+to Next.js and Tailwind 4: Chrome/Edge 111+, Firefox 128+, and Safari/iOS 16.4+.
+Next.js reads this file when computing build targets. The version floors follow
+the installed Next.js supported-browser guide and
+[Tailwind's compatibility requirements](https://tailwindcss.com/docs/compatibility).
+Browserslist targets guide compilation; they do not replace real-browser tests.
+
+Unit tests live beside the primitives and use real React/Radix behavior with
+Testing Library. Coverage includes every `src/components/ui/*.tsx` implementation,
+including files that a test does not import; tests themselves are excluded.
+`npm run test:coverage` runs the whole suite and writes text, HTML, and JSON
+summaries under the ignored `coverage/` directory. Open `coverage/index.html`
+to inspect uncovered behavior. Server routes, CSS contrast, and browser layout
+are outside this jsdom unit coverage.
+The unit coverage gate requires 95% of statements, functions, and lines and
+90% of branches. Vitest and its V8 provider are pinned to the same version.
 
 ## Stack
 
@@ -61,7 +93,11 @@ cp .env.example .env.local     # then fill in NEXT_PUBLIC_API_BASE_URL
 npm run dev                    # http://localhost:3000
 npm run typecheck              # tsc --noEmit
 npm run lint                   # eslint
+npm run format:check           # check the shared formatting policy
 npm run test                   # vitest run
+npm run test:unit              # UI primitives and shared common components
+npm run test:coverage          # full suite, V8 coverage of UI primitives
+npm run check                  # format, lint, types, and tests
 npm run build                  # next build
 npm run ui -- button card      # add a shadcn/ui component (needs network)
 ```

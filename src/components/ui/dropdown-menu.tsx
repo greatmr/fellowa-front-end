@@ -2,14 +2,24 @@
 
 import * as React from 'react'
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
+import { useDirection } from '@radix-ui/react-direction'
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
 function DropdownMenu({
+  dir,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  // Bridge the app direction into Radix versions with their own context copy.
+  const direction = useDirection(dir)
+  return (
+    <DropdownMenuPrimitive.Root
+      data-slot="dropdown-menu"
+      dir={direction}
+      {...props}
+    />
+  )
 }
 
 function DropdownMenuTrigger({
