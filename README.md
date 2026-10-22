@@ -9,6 +9,30 @@ primitives are in place, ported from `../presentation` — the design team's
 Vite prototype and this project's **design source**. Its screens are ported in
 one task at a time (`../.claude/tasks/frontend/`), never copied or imported.
 
+## Foundation migration (2026-10-22)
+
+The shared foundation now includes Radix-backed switch, checkbox, and select
+controls; locale-aware portal direction; keyboard-accessible theme selection;
+and Sonner tones derived from the same light/dark Tailwind tokens. The existing
+palette and named typography remain authoritative in `tailwind.config.ts`.
+
+`components/layout/app-layout.tsx` supplies the studio frame,
+`default-layout.tsx` supplies the new `(public)` header/footer and home frame,
+and `error-layout.tsx` supports localized route and global error recovery.
+The public introduction has working `#why` and `#features` sections; the full
+marketing landing and backend-dependent product screens remain later tasks.
+
+Progress and remaining gates are recorded outside the read-only agent
+configuration in [the workspace tasks](../TASKS.md) and
+[migration report](../MIGRATION_PROGRESS.md). Interactive tests use guarded
+browser-API polyfills in `test/setup.ts`; no mock backend was added.
+
+Use a runtime supported by the installed test dependencies (Node 20.19+, Node
+22.13+, or Node 24+). This stage was verified using Node 22.23.4; the machine's
+default Node 22.12 is too old for some dependencies. For production smoke checks
+on this Next.js version, run `npm run start -- --hostname localhost` so the bind
+host matches the internal locale rewrite origin.
+
 ## Stack
 
 | Concern         | Choice                                                                      |

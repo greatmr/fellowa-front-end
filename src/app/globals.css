@@ -18,7 +18,7 @@
  * is recorded in .claude/references/ui-and-theme.md.
  */
 :root {
-  --radius: 0.625rem;
+  --radius: --theme(--radius-base);
 
   --background: --theme(--color-ink-25);
   --foreground: --theme(--color-ink-900);
@@ -46,6 +46,19 @@
   --border: --theme(--color-ink-150);
   --input: --theme(--color-ink-250);
   --ring: --theme(--color-brand-500);
+
+  --success-subtle: --theme(--color-money-50);
+  --success-emphasis: --theme(--color-money-700);
+  --status-success-border: --theme(--color-money-100);
+  --danger-subtle: --theme(--color-red-50);
+  --danger-emphasis: --theme(--color-red-700);
+  --danger-border: --theme(--color-red-100);
+  --warning-subtle: --theme(--color-amber-50);
+  --warning-emphasis: --theme(--color-amber-700);
+  --status-warning-border: --theme(--color-amber-100);
+  --info-subtle: --theme(--color-brand-50);
+  --info-emphasis: --theme(--color-brand-700);
+  --status-info-border: --theme(--color-brand-100);
 
   --chart-1: --theme(--color-brand-600);
   --chart-2: --theme(--color-violet-600);
@@ -82,6 +95,19 @@
   --input: --theme(--color-white / 12%);
   --ring: --theme(--color-brand-400);
 
+  --success-subtle: --theme(--color-money-500 / 15%);
+  --success-emphasis: --theme(--color-money-300);
+  --status-success-border: --theme(--color-money-400 / 25%);
+  --danger-subtle: --theme(--color-red-500 / 15%);
+  --danger-emphasis: --theme(--color-red-300);
+  --danger-border: --theme(--color-red-400 / 25%);
+  --warning-subtle: --theme(--color-amber-500 / 15%);
+  --warning-emphasis: --theme(--color-amber-300);
+  --status-warning-border: --theme(--color-amber-400 / 25%);
+  --info-subtle: --theme(--color-brand-500 / 15%);
+  --info-emphasis: --theme(--color-brand-200);
+  --status-info-border: --theme(--color-brand-400 / 25%);
+
   --chart-1: --theme(--color-brand-400);
   --chart-2: --theme(--color-violet-400);
   --chart-3: --theme(--color-money-400);
@@ -117,6 +143,19 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-success-subtle: var(--success-subtle);
+  --color-success-emphasis: var(--success-emphasis);
+  --color-success-border: var(--status-success-border);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-emphasis: var(--danger-emphasis);
+  --color-danger-border: var(--danger-border);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-emphasis: var(--warning-emphasis);
+  --color-warning-border: var(--status-warning-border);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-emphasis: var(--info-emphasis);
+  --color-info-border: var(--status-info-border);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -131,6 +170,29 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Override Sonner's bundled palette using the same light/dark semantic tokens.
+ * The element qualifier keeps these aliases ahead of Sonner's theme selectors.
+ */
+html .toaster[data-sonner-toaster] {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: var(--success-subtle);
+  --success-text: var(--success-emphasis);
+  --success-border: var(--status-success-border);
+  --error-bg: var(--danger-subtle);
+  --error-text: var(--danger-emphasis);
+  --error-border: var(--danger-border);
+  --warning-bg: var(--warning-subtle);
+  --warning-text: var(--warning-emphasis);
+  --warning-border: var(--status-warning-border);
+  --info-bg: var(--info-subtle);
+  --info-text: var(--info-emphasis);
+  --info-border: var(--status-info-border);
+  --border-radius: --theme(--radius-base);
+  font-family: inherit;
 }
 
 /* Fade the end of a teaser so it reads as cut off (gated posts). */

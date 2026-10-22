@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react";
+import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { ThemeSwitch } from "@/components/common/theme-switch";
@@ -15,9 +15,7 @@ import { Link } from "@/i18n/navigation";
 /**
  * Sidebar body, shared by the desktop rail and the mobile drawer. A server
  * component; only the links and the theme switch are client leaves.
- * Not ported from the presentation (FE-SHELL-01): the collapsed icon rail,
- * collapsible groups, recent visits and the account menu — the last two
- * need a session (C-4).
+ * Account and recent-visit controls await the session contract (C-4).
  */
 function NavIcon({ item }: { item: StudioNavItem }) {
   const Icon = item.icon;
@@ -35,9 +33,10 @@ export function StudioSidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 shrink-0 items-center px-5">
+      <div className="flex h-16 shrink-0 items-center px-5 group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0">
         <Link
           href="/studio"
+          title={t("label")}
           className="focus-visible:ring-ring/50 rounded-md outline-none focus-visible:ring-[3px]"
         >
           <Logo />
@@ -48,13 +47,8 @@ export function StudioSidebar() {
         aria-label={t("mainNav")}
         className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-3 pb-2"
       >
-        {studioNav.map((section, index) => (
-          <div key={section.group ?? index} className="mb-2.5">
-            {section.group ? (
-              <p className="text-muted-foreground text-label px-3 py-1.5 font-semibold">
-                {t(`groups.${section.group}`)}
-              </p>
-            ) : null}
+        {studioNav.map((section, index) => {
+          const links = (
             <ul className="space-y-0.5">
               {section.items.map((item) => (
                 <li key={item.href}>
@@ -68,15 +62,43 @@ export function StudioSidebar() {
                 </li>
               ))}
             </ul>
-          </div>
-        ))}
+          );
+
+          return section.group ? (
+            <details
+              key={section.group}
+              open
+              className="group/nav-section mb-2.5"
+            >
+              <summary className="text-muted-foreground focus-visible:ring-ring/50 text-label flex cursor-pointer list-none items-center justify-between gap-1 rounded-md px-3 py-2 font-semibold outline-none group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0 focus-visible:ring-2 [&::-webkit-details-marker]:hidden">
+                <span className="group-data-[collapsed=true]/sidebar:sr-only">
+                  {t(`groups.${section.group}`)}
+                </span>
+                <ChevronDownIcon
+                  className="size-3.5 shrink-0 transition-transform group-open/nav-section:rotate-180 motion-reduce:transition-none"
+                  aria-hidden
+                />
+              </summary>
+              {links}
+            </details>
+          ) : (
+            <div key={index} className="mb-2.5">
+              {links}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="bg-card shrink-0 space-y-3 border-t p-3">
-        <Button asChild className="w-full">
-          <Link href="/studio/posts/new">
+        <Button
+          asChild
+          className="w-full group-data-[collapsed=true]/sidebar:px-0"
+        >
+          <Link href="/studio/posts/new" title={t("newPost")}>
             <PlusIcon strokeWidth={2.2} aria-hidden />
-            {t("newPost")}
+            <span className="group-data-[collapsed=true]/sidebar:sr-only">
+              {t("newPost")}
+            </span>
           </Link>
         </Button>
         <StudioNavLink
@@ -85,7 +107,7 @@ export function StudioSidebar() {
         >
           {t(`nav.${studioSettingsItem.label}`)}
         </StudioNavLink>
-        <ThemeSwitch className="px-1" />
+        <ThemeSwitch className="px-1 group-data-[collapsed=true]/sidebar:hidden" />
       </div>
     </div>
   );
