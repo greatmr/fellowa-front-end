@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from 'react'
 
-import { Link, usePathname } from "@/i18n/navigation";
-import { cn } from "@/lib/utils";
+import { Link, usePathname } from '@/i18n/navigation'
+import { cn } from '@/lib/utils'
 
-const noopSubscribe = () => () => {};
+const noopSubscribe = () => () => {}
 
 export function isPathActive(href: string, pathname: string, exact = false) {
-  if (exact) return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (exact) return pathname === href
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 /**
@@ -27,29 +27,29 @@ export function StudioNavLink({
   icon,
   children,
 }: {
-  href: string;
-  exact?: boolean;
-  icon: ReactNode;
-  children: ReactNode;
+  href: string
+  exact?: boolean
+  icon: ReactNode
+  children: ReactNode
 }) {
-  const pathname = usePathname();
+  const pathname = usePathname()
   const hydrated = useSyncExternalStore(
     noopSubscribe,
     () => true,
-    () => false,
-  );
-  const active = hydrated && isPathActive(href, pathname, exact);
+    () => false
+  )
+  const active = hydrated && isPathActive(href, pathname, exact)
 
   return (
     <Link
       href={href}
-      title={typeof children === "string" ? children : undefined}
-      aria-current={active ? "page" : undefined}
+      title={typeof children === 'string' ? children : undefined}
+      aria-current={active ? 'page' : undefined}
       className={cn(
-        "group text-body focus-visible:ring-ring/50 flex h-10 w-full items-center gap-2.5 rounded-md px-3 font-medium transition-colors outline-none group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0 focus-visible:ring-[3px]",
+        'group flex h-10 w-full items-center gap-2.5 rounded-md px-3 text-body font-medium transition-colors outline-none group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0 focus-visible:ring-[3px] focus-visible:ring-ring/50',
         active
-          ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200 font-semibold"
-          : "text-ink-700 hover:bg-accent hover:text-foreground dark:text-ink-200",
+          ? 'bg-brand-50 font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-200'
+          : 'text-ink-700 hover:bg-accent hover:text-foreground dark:text-ink-200'
       )}
     >
       {icon}
@@ -57,5 +57,5 @@ export function StudioNavLink({
         {children}
       </span>
     </Link>
-  );
+  )
 }

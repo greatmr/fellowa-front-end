@@ -1,35 +1,35 @@
-"use client";
+'use client'
 
-import { useSyncExternalStore } from "react";
-import { ThemeProvider } from "next-themes";
+import { useSyncExternalStore } from 'react'
+import { ThemeProvider } from 'next-themes'
 
-import { ErrorLayout } from "@/components/layout/error-layout";
-import { Button } from "@/components/ui/button";
-import en from "../../messages/en.json";
-import fa from "../../messages/fa.json";
+import { ErrorLayout } from '@/components/layout/error-layout'
+import { Button } from '@/components/ui/button'
+import en from '../../messages/en.json'
+import fa from '../../messages/fa.json'
 
-import "./globals.css";
+import './globals.css'
 
-const noopSubscribe = () => () => {};
+const noopSubscribe = () => () => {}
 
 /** Root-layout failures cannot depend on the locale or application providers. */
 export default function GlobalError({
   retry,
 }: {
-  error: unknown;
-  retry: () => void;
+  error: unknown
+  retry: () => void
 }) {
   const locale = useSyncExternalStore(
     noopSubscribe,
-    () => (window.location.pathname.split("/")[1] === "en" ? "en" : "fa"),
-    () => "fa",
-  );
-  const messages = locale === "en" ? en : fa;
+    () => (window.location.pathname.split('/')[1] === 'en' ? 'en' : 'fa'),
+    () => 'fa'
+  )
+  const messages = locale === 'en' ? en : fa
 
   return (
     <html
       lang={locale}
-      dir={locale === "fa" ? "rtl" : "ltr"}
+      dir={locale === 'fa' ? 'rtl' : 'ltr'}
       suppressHydrationWarning
     >
       <body className="min-h-dvh">
@@ -52,7 +52,7 @@ export default function GlobalError({
                 <>
                   <Button onClick={retry}>{messages.common.retry}</Button>
                   <Button asChild variant="outline">
-                    <a href={locale === "en" ? "/en" : "/"}>
+                    <a href={locale === 'en' ? '/en' : '/'}>
                       {messages.errors.backHome}
                     </a>
                   </Button>
@@ -63,5 +63,5 @@ export default function GlobalError({
         </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

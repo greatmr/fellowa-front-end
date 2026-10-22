@@ -1,13 +1,13 @@
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest'
 
-import { afterAll, afterEach, beforeAll } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { afterAll, afterEach, beforeAll } from 'vitest'
+import { cleanup } from '@testing-library/react'
 
-import { server } from "./msw/server";
+import { server } from './msw/server'
 
 // jsdom has no matchMedia; next-themes (system theme) and responsive hooks call
 // it. Report "no match" so tests run as a light-scheme, wide viewport.
-if (typeof window !== "undefined" && !window.matchMedia) {
+if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList => ({
     matches: false,
     media: query,
@@ -17,7 +17,7 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     addEventListener: () => {},
     removeEventListener: () => {},
     dispatchEvent: () => false,
-  });
+  })
 }
 
 // Radix measures controls and manages portaled focus through browser APIs that
@@ -27,29 +27,29 @@ if (!globalThis.ResizeObserver) {
     observe() {}
     unobserve() {}
     disconnect() {}
-  };
+  }
 }
 
 if (!Element.prototype.scrollIntoView) {
-  Element.prototype.scrollIntoView = () => {};
+  Element.prototype.scrollIntoView = () => {}
 }
 if (!Element.prototype.hasPointerCapture) {
-  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.hasPointerCapture = () => false
 }
 if (!Element.prototype.setPointerCapture) {
-  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.setPointerCapture = () => {}
 }
 if (!Element.prototype.releasePointerCapture) {
-  Element.prototype.releasePointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {}
 }
 
 // Network is mocked at the boundary, never per-module. An unhandled request is
 // an error so a test can never silently hit a real service.
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 
 afterEach(() => {
-  cleanup();
-  server.resetHandlers();
-});
+  cleanup()
+  server.resetHandlers()
+})
 
-afterAll(() => server.close());
+afterAll(() => server.close())

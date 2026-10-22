@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react'
 
-import { PublicFooter } from "@/components/layout/public-footer";
-import { PublicHeader } from "@/components/layout/public-header";
-import { SkipLink } from "@/components/layout/skip-link";
+import { PublicFooter } from '@/components/layout/public-footer'
+import { PublicHeader } from '@/components/layout/public-header'
+import { SkipLink } from '@/components/layout/skip-link'
 
 /** Public pages share their navigation without inheriting the studio rail. */
 export function DefaultLayout({ children }: { children: ReactNode }) {
@@ -15,5 +15,5 @@ export function DefaultLayout({ children }: { children: ReactNode }) {
       </main>
       <PublicFooter />
     </div>
-  );
+  )
 }
