@@ -6,6 +6,7 @@ import {
   borderRadius,
   boxShadow,
   fontSize,
+  maxWidth,
 } from "../../tailwind.config";
 
 /**
@@ -21,6 +22,7 @@ const twMerge = extendTailwindMerge({
       shadow: [{ shadow: Object.keys(boxShadow) }],
       rounded: [{ rounded: Object.keys(borderRadius) }],
       "bg-image": [{ bg: Object.keys(backgroundImage) }],
+      "max-w": [{ "max-w": Object.keys(maxWidth) }],
     },
   },
 });

@@ -20,6 +20,29 @@ if (typeof window !== "undefined" && !window.matchMedia) {
   });
 }
 
+// Radix measures controls and manages portaled focus through browser APIs that
+// jsdom does not implement. Keep existing browser implementations when present.
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
+
 // Network is mocked at the boundary, never per-module. An unhandled request is
 // an error so a test can never silently hit a real service.
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));

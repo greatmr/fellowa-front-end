@@ -8,6 +8,9 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
+    // Let Vite resolve next-intl's extensionless next/navigation import in
+    // component tests, matching the application's bundler resolution.
+    server: { deps: { inline: ["next-intl"] } },
     environment: "jsdom",
     globals: true,
     setupFiles: ["./test/setup.ts"],

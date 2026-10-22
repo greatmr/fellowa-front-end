@@ -1,11 +1,12 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useId, useRef, useSyncExternalStore, type KeyboardEvent } from "react";
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
+import { getDirection } from "@/i18n/routing";
 
 const OPTIONS = [
   { value: "light", icon: SunIcon },
@@ -26,6 +27,9 @@ const noopSubscribe = () => () => {};
 export function ThemeSwitch({ className }: { className?: string }) {
   const t = useTranslations("theme");
   const { theme, setTheme } = useTheme();
+  const labelId = useId();
+  const buttons = useRef<Array<HTMLButtonElement | null>>([]);
+  const direction = getDirection(useLocale());
   const hydrated = useSyncExternalStore(
     noopSubscribe,
     () => true,
@@ -35,20 +39,41 @@ export function ThemeSwitch({ className }: { className?: string }) {
     ? OPTIONS.find((option) => option.value === theme)?.value
     : undefined;
 
+  function moveSelection(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) {
+    const nextKey = direction === "rtl" ? "ArrowLeft" : "ArrowRight";
+    const previousKey = direction === "rtl" ? "ArrowRight" : "ArrowLeft";
+    let next: number;
+    if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = OPTIONS.length - 1;
+    else if (event.key === nextKey || event.key === "ArrowDown") {
+      next = (index + 1) % OPTIONS.length;
+    } else if (event.key === previousKey || event.key === "ArrowUp") {
+      next = (index + OPTIONS.length - 1) % OPTIONS.length;
+    } else return;
+
+    event.preventDefault();
+    setTheme(OPTIONS[next].value);
+    buttons.current[next]?.focus();
+  }
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <p
-        id="theme-switch-label"
+        id={labelId}
         className="text-muted-foreground text-label font-semibold"
       >
         {t("label")}
       </p>
       <div
         role="radiogroup"
-        aria-labelledby="theme-switch-label"
+        aria-labelledby={labelId}
+        aria-orientation="horizontal"
         className="bg-secondary grid grid-cols-3 gap-1 rounded-md p-1"
       >
-        {OPTIONS.map(({ value, icon: Icon }) => {
+        {OPTIONS.map(({ value, icon: Icon }, index) => {
           const selected = current === value;
           return (
             <button
@@ -56,6 +81,11 @@ export function ThemeSwitch({ className }: { className?: string }) {
               type="button"
               role="radio"
               aria-checked={selected}
+              tabIndex={selected || (!current && index === 0) ? 0 : -1}
+              ref={(element) => {
+                buttons.current[index] = element;
+              }}
+              onKeyDown={(event) => moveSelection(event, index)}
               onClick={() => setTheme(value)}
               className={cn(
                 "text-label focus-visible:ring-ring/50 inline-flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 font-semibold transition-colors outline-none focus-visible:ring-[3px]",

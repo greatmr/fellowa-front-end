@@ -1,22 +1,27 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useLocale, useTranslations } from "next-intl";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-function Toaster({ ...props }: ToasterProps) {
+import { getDirection } from "@/i18n/routing";
+import { cn } from "@/lib/utils";
+
+function Toaster({ className, toastOptions, ...props }: ToasterProps) {
   const { theme = "system" } = useTheme();
+  const t = useTranslations("common");
+  const direction = getDirection(useLocale());
+  const supportedTheme =
+    theme === "light" || theme === "dark" ? theme : "system";
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-        } as React.CSSProperties
-      }
+      theme={supportedTheme}
+      dir={direction}
+      className={cn("toaster group", className)}
+      containerAriaLabel={t("notifications")}
+      closeButton
+      toastOptions={{ closeButtonAriaLabel: t("close"), ...toastOptions }}
       {...props}
     />
   );

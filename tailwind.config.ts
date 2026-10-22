@@ -129,8 +129,24 @@ export const fontSize = {
 } satisfies NonNullable<Config["theme"]>["fontSize"];
 
 export const borderRadius = {
+  /** Compact controls and the shared semantic radius foundation. */
+  control: "0.25rem",
+  base: "0.625rem",
   /** Large media and profile cards (presentation `--radius-card`). */
   card: "1.25rem",
+} as const;
+
+/** Shared shell dimensions, measured from the presentation's studio frame. */
+export const spacing = {
+  sidebar: "16.5rem",
+  "sidebar-collapsed": "4.5rem",
+  drawer: "17.5rem",
+} as const;
+
+export const maxWidth = {
+  content: "64rem",
+  public: "71.25rem",
+  error: "28rem",
 } as const;
 
 export const boxShadow = {
@@ -188,6 +204,8 @@ const config = {
         ],
       },
       borderRadius,
+      spacing,
+      maxWidth,
       boxShadow,
       backgroundImage,
       keyframes: {

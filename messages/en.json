@@ -5,7 +5,9 @@
     "retry": "Try again",
     "cancel": "Cancel",
     "save": "Save",
-    "close": "Close"
+    "close": "Close",
+    "skipToContent": "Skip to content",
+    "notifications": "Notifications"
   },
   "errors": {
     "unexpectedTitle": "Something went wrong",
@@ -17,8 +19,24 @@
     "backHome": "Back to home"
   },
   "home": {
-    "scaffoldTitle": "Project base is ready",
-    "scaffoldBody": "This page is a placeholder. It is replaced when the presentation directory is moved in and refactored."
+    "eyebrow": "Create with your community",
+    "title": "Your creativity. Your people. Your own space.",
+    "description": "Fellowa brings your work and your supporters together around a page that is yours. Build closer connections with the people who value what you create.",
+    "studioCta": "Explore the studio",
+    "learnMore": "Discover Fellowa",
+    "whyTitle": "Why Fellowa?",
+    "whyBody": "Creative work grows through meaningful relationships. A dedicated home makes room for your voice, your work, and the people who want to be part of it.",
+    "whyNote": "A place to create, share, and grow together.",
+    "featuresTitle": "Built around your creative work",
+    "featuresBody": "The Fellowa experience brings these ideas together in one place.",
+    "pageTitle": "Your own page",
+    "pageBody": "A dedicated space to introduce yourself, share your story, and bring your creative work together.",
+    "membershipTitle": "A closer community",
+    "membershipBody": "Membership brings creators and their supporters together around shared interests and creative work.",
+    "contentTitle": "A home for your content",
+    "contentBody": "Give your ideas room to grow through writing, audio, images, and the stories behind your work.",
+    "closingTitle": "Make space for what you create",
+    "closingBody": "Take a look around the creator studio."
   },
   "theme": {
     "label": "Appearance",
@@ -84,6 +102,21 @@
     "placeholder": {
       "title": "This section isn't built yet",
       "body": "This page will be built in a later step."
-    }
+    },
+    "label": "Creator studio",
+    "visitHome": "Visit home",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
+  },
+  "publicLayout": {
+    "home": "Fellowa home",
+    "mainNav": "Main navigation",
+    "footerNav": "Footer navigation",
+    "openMenu": "Open navigation",
+    "why": "Why Fellowa",
+    "features": "Features",
+    "studio": "Open studio",
+    "tagline": "A home for your creative work and the people who believe in it.",
+    "copyright": "Fellowa · Made for creators and their communities."
   }
 }

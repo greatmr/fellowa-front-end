@@ -43,16 +43,19 @@ export function StudioNavLink({
   return (
     <Link
       href={href}
+      title={typeof children === "string" ? children : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group text-body focus-visible:ring-ring/50 flex h-10 w-full items-center gap-2.5 rounded-md px-3 font-medium transition-colors outline-none focus-visible:ring-[3px]",
+        "group text-body focus-visible:ring-ring/50 flex h-10 w-full items-center gap-2.5 rounded-md px-3 font-medium transition-colors outline-none group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0 focus-visible:ring-[3px]",
         active
           ? "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200 font-semibold"
           : "text-ink-700 hover:bg-accent hover:text-foreground dark:text-ink-200",
       )}
     >
       {icon}
-      <span className="flex-1 truncate">{children}</span>
+      <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:sr-only">
+        {children}
+      </span>
     </Link>
   );
 }
