@@ -1,19 +1,19 @@
-import { ConstructionIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { ConstructionIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
-import { EmptyState } from "@/components/common/empty-state";
-import { StudioPageHeader } from "@/components/layout/studio-page-header";
+import { EmptyState } from '@/components/common/empty-state'
+import { StudioPageHeader } from '@/components/layout/studio-page-header'
 
 export type StudioPage =
-  | "dashboard"
-  | "page"
-  | "posts"
-  | "composer"
-  | "tiers"
-  | "audience"
-  | "payouts"
-  | "payments"
-  | "settings";
+  | 'dashboard'
+  | 'page'
+  | 'posts'
+  | 'composer'
+  | 'tiers'
+  | 'audience'
+  | 'payouts'
+  | 'payments'
+  | 'settings'
 
 /**
  * Stand-in body for a studio route whose screen is a later FE-… task. It
@@ -21,7 +21,7 @@ export type StudioPage =
  * that the screen is not built — never fake data.
  */
 export function StudioPlaceholder({ page }: { page: StudioPage }) {
-  const t = useTranslations("studio");
+  const t = useTranslations('studio')
 
   return (
     <>
@@ -31,9 +31,9 @@ export function StudioPlaceholder({ page }: { page: StudioPage }) {
       />
       <EmptyState
         icon={<ConstructionIcon />}
-        title={t("placeholder.title")}
-        description={t("placeholder.body")}
+        title={t('placeholder.title')}
+        description={t('placeholder.body')}
       />
     </>
-  );
+  )
 }

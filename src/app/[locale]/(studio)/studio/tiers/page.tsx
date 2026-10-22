@@ -1,14 +1,14 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from 'next-intl/server'
 
-import { StudioPlaceholder } from "@/components/layout/studio-placeholder";
+import { StudioPlaceholder } from '@/components/layout/studio-placeholder'
 
 export default async function Page({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
+  const { locale } = await params
+  setRequestLocale(locale)
 
-  return <StudioPlaceholder page="tiers" />;
+  return <StudioPlaceholder page="tiers" />
 }

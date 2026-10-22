@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound } from 'next/navigation'
 
 /**
  * Unmatched paths inside a locale would otherwise get Next's default English
@@ -6,5 +6,5 @@ import { notFound } from "next/navigation";
  * `[locale]/not-found.tsx` with the right language and direction.
  */
 export default function CatchAllNotFound() {
-  notFound();
+  notFound()
 }

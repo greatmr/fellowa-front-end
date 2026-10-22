@@ -1,6 +1,6 @@
-import { QueryClient, isServer } from "@tanstack/react-query";
+import { QueryClient, isServer } from '@tanstack/react-query'
 
-import { ApiError } from "@/lib/api/errors";
+import { ApiError } from '@/lib/api/errors'
 
 /**
  * Query defaults.
@@ -24,20 +24,20 @@ function makeQueryClient() {
         retry: (failureCount, error) => {
           if (error instanceof ApiError) {
             if (error.status && error.status >= 400 && error.status < 500) {
-              return false;
+              return false
             }
           }
-          return failureCount < 2;
+          return failureCount < 2
         },
       },
       mutations: {
         retry: false,
       },
     },
-  });
+  })
 }
 
-let browserQueryClient: QueryClient | undefined;
+let browserQueryClient: QueryClient | undefined
 
 /**
  * One client per request on the server, one shared client in the browser.
@@ -45,7 +45,7 @@ let browserQueryClient: QueryClient | undefined;
  * would leak one user's cache into another request.
  */
 export function getQueryClient() {
-  if (isServer) return makeQueryClient();
-  browserQueryClient ??= makeQueryClient();
-  return browserQueryClient;
+  if (isServer) return makeQueryClient()
+  browserQueryClient ??= makeQueryClient()
+  return browserQueryClient
 }

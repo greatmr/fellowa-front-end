@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx";
-import { extendTailwindMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from 'clsx'
+import { extendTailwindMerge } from 'tailwind-merge'
 
 import {
   backgroundImage,
@@ -7,7 +7,7 @@ import {
   boxShadow,
   fontSize,
   maxWidth,
-} from "../../tailwind.config";
+} from '../../tailwind.config'
 
 /**
  * tailwind-merge only knows Tailwind's default scales. Without this, a
@@ -18,16 +18,16 @@ import {
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
-      "font-size": [{ text: Object.keys(fontSize) }],
+      'font-size': [{ text: Object.keys(fontSize) }],
       shadow: [{ shadow: Object.keys(boxShadow) }],
       rounded: [{ rounded: Object.keys(borderRadius) }],
-      "bg-image": [{ bg: Object.keys(backgroundImage) }],
-      "max-w": [{ "max-w": Object.keys(maxWidth) }],
+      'bg-image': [{ bg: Object.keys(backgroundImage) }],
+      'max-w': [{ 'max-w': Object.keys(maxWidth) }],
     },
   },
-});
+})
 
 /** Merge conditional class names, with later Tailwind utilities winning. */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }

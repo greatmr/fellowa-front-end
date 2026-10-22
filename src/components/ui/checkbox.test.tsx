@@ -1,18 +1,40 @@
-import { useState } from "react";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { useState } from 'react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from '@/components/ui/checkbox'
 
-describe("Checkbox", () => {
-  it("moves from indeterminate to checked with Space and participates in a form", async () => {
-    const user = userEvent.setup();
+describe('Checkbox', () => {
+  it('validates a required checkbox and restores its default on form reset', async () => {
+    const user = userEvent.setup()
+    render(
+      <form aria-label="Agreement">
+        <Checkbox aria-label="Terms" required name="terms" defaultChecked />
+        <button type="reset">Reset agreement</button>
+      </form>
+    )
+
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Agreement',
+    })
+    const terms = screen.getByRole('checkbox', { name: 'Terms' })
+    expect(form.checkValidity()).toBe(true)
+    await user.click(terms)
+    expect(form.checkValidity()).toBe(false)
+    await user.click(screen.getByRole('button', { name: 'Reset agreement' }))
+    expect(terms).toBeChecked()
+    expect(form.checkValidity()).toBe(true)
+    expect(new FormData(form).get('terms')).toBe('on')
+  })
+
+  it('moves from indeterminate to checked with Space and participates in a form', async () => {
+    const user = userEvent.setup()
 
     function Consent() {
-      const [checked, setChecked] = useState<boolean | "indeterminate">(
-        "indeterminate",
-      );
+      const [checked, setChecked] = useState<boolean | 'indeterminate'>(
+        'indeterminate'
+      )
 
       return (
         <form aria-label="Consent">
@@ -25,27 +47,27 @@ describe("Checkbox", () => {
           />
           <label htmlFor="terms">Accept terms</label>
         </form>
-      );
+      )
     }
 
-    render(<Consent />);
-    const control = screen.getByRole("checkbox", { name: "Accept terms" });
-    const form = screen.getByRole<HTMLFormElement>("form", { name: "Consent" });
+    render(<Consent />)
+    const control = screen.getByRole('checkbox', { name: 'Accept terms' })
+    const form = screen.getByRole<HTMLFormElement>('form', { name: 'Consent' })
 
-    expect(control).toBePartiallyChecked();
-    expect(new FormData(form).has("terms")).toBe(false);
-    await user.tab();
-    expect(control).toHaveFocus();
-    await user.keyboard(" ");
-    expect(control).toBeChecked();
-    expect(new FormData(form).get("terms")).toBe("accepted");
-    await user.click(screen.getByText("Accept terms"));
-    expect(control).not.toBeChecked();
-    expect(new FormData(form).has("terms")).toBe(false);
-  });
+    expect(control).toBePartiallyChecked()
+    expect(new FormData(form).has('terms')).toBe(false)
+    await user.tab()
+    expect(control).toHaveFocus()
+    await user.keyboard(' ')
+    expect(control).toBeChecked()
+    expect(new FormData(form).get('terms')).toBe('accepted')
+    await user.click(screen.getByText('Accept terms'))
+    expect(control).not.toBeChecked()
+    expect(new FormData(form).has('terms')).toBe(false)
+  })
 
-  it("supports defaultChecked and excludes a disabled value from form data", async () => {
-    const user = userEvent.setup();
+  it('supports defaultChecked and excludes a disabled value from form data', async () => {
+    const user = userEvent.setup()
     render(
       <form aria-label="Preferences">
         <Checkbox aria-label="Optional" defaultChecked name="optional" />
@@ -55,20 +77,20 @@ describe("Checkbox", () => {
           disabled
           name="unavailable"
         />
-      </form>,
-    );
+      </form>
+    )
 
-    const optional = screen.getByRole("checkbox", { name: "Optional" });
-    const disabled = screen.getByRole("checkbox", { name: "Unavailable" });
-    const form = screen.getByRole<HTMLFormElement>("form", {
-      name: "Preferences",
-    });
-    expect(optional).toBeChecked();
-    await user.click(optional);
-    expect(optional).not.toBeChecked();
-    await user.click(disabled);
-    expect(disabled).toBeChecked();
-    expect(disabled).toBeDisabled();
-    expect(new FormData(form).has("unavailable")).toBe(false);
-  });
-});
+    const optional = screen.getByRole('checkbox', { name: 'Optional' })
+    const disabled = screen.getByRole('checkbox', { name: 'Unavailable' })
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Preferences',
+    })
+    expect(optional).toBeChecked()
+    await user.click(optional)
+    expect(optional).not.toBeChecked()
+    await user.click(disabled)
+    expect(disabled).toBeChecked()
+    expect(disabled).toBeDisabled()
+    expect(new FormData(form).has('unavailable')).toBe(false)
+  })
+})

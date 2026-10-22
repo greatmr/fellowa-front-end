@@ -1,0 +1,21 @@
+# Popular and maintained browsers, following the reference project's policy.
+> 1%
+last 2 versions
+not dead
+not ie 11
+
+# Next.js 16 and Tailwind 4 floors (Firefox is constrained by Tailwind).
+not chrome < 111
+not edge < 111
+not firefox < 128
+not safari < 16.4
+not ios_saf < 16.4
+not and_chr < 111
+not and_ff < 128
+not android < 111
+
+# Exclude legacy/embedded engines outside the framework/CSS support policy.
+not op_mini all
+not kaios > 0
+not and_uc > 0
+not and_qq > 0

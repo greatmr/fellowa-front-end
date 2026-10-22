@@ -4,5 +4,12 @@ AGENTS.md
 
 # Generated
 .next/
+out/
+build/
+dist/
 coverage/
 package-lock.json
+
+# Local configuration and secrets
+.env*
+!.env.example

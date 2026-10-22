@@ -2,10 +2,10 @@ import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type InternalAxiosRequestConfig,
-} from "axios";
+} from 'axios'
 
-import { env } from "@/lib/env";
-import { toApiError } from "@/lib/api/errors";
+import { env } from '@/lib/env'
+import { toApiError } from '@/lib/api/errors'
 
 /**
  * The single axios instance for the Fellowa API. Never import `axios` directly
@@ -20,32 +20,32 @@ import { toApiError } from "@/lib/api/errors";
 export const apiClient: AxiosInstance = axios.create({
   baseURL: env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 20_000,
-  headers: { Accept: "application/json" },
-});
+  headers: { Accept: 'application/json' },
+})
 
 type AccessTokenProvider = () =>
-  string | null | undefined | Promise<string | null | undefined>;
+  string | null | undefined | Promise<string | null | undefined>
 
-let accessTokenProvider: AccessTokenProvider | undefined;
+let accessTokenProvider: AccessTokenProvider | undefined
 
 export function setAccessTokenProvider(provider: AccessTokenProvider) {
-  accessTokenProvider = provider;
+  accessTokenProvider = provider
 }
 
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = await accessTokenProvider?.();
+    const token = await accessTokenProvider?.()
     if (token) {
-      config.headers.set("Authorization", `Bearer ${token}`);
+      config.headers.set('Authorization', `Bearer ${token}`)
     }
-    return config;
-  },
-);
+    return config
+  }
+)
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(toApiError(error)),
-);
+  (error) => Promise.reject(toApiError(error))
+)
 
 /**
  * Request helpers. They return the response body, so a caller types the body
@@ -55,43 +55,43 @@ apiClient.interceptors.response.use(
  */
 export async function apiGet<TResponse>(
   url: string,
-  config?: AxiosRequestConfig,
+  config?: AxiosRequestConfig
 ): Promise<TResponse> {
-  const response = await apiClient.get<TResponse>(url, config);
-  return response.data;
+  const response = await apiClient.get<TResponse>(url, config)
+  return response.data
 }
 
 export async function apiPost<TResponse, TBody = unknown>(
   url: string,
   body?: TBody,
-  config?: AxiosRequestConfig,
+  config?: AxiosRequestConfig
 ): Promise<TResponse> {
-  const response = await apiClient.post<TResponse>(url, body, config);
-  return response.data;
+  const response = await apiClient.post<TResponse>(url, body, config)
+  return response.data
 }
 
 export async function apiPatch<TResponse, TBody = unknown>(
   url: string,
   body?: TBody,
-  config?: AxiosRequestConfig,
+  config?: AxiosRequestConfig
 ): Promise<TResponse> {
-  const response = await apiClient.patch<TResponse>(url, body, config);
-  return response.data;
+  const response = await apiClient.patch<TResponse>(url, body, config)
+  return response.data
 }
 
 export async function apiPut<TResponse, TBody = unknown>(
   url: string,
   body?: TBody,
-  config?: AxiosRequestConfig,
+  config?: AxiosRequestConfig
 ): Promise<TResponse> {
-  const response = await apiClient.put<TResponse>(url, body, config);
-  return response.data;
+  const response = await apiClient.put<TResponse>(url, body, config)
+  return response.data
 }
 
 export async function apiDelete<TResponse>(
   url: string,
-  config?: AxiosRequestConfig,
+  config?: AxiosRequestConfig
 ): Promise<TResponse> {
-  const response = await apiClient.delete<TResponse>(url, config);
-  return response.data;
+  const response = await apiClient.delete<TResponse>(url, config)
+  return response.data
 }

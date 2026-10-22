@@ -1,16 +1,35 @@
-import { useState } from "react";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { useState } from 'react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 
-import { Switch } from "@/components/ui/switch";
+import { Switch } from '@/components/ui/switch'
 
-describe("Switch", () => {
-  it("updates controlled state with the keyboard and submits its form value", async () => {
-    const user = userEvent.setup();
+describe('Switch', () => {
+  it('enforces required form consent until it is enabled', async () => {
+    const user = userEvent.setup()
+    render(
+      <form aria-label="Required preferences">
+        <Switch aria-label="Enable notifications" required name="notify" />
+      </form>
+    )
+
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Required preferences',
+    })
+    expect(form.checkValidity()).toBe(false)
+    await user.click(
+      screen.getByRole('switch', { name: 'Enable notifications' })
+    )
+    expect(form.checkValidity()).toBe(true)
+    expect(new FormData(form).get('notify')).toBe('on')
+  })
+
+  it('updates controlled state with the keyboard and submits its form value', async () => {
+    const user = userEvent.setup()
 
     function Preferences() {
-      const [checked, setChecked] = useState(false);
+      const [checked, setChecked] = useState(false)
 
       return (
         <form aria-label="Preferences">
@@ -22,44 +41,44 @@ describe("Switch", () => {
             checked={checked}
             onCheckedChange={setChecked}
           />
-          <output>{checked ? "Enabled" : "Disabled"}</output>
+          <output>{checked ? 'Enabled' : 'Disabled'}</output>
         </form>
-      );
+      )
     }
 
-    render(<Preferences />);
-    const control = screen.getByRole("switch", { name: "Notifications" });
-    const form = screen.getByRole<HTMLFormElement>("form", {
-      name: "Preferences",
-    });
+    render(<Preferences />)
+    const control = screen.getByRole('switch', { name: 'Notifications' })
+    const form = screen.getByRole<HTMLFormElement>('form', {
+      name: 'Preferences',
+    })
 
-    expect(control).not.toBeChecked();
-    expect(new FormData(form).has("notifications")).toBe(false);
-    await user.tab();
-    expect(control).toHaveFocus();
-    await user.keyboard(" ");
-    expect(control).toBeChecked();
-    expect(screen.getByRole("status")).toHaveTextContent("Enabled");
-    expect(new FormData(form).get("notifications")).toBe("enabled");
-  });
+    expect(control).not.toBeChecked()
+    expect(new FormData(form).has('notifications')).toBe(false)
+    await user.tab()
+    expect(control).toHaveFocus()
+    await user.keyboard(' ')
+    expect(control).toBeChecked()
+    expect(screen.getByRole('status')).toHaveTextContent('Enabled')
+    expect(new FormData(form).get('notifications')).toBe('enabled')
+  })
 
-  it("supports an uncontrolled value and leaves disabled controls unchanged", async () => {
-    const user = userEvent.setup();
+  it('supports an uncontrolled value and leaves disabled controls unchanged', async () => {
+    const user = userEvent.setup()
     render(
       <>
         <Switch aria-label="Available" defaultChecked size="sm" />
         <Switch aria-label="Unavailable" defaultChecked disabled />
-      </>,
-    );
+      </>
+    )
 
-    const available = screen.getByRole("switch", { name: "Available" });
-    const unavailable = screen.getByRole("switch", { name: "Unavailable" });
-    await user.click(available);
-    expect(available).not.toBeChecked();
-    await user.click(unavailable);
-    expect(unavailable).toBeDisabled();
-    expect(unavailable).toBeChecked();
-    await user.tab();
-    expect(unavailable).not.toHaveFocus();
-  });
-});
+    const available = screen.getByRole('switch', { name: 'Available' })
+    const unavailable = screen.getByRole('switch', { name: 'Unavailable' })
+    await user.click(available)
+    expect(available).not.toBeChecked()
+    await user.click(unavailable)
+    expect(unavailable).toBeDisabled()
+    expect(unavailable).toBeChecked()
+    await user.tab()
+    expect(unavailable).not.toHaveFocus()
+  })
+})
