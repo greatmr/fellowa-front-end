@@ -1,11 +1,11 @@
 # fellowa-web
 
 Product frontend for Fellowa — the creator-subscription platform whose API lives
-in `../back-end`. This is the **project base only**: packages, conventions,
-app shell, i18n, API layer and the agent configuration under `.claude/`.
+in `../back-end`. The shared foundation and email/password authentication are
+implemented; most product data screens remain migration tasks.
 
-No product features are implemented yet. The Fellowa design tokens and branded
-primitives are in place, ported from `../presentation` — the design team's
+The Fellowa design tokens and branded primitives are in place, ported from
+`../presentation` — the design team's
 Vite prototype and this project's **design source**. Its screens are ported in
 one task at a time (`../.claude/tasks/frontend/`), never copied or imported.
 
@@ -65,6 +65,60 @@ are outside this jsdom unit coverage.
 The unit coverage gate requires 95% of statements, functions, and lines and
 90% of branches. Vitest and its V8 provider are pinned to the same version.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request in the frontend
+repository. It installs from the lockfile with Node 22.23.4, then checks
+formatting, lint, types, full-suite coverage, and the production build. The
+workflow uses npm caching, read-only repository permissions, and pinned action
+commits. Its public API/app URLs are synthetic build configuration; no deployed
+backend or application secrets are required.
+
+The API base URL must include the backend's `/api` prefix, as shown in
+`.env.example`. Request helpers return the backend response envelope; feature
+types must account for `{ data, errors }`. API error normalization handles that
+envelope as well as default NestJS error bodies.
+
+## Authentication
+
+`/auth/login`, `/auth/register`, and `/auth/verify-email` support Persian RTL
+and English (`/en/...`). The owner selected the current backend's email/password
+flow and a Next.js HttpOnly session on 2026-10-23. The presentation's phone,
+Google, and mock account flows were not adopted.
+
+Server Actions validate input and Origin, call the existing `/api/auth/*`
+endpoints, and validate identity through the guarded self-profile endpoint.
+The backend token stays in a host-only HttpOnly cookie (Secure in production,
+SameSite=Lax), with expiry capped at the JWT expiry and one day. Reading or
+verifying a session does not renew it. There is no refresh endpoint; expiration
+requires signing in again. Logout clears this browser's cookie and query cache;
+the backend has no token revocation endpoint.
+
+Set `NEXT_PUBLIC_API_BASE_URL` to the backend URL **including `/api`**, and
+`NEXT_PUBLIC_APP_URL` to the browser's exact canonical origin, including a
+development port. These values are required for the auth server boundary;
+production must serve the application over HTTPS. Neither value is a secret.
+
+Registration and unverified login lead to real email verification and resend.
+Studio routes require a backend-validated, verified session. This rendering gate
+does not replace authorization in future feature data helpers. API errors render
+translated feedback; password recovery and onboarding remain separate tasks.
+
+Native form submissions use canonical locale-aware URLs and redirect back with
+allowlisted feedback keys when an action returns an error or resend status.
+This avoids the current PPR resume path losing server-rendered action feedback.
+Credentials and tokens never enter those URLs; query feedback affects display
+only. Hydrated forms continue to consume typed React action state.
+
+Next.js and its matching ESLint configuration are pinned to 16.4.2 after the
+existing 16.4.0 security advisories were found during verification. The patched
+production dependency audit passes.
+
+Before production, resolve backend client tracking for the chosen deployment:
+the current IP-based auth limit sees the Next.js server as the caller and can
+throttle unrelated users together. No untrusted forwarded IP headers are used
+to bypass that limit.
+
 ## Stack
 
 | Concern         | Choice                                                                      |
@@ -88,7 +142,7 @@ The unit coverage gate requires 95% of statements, functions, and lines and
 
 ```bash
 npm install
-cp .env.example .env.local     # then fill in NEXT_PUBLIC_API_BASE_URL
+cp .env.example .env.local     # configure API URL and canonical app origin
 
 npm run dev                    # http://localhost:3000
 npm run typecheck              # tsc --noEmit

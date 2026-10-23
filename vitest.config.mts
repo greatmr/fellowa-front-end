@@ -1,9 +1,20 @@
 import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    // These tests run server helpers in Node; Next.js enforces the production
+    // client boundary itself. Use its empty server-condition guard for Vitest.
+    alias: {
+      'server-only': fileURLToPath(
+        new URL(
+          './node_modules/next/dist/compiled/server-only/empty.js',
+          import.meta.url
+        )
+      ),
+    },
     // Resolves the `@/*` alias from tsconfig.json natively.
     tsconfigPaths: true,
   },

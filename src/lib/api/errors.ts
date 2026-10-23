@@ -43,35 +43,57 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * The NestJS default exception body is `{ statusCode, message, error }`, where
- * `message` is a string or an array of strings (class-validator). Anything else
- * is read defensively — verify against the backend's exception filter before
- * relying on a field, and never invent one.
- */
-function extractMessages(data: unknown): string[] {
-  if (typeof data === 'string' && data.trim()) return [data]
-  if (data && typeof data === 'object') {
-    const body = data as Record<string, unknown>
-    const message = body.message ?? body.error
-    if (typeof message === 'string' && message.trim()) return [message]
-    if (Array.isArray(message)) {
-      const strings = message.filter(
-        (item): item is string => typeof item === 'string'
-      )
-      if (strings.length) return strings
-    }
-  }
-  return []
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function extractCode(data: unknown): string | undefined {
-  if (data && typeof data === 'object') {
-    const body = data as Record<string, unknown>
-    if (typeof body.code === 'string') return body.code
-    if (typeof body.error === 'string') return body.error
+function isNonblankString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+/**
+ * AllExceptionsFilter returns `{ data: null, errors: [{ message, code }] }`.
+ * Keep legacy NestJS bodies readable while deployments migrate. A code belongs
+ * to the first usable envelope message, never to another malformed entry.
+ */
+function extractFailure(data: unknown): {
+  messages: string[]
+  code?: string
+} {
+  if (isNonblankString(data)) return { messages: [data] }
+  if (!isRecord(data)) return { messages: [] }
+
+  if (Array.isArray(data.errors)) {
+    const entries = data.errors.filter(
+      (entry): entry is Record<string, unknown> & { message: string } =>
+        isRecord(entry) && isNonblankString(entry.message)
+    )
+    const first = entries[0]
+    if (first) {
+      return {
+        messages: entries.map((entry) => entry.message),
+        code: isNonblankString(first.code) ? first.code : undefined,
+      }
+    }
   }
-  return undefined
+
+  const messages = Array.isArray(data.message)
+    ? data.message.filter(isNonblankString)
+    : isNonblankString(data.message)
+      ? [data.message]
+      : []
+
+  return {
+    messages:
+      messages.length || !isNonblankString(data.error)
+        ? messages
+        : [data.error],
+    code: isNonblankString(data.code)
+      ? data.code
+      : isNonblankString(data.error)
+        ? data.error
+        : undefined,
+  }
 }
 
 /** Turn anything thrown by the API layer into an `ApiError`. */
@@ -80,12 +102,12 @@ export function toApiError(error: unknown): ApiError {
 
   if (axios.isAxiosError(error)) {
     const status = error.response?.status
-    const messages = extractMessages(error.response?.data)
+    const { messages, code } = extractFailure(error.response?.data)
 
     return new ApiError({
       message: messages[0] ?? error.message,
       status,
-      code: extractCode(error.response?.data),
+      code,
       messages: messages.length ? messages : [error.message],
       isNetworkError: !error.response,
       cause: error,
