@@ -1,11 +1,15 @@
+import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Logo } from '@/components/layout/logo'
 import { PublicMobileNav } from '@/components/layout/public-mobile-nav'
-import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
-export function PublicHeader() {
+export function PublicHeader({
+  authNavigation,
+}: {
+  authNavigation?: ReactNode
+}) {
   const t = useTranslations('publicLayout')
 
   return (
@@ -36,9 +40,7 @@ export function PublicHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Button asChild size="sm" className="rounded-full">
-            <Link href="/studio">{t('studio')}</Link>
-          </Button>
+          {authNavigation}
           <PublicMobileNav />
         </div>
       </div>

@@ -13,7 +13,7 @@ import { z } from 'zod'
 const publicSchema = z.object({
   /** Base URL of the Fellowa NestJS API, no trailing slash. */
   NEXT_PUBLIC_API_BASE_URL: z.string().min(1),
-  /** Public origin of this app, used for absolute URLs and metadata. */
+  /** Canonical origin; auth mutations require it for Origin validation. */
   NEXT_PUBLIC_APP_URL: z.string().min(1).optional(),
 })
 

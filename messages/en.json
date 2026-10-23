@@ -1,4 +1,83 @@
 {
+  "auth": {
+    "layout": {
+      "home": "Back to home",
+      "brandTitle": "Your creativity. Your community.",
+      "brandBody": "A home for your work and the people who believe in it.",
+      "brandNote": "Make space for the things you love to create."
+    },
+    "login": {
+      "title": "Welcome back",
+      "description": "Sign in to Fellowa with your email and password.",
+      "submit": "Sign in",
+      "pending": "Signing in…",
+      "switchPrompt": "New to Fellowa?",
+      "switchLink": "Create an account"
+    },
+    "register": {
+      "title": "Join Fellowa",
+      "description": "Create your account and connect with your creative community.",
+      "submit": "Create account",
+      "pending": "Creating account…",
+      "switchPrompt": "Already have an account?",
+      "switchLink": "Sign in"
+    },
+    "fields": {
+      "email": "Email address",
+      "password": "Password",
+      "code": "Verification code"
+    },
+    "emailHint": "Use the email address for your account.",
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password",
+      "hint": "Use at least 8 characters.",
+      "loginHint": "Enter your account password."
+    },
+    "validation": {
+      "email": "Enter a valid email address.",
+      "passwordRequired": "Enter your password.",
+      "passwordLength": "Use at least 8 characters for your password.",
+      "code": "Enter the six-digit code from your email."
+    },
+    "errors": {
+      "invalidCredentials": "The email address or password is incorrect.",
+      "emailTaken": "An account already uses this email address. Sign in instead.",
+      "rateLimited": "Too many attempts. Wait a moment and try again.",
+      "network": "Could not connect. Check your connection and try again.",
+      "unavailable": "This service is temporarily unavailable. Please try again.",
+      "invalidResponse": "The request could not be completed. Please try again.",
+      "expiredSession": "Your session has expired. Please sign in again.",
+      "invalidCode": "The code is incorrect or has expired. Try again or request a new code.",
+      "alreadyVerified": "This email address is already verified. Sign in to continue.",
+      "invalidRequest": "Check the information you entered and try again.",
+      "unexpected": "The request could not be completed. Please try again."
+    },
+    "verify": {
+      "title": "Check your email",
+      "description": "Enter the verification code sent to your email address.",
+      "submit": "Verify email",
+      "pending": "Verifying…",
+      "resend": "Send a new code",
+      "resending": "Sending…",
+      "sent": "A new code has been sent. Check your inbox and spam folder.",
+      "changeAccount": "Sign in with another account",
+      "codeHint": "Enter all six digits. Request a new code if it has expired."
+    },
+    "nav": {
+      "login": "Sign in",
+      "register": "Create account",
+      "logout": "Sign out",
+      "loggingOut": "Signing out…",
+      "sessionLoading": "Loading account…",
+      "signedInAs": "Signed in as {email}"
+    },
+    "sessionExpired": {
+      "title": "Please sign in again",
+      "body": "Your session has expired. Sign in to request a new verification code.",
+      "login": "Return to sign in"
+    }
+  },
   "common": {
     "appName": "Fellowa",
     "loading": "Loading…",

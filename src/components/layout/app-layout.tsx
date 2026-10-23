@@ -10,8 +10,14 @@ import { StudioSidebar } from '@/components/layout/studio-sidebar'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
-/** Session-independent creator frame. Product data and authorization belong to features. */
-export function AppLayout({ children }: { children: ReactNode }) {
+/** Creator frame; protected product data is authorized by its owning feature. */
+export function AppLayout({
+  children,
+  authNavigation,
+}: {
+  children: ReactNode
+  authNavigation?: ReactNode
+}) {
   const t = useTranslations('studio')
 
   return (
@@ -36,12 +42,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
               {t('label')}
             </span>
           </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/">
-              {t('visitHome')}
-              <ArrowUpRightIcon className="size-4 rtl:-rotate-90" aria-hidden />
-            </Link>
-          </Button>
+          <div className="flex min-w-0 items-center gap-2">
+            {authNavigation}
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/">
+                {t('visitHome')}
+                <ArrowUpRightIcon
+                  className="size-4 rtl:-rotate-90"
+                  aria-hidden
+                />
+              </Link>
+            </Button>
+          </div>
         </header>
         <main
           id="main-content"
