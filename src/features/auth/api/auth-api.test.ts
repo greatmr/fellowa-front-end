@@ -5,8 +5,18 @@ import { server } from '../../../../test/msw/server'
 
 const origin = 'https://api.fellowa.test'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', `${origin}/api`)
-const { fetchOwnProfile, resendEmailCode, submitCredentials, verifyEmailCode } =
-  await import('./auth-api')
+const {
+  changePassword,
+  confirmPasswordReset,
+  exchangeGoogleCode,
+  fetchOwnProfile,
+  requestPasswordReset,
+  resendEmailCode,
+  setCreatorAlias,
+  submitCredentials,
+  verifyAuthToken,
+  verifyEmailCode,
+} = await import('./auth-api')
 afterAll(() => vi.unstubAllEnvs())
 
 describe('server authentication API', () => {
@@ -125,5 +135,154 @@ describe('server authentication API', () => {
     )
     await expect(verifyEmailCode('token', '123456')).resolves.toBeUndefined()
     await expect(resendEmailCode('token')).resolves.toBeUndefined()
+  })
+
+  it('sends the remaining protected mutations with the session bearer token', async () => {
+    server.use(
+      http.put(`${origin}/api/auth/alias`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        expect(await request.json()).toEqual({ alias: 'creator-name' })
+        return HttpResponse.json({
+          data: { message: 'Alias set successfully' },
+          errors: null,
+        })
+      }),
+      http.put(`${origin}/api/auth/reset-password`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        expect(await request.json()).toEqual({
+          currentPassword: 'old-password',
+          newPassword: 'new-password',
+        })
+        return HttpResponse.json({
+          data: { message: 'Password changed successfully' },
+          errors: null,
+        })
+      })
+    )
+
+    await expect(
+      setCreatorAlias('token', 'creator-name')
+    ).resolves.toBeUndefined()
+    await expect(
+      changePassword('token', {
+        currentPassword: 'old-password',
+        newPassword: 'new-password',
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  it('uses the public password recovery routes and DTO bodies', async () => {
+    server.use(
+      http.post(`${origin}/api/auth/forgot-password`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBeNull()
+        expect(await request.json()).toEqual({ email: 'creator@example.com' })
+        return HttpResponse.json(
+          {
+            data: {
+              message:
+                'If that email exists, a password reset token has been sent',
+            },
+            errors: null,
+          },
+          { status: 201 }
+        )
+      }),
+      http.post(
+        `${origin}/api/auth/reset-password/confirm`,
+        async ({ request }) => {
+          expect(request.headers.get('authorization')).toBeNull()
+          expect(await request.json()).toEqual({
+            token: 'reset-token-from-email',
+            newPassword: 'new-password',
+          })
+          return HttpResponse.json(
+            { data: { message: 'Password has been reset' }, errors: null },
+            { status: 201 }
+          )
+        }
+      )
+    )
+
+    await expect(
+      requestPasswordReset('creator@example.com')
+    ).resolves.toBeUndefined()
+    await expect(
+      confirmPasswordReset({
+        token: 'reset-token-from-email',
+        newPassword: 'new-password',
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  it('exchanges a Google authorization code and returns only the access token', async () => {
+    server.use(
+      http.post(`${origin}/api/auth/google`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBeNull()
+        expect(await request.json()).toEqual({
+          code: 'google-code',
+          redirectUri: 'https://fellowa.test/auth/google/callback',
+        })
+        return HttpResponse.json(
+          {
+            data: {
+              message: 'Successfully logged in',
+              token: 'backend-token',
+              user: { id: 4, email: 'creator@example.com', alias: null },
+            },
+            errors: null,
+          },
+          { status: 201 }
+        )
+      })
+    )
+
+    await expect(
+      exchangeGoogleCode({
+        code: 'google-code',
+        redirectUri: 'https://fellowa.test/auth/google/callback',
+      })
+    ).resolves.toBe('backend-token')
+  })
+
+  it('uses the public token validation route and rejects invalid responses', async () => {
+    server.use(
+      http.post(`${origin}/api/auth/verify-token`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBeNull()
+        expect(await request.json()).toEqual({ token: 'candidate-token' })
+        return HttpResponse.json(
+          {
+            data: {
+              valid: true,
+              payload: {
+                sub: 4,
+                email: 'creator@example.com',
+                exp: 2_000_000_000,
+              },
+            },
+            errors: null,
+          },
+          { status: 201 }
+        )
+      })
+    )
+    await expect(verifyAuthToken('candidate-token')).resolves.toBe(true)
+
+    server.use(
+      http.post(`${origin}/api/auth/verify-token`, () =>
+        HttpResponse.json({ data: { valid: false }, errors: null })
+      )
+    )
+    await expect(verifyAuthToken('candidate-token')).rejects.toMatchObject({
+      name: 'InvalidAuthResponseError',
+    })
+
+    server.use(
+      http.post(`${origin}/api/auth/verify-token`, () =>
+        HttpResponse.json({ data: { valid: true }, errors: null })
+      )
+    )
+    await expect(verifyAuthToken('candidate-token')).rejects.toMatchObject({
+      name: 'InvalidAuthResponseError',
+    })
   })
 })
