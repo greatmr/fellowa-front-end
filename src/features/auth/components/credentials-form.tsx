@@ -1,15 +1,7 @@
 'use client'
 
-import {
-  startTransition,
-  useActionState,
-  useState,
-  useRef,
-  useEffect,
-  type FormEvent,
-} from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueryClient } from '@tanstack/react-query'
 import { EyeIcon, EyeOffIcon, LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
@@ -24,38 +16,33 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  useLoginMutation,
+  useRegisterMutation,
+} from '@/features/auth/api/auth-hooks'
+import { hookFeedback } from '@/features/auth/lib/hook-feedback'
+import { safeReturnTo } from '@/features/auth/lib/return-to'
 import { createCredentialsSchema } from '@/features/auth/schemas'
-import type { AuthActionState, AuthFormAction } from '@/features/auth/types'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
 
 export function CredentialsForm({
   mode,
-  action,
   returnTo,
-  permalink,
-  initialState,
 }: {
   mode: 'login' | 'register'
-  action: AuthFormAction
   returnTo?: string
-  permalink?: string
-  initialState?: AuthActionState
 }) {
   const t = useTranslations('auth')
+  const router = useRouter()
   const submitting = useRef(false)
-  const [state, dispatch, pending] = useActionState<AuthActionState, FormData>(
-    action,
-    initialState ?? { status: 'idle' },
-    permalink
-  )
-  useEffect(() => {
-    if (!pending) submitting.current = false
-  }, [pending, state])
+  const login = useLoginMutation()
+  const register = useRegisterMutation()
+  const mutation = mode === 'login' ? login : register
+  const pending = mutation.isPending
   const [showPassword, setShowPassword] = useState(false)
-  const queryClient = useQueryClient()
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(
       createCredentialsSchema(mode, {
@@ -69,17 +56,28 @@ export function CredentialsForm({
   })
 
   function submit(event: FormEvent<HTMLFormElement>) {
-    const element = event.currentTarget
-    if (submitting.current) {
-      event.preventDefault()
-      return
-    }
+    event.preventDefault()
+    if (submitting.current || pending) return
     submitting.current = true
     void form.handleSubmit(
-      () => {
-        const data = new FormData(element)
-        queryClient.clear()
-        startTransition(() => dispatch(data))
+      (values) => {
+        mutation.mutate(values, {
+          onSuccess: (user) => {
+            mutation.reset()
+            const destination = safeReturnTo(returnTo)
+            router.replace(
+              user.isVerified
+                ? destination
+                : {
+                    pathname: '/auth/verify-email',
+                    query: { returnTo: destination },
+                  }
+            )
+          },
+          onError: () => {
+            submitting.current = false
+          },
+        })
       },
       () => {
         submitting.current = false
@@ -91,7 +89,7 @@ export function CredentialsForm({
   const href = returnTo
     ? { pathname: `/auth/${oppositeMode}`, query: { returnTo } }
     : `/auth/${oppositeMode}`
-  const fieldErrors = state.status === 'error' ? state.fieldErrors : undefined
+  const state = hookFeedback(mutation.error)
 
   return (
     <div className="space-y-6">
@@ -103,7 +101,6 @@ export function CredentialsForm({
       </div>
       <Form {...form}>
         <form
-          action={dispatch}
           onSubmit={submit}
           noValidate
           aria-busy={pending}
@@ -116,7 +113,7 @@ export function CredentialsForm({
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>{t('fields.email')}</FormLabel>
-                  <AuthFormControl serverError={Boolean(fieldErrors?.email)}>
+                  <AuthFormControl serverError={false}>
                     <Input
                       {...field}
                       type="email"
@@ -125,17 +122,11 @@ export function CredentialsForm({
                       autoCapitalize="none"
                       spellCheck={false}
                       required
-                      aria-invalid={
-                        fieldState.invalid || Boolean(fieldErrors?.email)
-                      }
+                      aria-invalid={fieldState.invalid}
                     />
                   </AuthFormControl>
                   <FormDescription>{t('emailHint')}</FormDescription>
-                  <FormMessage>
-                    {fieldErrors?.email
-                      ? t(`validation.${fieldErrors.email}`)
-                      : undefined}
-                  </FormMessage>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -146,9 +137,7 @@ export function CredentialsForm({
                 <FormItem>
                   <FormLabel>{t('fields.password')}</FormLabel>
                   <div className="relative" dir="ltr">
-                    <AuthFormControl
-                      serverError={Boolean(fieldErrors?.password)}
-                    >
+                    <AuthFormControl serverError={false}>
                       <Input
                         {...field}
                         className="pe-12"
@@ -159,9 +148,7 @@ export function CredentialsForm({
                         }
                         required
                         minLength={mode === 'register' ? 8 : undefined}
-                        aria-invalid={
-                          fieldState.invalid || Boolean(fieldErrors?.password)
-                        }
+                        aria-invalid={fieldState.invalid}
                       />
                     </AuthFormControl>
                     <Button
@@ -189,16 +176,12 @@ export function CredentialsForm({
                         : 'password.loginHint'
                     )}
                   </FormDescription>
-                  <FormMessage>
-                    {fieldErrors?.password
-                      ? t(`validation.${fieldErrors.password}`)
-                      : undefined}
-                  </FormMessage>
+                  <FormMessage />
                 </FormItem>
               )}
             />
           </fieldset>
-          <AuthFeedback state={state} returnTo={returnTo} />
+          {!pending && <AuthFeedback state={state} returnTo={returnTo} />}
           <Button
             type="submit"
             className="w-full"

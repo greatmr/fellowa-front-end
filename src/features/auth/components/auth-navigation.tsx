@@ -1,18 +1,11 @@
-import { getLocale, getTranslations } from 'next-intl/server'
-import { hasLocale } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
 import { LogoutButton } from '@/features/auth/components/logout-button'
-import { logoutAction } from '@/features/auth/server/actions'
 import { getSession } from '@/features/auth/server/session'
-import { getPathname, Link } from '@/i18n/navigation'
-import { routing } from '@/i18n/routing'
+import { Link } from '@/i18n/navigation'
 
 export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
-  const requestedLocale = await getLocale()
-  const locale = hasLocale(routing.locales, requestedLocale)
-    ? requestedLocale
-    : routing.defaultLocale
   const t = await getTranslations('auth')
   const publicT = await getTranslations('publicLayout')
   const session = await getSession()
@@ -48,10 +41,7 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
           </Link>
         </Button>
       )}
-      <LogoutButton
-        action={logoutAction.bind(null, locale)}
-        permalink={getPathname({ locale, href: studio ? '/studio' : '/' })}
-      />
+      <LogoutButton />
     </div>
   )
 }

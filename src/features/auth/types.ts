@@ -15,20 +15,7 @@ export type AuthFieldError =
   'email' | 'passwordRequired' | 'passwordLength' | 'code'
 
 export type AuthActionState =
-  | { status: 'idle' }
-  | {
-      status: 'error'
-      error?: AuthErrorCode
-      fieldErrors?: Partial<
-        Record<'email' | 'password' | 'code', AuthFieldError>
-      >
-    }
-  | { status: 'sent' }
-
-export type AuthFormAction = (
-  previous: AuthActionState,
-  formData: FormData
-) => Promise<AuthActionState>
+  { status: 'idle' } | { status: 'error'; error: AuthErrorCode }
 
 export type AuthUser = {
   id: number

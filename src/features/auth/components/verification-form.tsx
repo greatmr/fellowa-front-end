@@ -1,15 +1,7 @@
 'use client'
 
-import {
-  startTransition,
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-} from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueryClient } from '@tanstack/react-query'
 import { LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
@@ -24,62 +16,45 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  useLogoutMutation,
+  useResendEmailMutation,
+  useVerifyEmailMutation,
+} from '@/features/auth/api/auth-hooks'
+import { hookFeedback } from '@/features/auth/lib/hook-feedback'
+import { safeReturnTo } from '@/features/auth/lib/return-to'
 import { createVerificationSchema } from '@/features/auth/schemas'
-import type { AuthActionState, AuthFormAction } from '@/features/auth/types'
+import { useRouter } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
 
 export function VerificationForm({
   email,
-  verifyAction,
-  resendAction,
-  changeAccountAction,
   returnTo,
-  permalink,
-  initialState,
 }: {
   email: string
-  verifyAction: AuthFormAction
-  resendAction: AuthFormAction
-  changeAccountAction: AuthFormAction
   returnTo?: string
-  permalink?: string
-  initialState?: AuthActionState
 }) {
   const t = useTranslations('auth')
+  const router = useRouter()
   const submitting = useRef(false)
   const [lastAction, setLastAction] = useState<
     'verify' | 'resend' | 'change-account' | null
   >(null)
-  const [state, verify, verifying] = useActionState<AuthActionState, FormData>(
-    verifyAction,
-    initialState?.status === 'sent'
-      ? { status: 'idle' }
-      : (initialState ?? { status: 'idle' }),
-    permalink
-  )
-  const [resendState, resend, resending] = useActionState<
-    AuthActionState,
-    FormData
-  >(
-    resendAction,
-    initialState?.status === 'sent' ? initialState : { status: 'idle' },
-    permalink
-  )
-  const [changeAccountState, changeAccount, changingAccount] = useActionState(
-    changeAccountAction,
-    { status: 'idle' },
-    permalink
-  )
-  // Native pre-hydration submissions return action state without running the
-  // client submit handlers. Derive their feedback from that returned state.
-  let activeAction = lastAction ?? 'verify'
-  if (lastAction === null && resendState.status !== 'idle')
-    activeAction = 'resend'
-  if (lastAction === null && changeAccountState.status !== 'idle')
-    activeAction = 'change-account'
-  const queryClient = useQueryClient()
+  const verify = useVerifyEmailMutation()
+  const resend = useResendEmailMutation()
+  const changeAccount = useLogoutMutation()
+  const pending =
+    verify.isPending || resend.isPending || changeAccount.isPending
+  const state =
+    lastAction === 'verify'
+      ? hookFeedback(verify.error, true)
+      : lastAction === 'resend'
+        ? hookFeedback(resend.error, true)
+        : hookFeedback(changeAccount.error)
+  const expired = state.status === 'error' && state.error === 'expiredSession'
+  const disabled = pending || expired
   const form = useForm<{ code: string }>({
     resolver: zodResolver(
       createVerificationSchema({
@@ -91,33 +66,24 @@ export function VerificationForm({
     ),
     defaultValues: { code: '' },
   })
-  const expired = [state, resendState].some(
-    (value) => value.status === 'error' && value.error === 'expiredSession'
-  )
-  const pending = verifying || resending || changingAccount
-  useEffect(() => {
-    if (!pending) submitting.current = false
-  }, [pending, state, resendState, changeAccountState])
-  const disabled = pending || expired
-  const codeError =
-    activeAction === 'verify' && state.status === 'error'
-      ? state.fieldErrors?.code
-      : undefined
 
   function submit(event: FormEvent<HTMLFormElement>) {
-    const element = event.currentTarget
-    if (disabled || submitting.current) {
-      event.preventDefault()
-      return
-    }
+    event.preventDefault()
+    if (disabled || submitting.current) return
     submitting.current = true
+    setLastAction('verify')
+    resend.reset()
     void form.handleSubmit(
-      () => {
-        const data = new FormData(element)
-        setLastAction('verify')
-        queryClient.clear()
-        startTransition(() => verify(data))
-      },
+      (values) =>
+        verify.mutate(values, {
+          onSuccess: () => {
+            verify.reset()
+            router.replace(safeReturnTo(returnTo))
+          },
+          onError: () => {
+            submitting.current = false
+          },
+        }),
       () => {
         submitting.current = false
       }
@@ -129,18 +95,34 @@ export function VerificationForm({
     if (disabled || submitting.current) return
     submitting.current = true
     setLastAction('resend')
+    verify.reset()
     form.clearErrors('code')
-    startTransition(() => resend(new FormData()))
+    resend.mutate(undefined, {
+      onSettled: () => {
+        submitting.current = false
+      },
+    })
   }
 
   function submitChangeAccount(event: FormEvent<HTMLFormElement>) {
-    if (pending || submitting.current) {
-      event.preventDefault()
-      return
-    }
+    event.preventDefault()
+    if (pending || submitting.current) return
     submitting.current = true
     setLastAction('change-account')
-    queryClient.clear()
+    verify.reset()
+    resend.reset()
+    changeAccount.mutate(undefined, {
+      onSuccess: () => {
+        changeAccount.reset()
+        router.replace({
+          pathname: '/auth/login',
+          query: { returnTo: safeReturnTo(returnTo) },
+        })
+      },
+      onError: () => {
+        submitting.current = false
+      },
+    })
   }
 
   return (
@@ -156,10 +138,9 @@ export function VerificationForm({
       </div>
       <Form {...form}>
         <form
-          action={verify}
           onSubmit={submit}
           noValidate
-          aria-busy={verifying}
+          aria-busy={verify.isPending}
           className="space-y-5"
         >
           <fieldset disabled={disabled} className="min-w-0">
@@ -169,7 +150,11 @@ export function VerificationForm({
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>{t('fields.code')}</FormLabel>
-                  <AuthFormControl serverError={Boolean(codeError)}>
+                  <AuthFormControl
+                    serverError={
+                      state.status === 'error' && state.error === 'invalidCode'
+                    }
+                  >
                     <Input
                       {...field}
                       type="text"
@@ -180,18 +165,20 @@ export function VerificationForm({
                       maxLength={6}
                       required
                       className="numeric text-center text-title tracking-widest"
-                      aria-invalid={fieldState.invalid || Boolean(codeError)}
+                      aria-invalid={
+                        fieldState.invalid ||
+                        (state.status === 'error' &&
+                          state.error === 'invalidCode')
+                      }
                     />
                   </AuthFormControl>
                   <FormDescription>{t('verify.codeHint')}</FormDescription>
-                  <FormMessage>
-                    {codeError ? t(`validation.${codeError}`) : undefined}
-                  </FormMessage>
+                  <FormMessage />
                 </FormItem>
               )}
             />
           </fieldset>
-          {activeAction === 'verify' && !pending && (
+          {lastAction === 'verify' && !pending && (
             <AuthFeedback state={state} returnTo={returnTo} />
           )}
           <Button
@@ -201,56 +188,53 @@ export function VerificationForm({
             className="w-full"
             disabled={disabled}
           >
-            {verifying && (
+            {verify.isPending && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(verifying ? 'verify.pending' : 'verify.submit')}
+            {t(verify.isPending ? 'verify.pending' : 'verify.submit')}
           </Button>
         </form>
       </Form>
       <form
-        action={resend}
         onSubmit={submitResend}
-        aria-busy={resending}
+        aria-busy={resend.isPending}
         className="space-y-3"
       >
-        <input type="hidden" name="returnTo" value={returnTo ?? '/studio'} />
-        {activeAction === 'resend' && !pending && (
-          <AuthFeedback state={resendState} returnTo={returnTo} />
+        {lastAction === 'resend' && !pending && (
+          <AuthFeedback state={state} returnTo={returnTo} />
         )}
-        {activeAction === 'resend' &&
-          !pending &&
-          resendState.status === 'sent' && (
-            <p
-              role="status"
-              className="rounded-md border border-success-border bg-success-subtle p-3 text-body text-success-emphasis"
-            >
-              {t('verify.sent')}
-            </p>
-          )}
+        {lastAction === 'resend' && !pending && resend.isSuccess && (
+          <p
+            role="status"
+            className="rounded-md border border-success-border bg-success-subtle p-3 text-body text-success-emphasis"
+          >
+            {t('verify.sent')}
+          </p>
+        )}
         <Button
           type="submit"
           variant="outline"
           className="w-full"
           disabled={disabled}
         >
-          {t(resending ? 'verify.resending' : 'verify.resend')}
+          {t(resend.isPending ? 'verify.resending' : 'verify.resend')}
         </Button>
       </form>
       <form
-        action={changeAccount}
         onSubmit={submitChangeAccount}
-        aria-busy={changingAccount}
+        aria-busy={changeAccount.isPending}
         className="space-y-3 text-center"
       >
-        {activeAction === 'change-account' && !pending && (
-          <AuthFeedback state={changeAccountState} returnTo={returnTo} />
+        {lastAction === 'change-account' && !pending && (
+          <AuthFeedback state={state} returnTo={returnTo} />
         )}
         <Button type="submit" variant="link" disabled={pending}>
-          {t(changingAccount ? 'nav.loggingOut' : 'verify.changeAccount')}
+          {t(
+            changeAccount.isPending ? 'nav.loggingOut' : 'verify.changeAccount'
+          )}
         </Button>
       </form>
     </div>

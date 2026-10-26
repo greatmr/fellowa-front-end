@@ -62,7 +62,7 @@ One axios instance, `apiClient` in `src/lib/api/client.ts`: base URL from `env.N
 
 Query defaults (`query-client.ts`): `staleTime` 30 s, `gcTime` 5 min, no refetch on focus, **no retry on 4xx**, mutations never retry. One client per request on the server, one shared in the browser. Query keys: `src/lib/api/query-keys.ts` holds the root; each feature adds its own factory as it is built.
 
-**Open decision: auth transport.** Whether the access token is an httpOnly cookie or a bearer token held in memory is not decided. That is why the token reaches `apiClient` through a provider — so the decision can be made once, in one place. Do not pick it implicitly inside a feature.
+**Current auth transport.** The implemented auth feature keeps the access token in an httpOnly cookie. Server-only request functions pass it explicitly to guarded backend endpoints; React Query `use…Mutation` and `useOwnProfileQuery` hooks call narrow server actions, so the browser never receives the token. The generic `apiClient` token-provider seam still exists for other features. This implementation does not settle the workspace's longer-term refresh-token decision.
 
 ## Backend reality you must design against
 
@@ -75,7 +75,7 @@ The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 
 ## Known gaps in this project (not precedent, and not bugs to "fix" silently)
 
-- No feature code, no routes beyond the placeholder home page, no auth flow, no stores, no shared hooks.
+- Auth routes and React Query auth hooks now exist. Other product feature screens remain placeholders; no shared store is used for auth data.
 - `src/lib/api/query-keys.ts` has only the root key; factories come with their features.
 - `test/msw/handlers.ts` is empty by design — handlers arrive with the endpoints that need them.
 - No git hooks, no commitlint, no CI, no Playwright/e2e layer.

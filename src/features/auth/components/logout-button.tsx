@@ -1,53 +1,47 @@
 'use client'
 
-import { useActionState, useEffect, useRef, type FormEvent } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
-import type { AuthFormAction } from '@/features/auth/types'
+import { useLogoutMutation } from '@/features/auth/api/auth-hooks'
+import { hookFeedback } from '@/features/auth/lib/hook-feedback'
+import { useRouter } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 
-export function LogoutButton({
-  action,
-  permalink,
-}: {
-  action: AuthFormAction
-  permalink?: string
-}) {
+export function LogoutButton() {
   const t = useTranslations('auth.nav')
+  const router = useRouter()
   const submitting = useRef(false)
-  const [state, dispatch, pending] = useActionState(
-    action,
-    { status: 'idle' },
-    permalink
-  )
-  useEffect(() => {
-    if (!pending) submitting.current = false
-  }, [pending, state])
-  const queryClient = useQueryClient()
+  const logout = useLogoutMutation()
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    if (submitting.current) {
-      event.preventDefault()
-      return
-    }
+  function submit() {
+    if (submitting.current || logout.isPending) return
     submitting.current = true
-    queryClient.clear()
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        logout.reset()
+        router.replace('/auth/login')
+      },
+      onError: () => {
+        submitting.current = false
+      },
+    })
   }
 
   return (
-    <form
-      action={dispatch}
-      onSubmit={submit}
-      aria-busy={pending}
-      className="space-y-2"
-    >
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
-        {t(pending ? 'loggingOut' : 'logout')}
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={logout.isPending}
+        onClick={submit}
+      >
+        {t(logout.isPending ? 'loggingOut' : 'logout')}
       </Button>
-      <AuthFeedback state={state} />
-    </form>
+      <AuthFeedback state={hookFeedback(logout.error)} />
+    </div>
   )
 }
