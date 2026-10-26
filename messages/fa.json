@@ -123,12 +123,43 @@
     "dark": "تیره",
     "system": "سیستم"
   },
+  "tiers": {
+    "create": "ایجاد پلن",
+    "edit": "ویرایش",
+    "delete": "حذف",
+    "toman": "تومان",
+    "emptyTitle": "هنوز پلنی ندارید",
+    "emptyBody": "برای اعضای خود پلنی با قیمت و مزایا بسازید.",
+    "loadError": "بارگذاری پلن‌ها ناموفق بود",
+    "createTitle": "ایجاد پلن عضویت",
+    "editTitle": "ویرایش پلن عضویت",
+    "formHint": "قیمت ماهانه و مزایای دلخواه را وارد کنید.",
+    "name": "نام پلن",
+    "description": "توضیحات",
+    "priceToman": "قیمت ماهانه (تومان)",
+    "priceHint": "مبلغ را به تومان و به صورت عدد صحیح وارد کنید.",
+    "benefits": "مزایا",
+    "addBenefit": "افزودن مزیت",
+    "benefitName": "نام مزیت",
+    "benefitRole": "نقش مزیت",
+    "removeBenefit": "حذف مزیت",
+    "unknownRole": "نقش فعلی",
+    "rolesError": "بارگذاری نقش مزایا ناموفق بود.",
+    "validationError": "نام، قیمت و مزایا را بررسی کنید.",
+    "saveError": "ذخیره پلن ناموفق بود. دوباره تلاش کنید.",
+    "saving": "در حال ذخیره…",
+    "deleteTitle": "پلن حذف شود؟",
+    "deleteBody": "پلن {title} حذف شود؟ این پلن از فهرست شما حذف می‌شود.",
+    "deleteError": "حذف پلن ناموفق بود. دوباره تلاش کنید.",
+    "deleting": "در حال حذف…"
+  },
   "studio": {
     "mainNav": "منوی اصلی",
     "openMenu": "باز کردن منو",
     "newPost": "ایجاد پست",
     "groups": {
-      "monetization": "درآمدزایی"
+      "monetization": "درآمدزایی",
+      "discover": "کشف و ارتباط"
     },
     "nav": {
       "dashboard": "داشبورد",
@@ -138,7 +169,11 @@
       "posts": "پست‌ها",
       "payouts": "گزارش‌ها",
       "payments": "پرداخت‌ها",
-      "settings": "تنظیمات"
+      "settings": "تنظیمات",
+      "explore": "اکسپلور",
+      "feed": "فید",
+      "chats": "چت‌ها",
+      "notifications": "اعلان‌ها"
     },
     "pages": {
       "dashboard": {
@@ -176,6 +211,22 @@
       "settings": {
         "title": "تنظیمات حساب",
         "category": "مدیریت"
+      },
+      "explore": {
+        "title": "اکسپلور",
+        "category": "کشف و ارتباط"
+      },
+      "feed": {
+        "title": "فید",
+        "category": "کشف و ارتباط"
+      },
+      "chats": {
+        "title": "چت‌ها",
+        "category": "کشف و ارتباط"
+      },
+      "notifications": {
+        "title": "اعلان‌ها",
+        "category": "کشف و ارتباط"
       }
     },
     "placeholder": {

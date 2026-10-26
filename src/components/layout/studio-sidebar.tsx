@@ -1,8 +1,9 @@
-import { ChevronDownIcon, PlusIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Logo } from '@/components/layout/logo'
+import { StudioNavGroup } from '@/components/layout/studio-nav-group'
 import {
   studioNav,
   studioSettingsItem,
@@ -13,9 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
 /**
- * Sidebar body, shared by the desktop rail and the mobile drawer. A server
- * component; only the links and the theme switch are client leaves.
- * Account and recent-visit controls await the session contract (C-4).
+ * Sidebar body, shared by the desktop rail and the mobile drawer. Group
+ * disclosure and links are client leaves; labels and icons render on the server.
  */
 function NavIcon({ item }: { item: StudioNavItem }) {
   const Icon = item.icon
@@ -65,22 +65,12 @@ export function StudioSidebar() {
           )
 
           return section.group ? (
-            <details
+            <StudioNavGroup
               key={section.group}
-              open
-              className="group/nav-section mb-2.5"
+              label={t(`groups.${section.group}`)}
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-1 rounded-md px-3 py-2 text-label font-semibold text-muted-foreground outline-none group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-0 focus-visible:ring-2 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
-                <span className="group-data-[collapsed=true]/sidebar:sr-only">
-                  {t(`groups.${section.group}`)}
-                </span>
-                <ChevronDownIcon
-                  className="size-3.5 shrink-0 transition-transform group-open/nav-section:rotate-180 motion-reduce:transition-none"
-                  aria-hidden
-                />
-              </summary>
               {links}
-            </details>
+            </StudioNavGroup>
           ) : (
             <div key={index} className="mb-2.5">
               {links}

@@ -1,10 +1,14 @@
 import {
   BarChart3,
+  Bell,
+  Compass,
   CreditCard,
   ExternalLink,
   FileText,
   Home,
   Layers,
+  LayoutGrid,
+  MessageSquare,
   Settings,
   Users,
   type LucideIcon,
@@ -12,9 +16,8 @@ import {
 
 /**
  * Creator studio navigation (presentation Sidebar `navItems`, @fdb5f6c).
- * Only entries with a planned route are listed — see the route map in
- * ../.claude/tasks/frontend/migration-plan.md. The presentation's explore,
- * feed, chats and notifications entries are omitted until a task routes them.
+ * Every item in the presentation's main navigation has a route. Sections
+ * without a product screen render an honest placeholder until their feature is built.
  * Labels are keys under `studio.nav`.
  */
 export type StudioNavItem = {
@@ -46,6 +49,15 @@ export const studioNav: StudioNavGroup[] = [
       { href: '/studio/posts', label: 'posts', icon: FileText },
       { href: '/studio/payouts', label: 'payouts', icon: BarChart3 },
       { href: '/memberships', label: 'payments', icon: CreditCard },
+    ],
+  },
+  {
+    group: 'discover',
+    items: [
+      { href: '/explore', label: 'explore', icon: Compass },
+      { href: '/feed', label: 'feed', icon: LayoutGrid },
+      { href: '/chats', label: 'chats', icon: MessageSquare },
+      { href: '/notifications', label: 'notifications', icon: Bell },
     ],
   },
 ]

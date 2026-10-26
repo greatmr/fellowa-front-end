@@ -33,7 +33,7 @@ src/
                        dropdown-menu form input label separator sheet skeleton sonner tabs textarea
   components/common/   app composites: empty-state, error-state
   components/providers/ app-providers (theme + query + toaster), query-provider
-  features/<feature>/  api · components · hooks · schemas · types · index.ts   (none yet)
+  features/<feature>/  api · components · server · schemas · types (auth and tiers implemented)
   hooks/               shared hooks (none yet)
   i18n/                routing.ts (locales, direction) · request.ts · navigation.ts
   lib/api/             client.ts (axios instance + helpers) · errors.ts (ApiError,
@@ -58,7 +58,7 @@ Cache Components changes the rules you may remember: `params`/`searchParams` are
 
 One axios instance, `apiClient` in `src/lib/api/client.ts`: base URL from `env.NEXT_PUBLIC_API_BASE_URL`, 20 s timeout, a request interceptor that attaches `Authorization: Bearer <token>` from a **single registered provider** (`setAccessTokenProvider`), and a response interceptor that converts every failure into `ApiError` via `toApiError`. Feature code uses `apiGet`/`apiPost`/`apiPatch`/`apiPut`/`apiDelete`, never `axios` directly.
 
-`ApiError` carries `status`, `code`, `messages[]`, `isNetworkError` and the `isUnauthorized`/`isForbidden`/`isNotFound` helpers. Its body parsing assumes the **NestJS default** exception shape (`{ statusCode, message, error }`, `message` string or string[]); confirm against the backend's exception filter before relying on a field.
+`ApiError` carries `status`, `code`, `messages[]`, `isNetworkError` and the `isUnauthorized`/`isForbidden`/`isNotFound` helpers. Its body parsing handles the backend's `{data, errors}` exception envelope.
 
 Query defaults (`query-client.ts`): `staleTime` 30 s, `gcTime` 5 min, no refetch on focus, **no retry on 4xx**, mutations never retry. One client per request on the server, one shared in the browser. Query keys: `src/lib/api/query-keys.ts` holds the root; each feature adds its own factory as it is built.
 
@@ -75,11 +75,11 @@ The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 
 ## Known gaps in this project (not precedent, and not bugs to "fix" silently)
 
-- Auth routes and React Query auth hooks now exist. Other product feature screens remain placeholders; no shared store is used for auth data.
+- Auth routes and React Query auth hooks exist. The tier manager uses `useTiersQuery`, `useTierRolesQuery`, and `use…TierMutation` hooks over guarded server actions. Server-only tier API helpers pass the httpOnly cookie token as an explicit Bearer header. The browser receives a narrow tier model and never the token. Other product feature screens remain placeholders; no shared store is used for auth or tier data.
 - `src/lib/api/query-keys.ts` has only the root key; factories come with their features.
 - `test/msw/handlers.ts` is empty by design — handlers arrive with the endpoints that need them.
 - No git hooks, no commitlint, no CI, no Playwright/e2e layer.
-- **No git.** `front-end/` is not a repository yet (`FE-FND-00`), so there is no diff for `code-reviewer` and no history for ported code.
+- `front-end/` is a separate git repository; review its diff from that directory.
 - Switch, checkbox and select primitives are missing (`FE-FND-05`, needs packages). `ui/dialog.tsx` has an English sr-only "Close" (`FE-FND-08`).
 - Fonts are **not** loaded from Google Fonts (a build-time fetch, and unreliable from Iran). The stack in `tailwind.config.ts` names `var(--font-brand)`, Ravi, Vazirmatn and falls back (brand face is `FQ-1`); self-host it with `next/font/local` when the files exist.
 - `npm audit`: 5 high-severity advisories, all dev-only and transitive through `eslint-config-next` → `fast-glob` → `micromatch` → `braces`, no fix in range. Do not `npm audit fix --force`.

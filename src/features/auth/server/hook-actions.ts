@@ -27,7 +27,7 @@ import {
   createCredentialsSchema,
   createVerificationSchema,
 } from '@/features/auth/schemas'
-import type { AuthActionResult } from '@/features/auth/types/auth-action-result'
+import type { ApiActionResult } from '@/lib/api/action-result'
 import type {
   ConfirmPasswordResetPayload,
   CredentialsPayload,
@@ -54,7 +54,7 @@ const googleSchema = z.object({
 
 async function execute<T>(
   operation: () => Promise<T>
-): Promise<AuthActionResult<T>> {
+): Promise<ApiActionResult<T>> {
   try {
     return { ok: true, data: await operation() }
   } catch (error) {
@@ -77,7 +77,7 @@ async function mutate<TInput, TData>(
   schema: z.ZodType<TInput>,
   input: unknown,
   operation: (input: TInput) => Promise<TData>
-): Promise<AuthActionResult<TData>> {
+): Promise<ApiActionResult<TData>> {
   if (!(await validAuthRequestOrigin())) {
     return { ok: false, status: 403, code: 'INVALID_REQUEST' }
   }
@@ -119,7 +119,7 @@ export async function registerForHook(input: CredentialsPayload) {
 
 export async function ownProfileForHook(
   userId: number
-): Promise<AuthActionResult<AuthUser>> {
+): Promise<ApiActionResult<AuthUser>> {
   return execute(async () => {
     const session = await activeSession()
     if (session.user.id !== userId) {

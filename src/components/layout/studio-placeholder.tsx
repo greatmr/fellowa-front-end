@@ -14,6 +14,10 @@ export type StudioPage =
   | 'payouts'
   | 'payments'
   | 'settings'
+  | 'explore'
+  | 'feed'
+  | 'chats'
+  | 'notifications'
 
 /**
  * Stand-in body for a studio route whose screen is a later FE-… task. It

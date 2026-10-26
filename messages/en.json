@@ -123,12 +123,43 @@
     "dark": "Dark",
     "system": "System"
   },
+  "tiers": {
+    "create": "Create tier",
+    "edit": "Edit",
+    "delete": "Delete",
+    "toman": "Toman",
+    "emptyTitle": "No membership tiers yet",
+    "emptyBody": "Create a tier to set a price and benefits for your members.",
+    "loadError": "Could not load your tiers",
+    "createTitle": "Create a membership tier",
+    "editTitle": "Edit membership tier",
+    "formHint": "Set the monthly price and optional benefits.",
+    "name": "Tier name",
+    "description": "Description",
+    "priceToman": "Monthly price (Toman)",
+    "priceHint": "Enter a whole number in Toman.",
+    "benefits": "Benefits",
+    "addBenefit": "Add benefit",
+    "benefitName": "Benefit name",
+    "benefitRole": "Benefit role",
+    "removeBenefit": "Remove benefit",
+    "unknownRole": "Current role",
+    "rolesError": "Could not load benefit roles.",
+    "validationError": "Check the name, price and benefits.",
+    "saveError": "Could not save this tier. Try again.",
+    "saving": "Saving…",
+    "deleteTitle": "Delete tier?",
+    "deleteBody": "Delete {title}? This removes the tier from your list.",
+    "deleteError": "Could not delete this tier. Try again.",
+    "deleting": "Deleting…"
+  },
   "studio": {
     "mainNav": "Main menu",
     "openMenu": "Open menu",
     "newPost": "New post",
     "groups": {
-      "monetization": "Monetization"
+      "monetization": "Monetization",
+      "discover": "Discover and connect"
     },
     "nav": {
       "dashboard": "Dashboard",
@@ -138,7 +169,11 @@
       "posts": "Posts",
       "payouts": "Reports",
       "payments": "Payments",
-      "settings": "Settings"
+      "settings": "Settings",
+      "explore": "Explore",
+      "feed": "Feed",
+      "chats": "Chats",
+      "notifications": "Notifications"
     },
     "pages": {
       "dashboard": {
@@ -176,6 +211,22 @@
       "settings": {
         "title": "Account settings",
         "category": "Account"
+      },
+      "explore": {
+        "title": "Explore",
+        "category": "Discover and connect"
+      },
+      "feed": {
+        "title": "Feed",
+        "category": "Discover and connect"
+      },
+      "chats": {
+        "title": "Chats",
+        "category": "Discover and connect"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "category": "Discover and connect"
       }
     },
     "placeholder": {

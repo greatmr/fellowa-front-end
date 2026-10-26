@@ -8,6 +8,9 @@ const privatePaths = new Set([
   '/studio/payouts',
   '/memberships',
   '/settings',
+  '/feed',
+  '/chats',
+  '/notifications',
 ])
 
 /** Only existing private route paths can be a post-authentication destination. */

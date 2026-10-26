@@ -22,7 +22,6 @@ import {
   verifyAuthTokenForHook,
   verifyEmailForHook,
 } from '@/features/auth/server/hook-actions'
-import type { AuthActionResult } from '@/features/auth/types/auth-action-result'
 import type {
   ConfirmPasswordResetPayload,
   CredentialsPayload,
@@ -30,23 +29,17 @@ import type {
   ResetPasswordPayload,
 } from '@/features/auth/types/auth-contract'
 import type { AuthUser } from '@/features/auth/types'
-import { ApiError } from '@/lib/api/errors'
+import type { ApiError } from '@/lib/api/errors'
+import {
+  unwrapApiActionResult,
+  type ApiActionResult,
+} from '@/lib/api/action-result'
 
 export const authKeys = {
   all: ['auth'] as const,
   profileAll: ['auth', 'own-profile'] as const,
   profile: (userId: number) => ['auth', 'own-profile', userId] as const,
   mutation: (name: string) => ['auth', name] as const,
-}
-
-function unwrap<T>(result: AuthActionResult<T>): T {
-  if (result.ok) return result.data
-  throw new ApiError({
-    message: 'Authentication request failed',
-    status: result.status,
-    code: result.code,
-    isNetworkError: result.isNetworkError,
-  })
 }
 
 type MutationOptions<TData, TVariables> = Omit<
@@ -56,7 +49,7 @@ type MutationOptions<TData, TVariables> = Omit<
 
 function useAuthMutation<TData, TVariables>(
   name: string,
-  action: (variables: TVariables) => Promise<AuthActionResult<TData>>,
+  action: (variables: TVariables) => Promise<ApiActionResult<TData>>,
   cacheChange: 'identity' | 'profile' | null,
   options?: MutationOptions<TData, TVariables>
 ) {
@@ -64,7 +57,8 @@ function useAuthMutation<TData, TVariables>(
   return useMutation<TData, ApiError, TVariables>({
     ...options,
     mutationKey: authKeys.mutation(name),
-    mutationFn: async (variables) => unwrap(await action(variables)),
+    mutationFn: async (variables) =>
+      unwrapApiActionResult(await action(variables)),
     gcTime: 0,
     onMutate: async (variables, context) => {
       if (cacheChange === 'identity') queryClient.removeQueries()
@@ -102,7 +96,7 @@ export function useOwnProfileQuery(
   return useQuery<AuthUser, ApiError>({
     ...options,
     queryKey: authKeys.profile(userId),
-    queryFn: async () => unwrap(await ownProfileForHook(userId)),
+    queryFn: async () => unwrapApiActionResult(await ownProfileForHook(userId)),
     enabled: Number.isSafeInteger(userId) && userId > 0,
     staleTime: 0,
   })

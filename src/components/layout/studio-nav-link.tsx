@@ -53,7 +53,7 @@ export function StudioNavLink({
       )}
     >
       {icon}
-      <span className="flex-1 truncate group-data-[collapsed=true]/sidebar:sr-only">
+      <span className="max-w-48 flex-1 truncate transition-[max-width,opacity] duration-300 group-data-[collapsed=true]/sidebar:max-w-0 group-data-[collapsed=true]/sidebar:flex-none group-data-[collapsed=true]/sidebar:opacity-0 motion-reduce:transition-none">
         {children}
       </span>
     </Link>
