@@ -23,12 +23,12 @@ import {
   verifyEmailForHook,
 } from '@/features/auth/server/hook-actions'
 import type {
+  AuthUser,
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
   ResetPasswordPayload,
-} from '@/features/auth/types/auth-contract'
-import type { AuthUser } from '@/features/auth/types'
+} from '@/features/auth/types'
 import type { ApiError } from '@/lib/api/errors'
 import {
   unwrapApiActionResult,

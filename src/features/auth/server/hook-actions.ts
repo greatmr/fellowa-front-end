@@ -27,14 +27,14 @@ import {
   createCredentialsSchema,
   createVerificationSchema,
 } from '@/features/auth/schemas'
-import type { ApiActionResult } from '@/lib/api/action-result'
+import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import type {
+  AuthUser,
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
   ResetPasswordPayload,
-} from '@/features/auth/types/auth-contract'
-import type { AuthUser } from '@/features/auth/types'
+} from '@/features/auth/types'
 import { ApiError } from '@/lib/api/errors'
 
 const aliasSchema = z.object({ alias: z.string().min(3).max(255) })
@@ -52,25 +52,12 @@ const googleSchema = z.object({
   redirectUri: z.string(),
 })
 
-async function execute<T>(
-  operation: () => Promise<T>
-): Promise<ApiActionResult<T>> {
-  try {
-    return { ok: true, data: await operation() }
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return {
-        ok: false,
-        status: error.status,
-        code: error.code,
-        isNetworkError: error.isNetworkError,
-      }
-    }
-    if (error instanceof InvalidAuthResponseError) {
-      return { ok: false, code: 'INVALID_AUTH_RESPONSE' }
-    }
-    return { ok: false }
-  }
+function execute<T>(operation: () => Promise<T>) {
+  return runApiAction(operation, (error) =>
+    error instanceof InvalidAuthResponseError
+      ? { code: 'INVALID_AUTH_RESPONSE' }
+      : undefined
+  )
 }
 
 async function mutate<TInput, TData>(

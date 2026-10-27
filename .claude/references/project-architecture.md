@@ -36,8 +36,12 @@ src/
   features/<feature>/  api · components · server · schemas · types (auth and tiers implemented)
   hooks/               shared hooks (none yet)
   i18n/                routing.ts (locales, direction) · request.ts · navigation.ts
-  lib/api/             client.ts (axios instance + helpers) · errors.ts (ApiError,
-                       toApiError) · query-client.ts · query-keys.ts
+  lib/api/             client.ts (axios instance + helpers, withBearer) · errors.ts
+                       (ApiError, toApiError) · types.ts (envelope types) ·
+                       envelope.ts (parseEnvelope) · action-result.ts
+                       (ApiActionResult, runApiAction) · query-client.ts · query-keys.ts
+  features/<f>/types/  plain types · schemas/ zod schemas + response parsers ·
+                       lib/ pure helpers (e.g. tiers/lib/tier-draft.ts)
   lib/env.ts           zod-validated env contract
   lib/utils.ts         cn()
   stores/              Zustand stores (none yet)

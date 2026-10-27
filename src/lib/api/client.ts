@@ -47,6 +47,11 @@ apiClient.interceptors.response.use(
   (error) => Promise.reject(toApiError(error))
 )
 
+/** Per-request auth header for server code that holds the token explicitly. */
+export function withBearer(token: string): AxiosRequestConfig {
+  return { headers: { Authorization: `Bearer ${token}` } }
+}
+
 /**
  * Request helpers. They return the response body, so a caller types the body
  * and nothing else. Type it from the real backend contract
