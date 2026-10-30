@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, type FormEvent } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { EyeIcon, EyeOffIcon, LoaderCircleIcon } from 'lucide-react'
+import { LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useForm } from 'react-hook-form'
 
@@ -21,12 +21,13 @@ import {
   useRegisterMutation,
 } from '@/features/auth/api/auth-hooks'
 import { hookFeedback } from '@/features/auth/lib/hook-feedback'
-import { safeReturnTo } from '@/features/auth/lib/return-to'
+import { authHref, safeReturnTo } from '@/features/auth/lib/return-to'
 import { createCredentialsSchema } from '@/features/auth/schemas'
 import { Link, useRouter } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
+import { PasswordInput } from './password-input'
 
 export function CredentialsForm({
   mode,
@@ -42,7 +43,6 @@ export function CredentialsForm({
   const register = useRegisterMutation()
   const mutation = mode === 'login' ? login : register
   const pending = mutation.isPending
-  const [showPassword, setShowPassword] = useState(false)
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(
       createCredentialsSchema(mode, {
@@ -86,9 +86,7 @@ export function CredentialsForm({
   }
 
   const oppositeMode = mode === 'login' ? 'register' : 'login'
-  const href = returnTo
-    ? { pathname: `/auth/${oppositeMode}`, query: { returnTo } }
-    : `/auth/${oppositeMode}`
+  const href = authHref(`/auth/${oppositeMode}`, returnTo)
   const state = hookFeedback(mutation.error)
 
   return (
@@ -136,39 +134,15 @@ export function CredentialsForm({
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>{t('fields.password')}</FormLabel>
-                  <div className="relative" dir="ltr">
-                    <AuthFormControl serverError={false}>
-                      <Input
-                        {...field}
-                        className="pe-12"
-                        type={showPassword ? 'text' : 'password'}
-                        dir="ltr"
-                        autoComplete={
-                          mode === 'login' ? 'current-password' : 'new-password'
-                        }
-                        required
-                        minLength={mode === 'register' ? 8 : undefined}
-                        aria-invalid={fieldState.invalid}
-                      />
-                    </AuthFormControl>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="absolute inset-y-0 end-0.5 my-auto"
-                      aria-label={t(
-                        showPassword ? 'password.hide' : 'password.show'
-                      )}
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? (
-                        <EyeOffIcon aria-hidden />
-                      ) : (
-                        <EyeIcon aria-hidden />
-                      )}
-                    </Button>
-                  </div>
+                  <PasswordInput
+                    {...field}
+                    autoComplete={
+                      mode === 'login' ? 'current-password' : 'new-password'
+                    }
+                    required
+                    minLength={mode === 'register' ? 8 : undefined}
+                    aria-invalid={fieldState.invalid}
+                  />
                   <FormDescription>
                     {t(
                       mode === 'register'
@@ -177,6 +151,14 @@ export function CredentialsForm({
                     )}
                   </FormDescription>
                   <FormMessage />
+                  {mode === 'login' && (
+                    <Link
+                      href={authHref('/auth/forgot-password', returnTo)}
+                      className="justify-self-end rounded-sm text-body-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      {t('login.forgotLink')}
+                    </Link>
+                  )}
                 </FormItem>
               )}
             />

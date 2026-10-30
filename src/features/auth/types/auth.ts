@@ -7,7 +7,9 @@ export type AuthErrorCode =
   | 'invalidResponse'
   | 'expiredSession'
   | 'invalidCode'
-  | 'alreadyVerified'
+  | 'tooManyAttempts'
+  | 'resendCooldown'
+  | 'invalidResetToken'
   | 'invalidRequest'
   | 'unexpected'
 

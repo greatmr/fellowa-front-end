@@ -9,6 +9,8 @@ export function hookFeedback(
   let code: AuthErrorCode = 'unexpected'
   if (error.code === 'INVALID_AUTH_RESPONSE') code = 'invalidResponse'
   else if (error.code === 'INVALID_REQUEST') code = 'invalidRequest'
+  else if (error.code === 'AUTH_TOO_MANY_ATTEMPTS') code = 'tooManyAttempts'
+  else if (error.code === 'AUTH_RESEND_COOLDOWN') code = 'resendCooldown'
   else if (error.status === 429) code = 'rateLimited'
   else if (error.isNetworkError) code = 'network'
   else if (error.status !== undefined && error.status >= 500)
@@ -24,8 +26,8 @@ export function hookFeedback(
       case 'AUTH_INVALID_CODE':
         code = 'invalidCode'
         break
-      case 'AUTH_ALREADY_VERIFIED':
-        code = 'alreadyVerified'
+      case 'AUTH_INVALID_RESET_TOKEN':
+        code = 'invalidResetToken'
         break
       default:
         if (guarded && [401, 403, 404].includes(error.status ?? 0)) {

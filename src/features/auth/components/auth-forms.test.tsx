@@ -194,6 +194,144 @@ describe('React Query auth forms', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('offers password recovery on login only, keeping the destination', () => {
+    const { unmount } = renderAuth(
+      <CredentialsForm mode="login" returnTo="/settings" />
+    )
+    expect(
+      screen.getByRole('link', { name: en.auth.login.forgotLink })
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('/auth/forgot-password?returnTo=%2Fsettings')
+    )
+    unmount()
+    renderAuth(<CredentialsForm mode="register" />)
+    expect(
+      screen.queryByRole('link', { name: en.auth.login.forgotLink })
+    ).not.toBeInTheDocument()
+  })
+
+  it('accepts a code typed with a Persian keyboard', async () => {
+    const user = userEvent.setup()
+    mocked.actions.verifyEmailForHook.mockResolvedValue({
+      ok: false,
+      status: 400,
+      code: 'AUTH_INVALID_CODE',
+    })
+    renderAuth(<VerificationForm email="creator@example.com" />)
+    await user.type(screen.getByLabelText(en.auth.fields.code), '۰۱۲۳۴۵')
+    expect(screen.getByLabelText(en.auth.fields.code)).toHaveValue('012345')
+    await user.click(
+      screen.getByRole('button', { name: en.auth.verify.submit })
+    )
+    await screen.findByRole('alert')
+    expect(mocked.actions.verifyEmailForHook).toHaveBeenCalledWith({
+      code: '012345',
+    })
+  })
+
+  describe('after too many attempts', () => {
+    async function lockOut() {
+      const user = userEvent.setup()
+      mocked.actions.verifyEmailForHook.mockResolvedValue({
+        ok: false,
+        status: 429,
+        code: 'AUTH_TOO_MANY_ATTEMPTS',
+      })
+      renderAuth(<VerificationForm email="creator@example.com" />)
+      await user.type(screen.getByLabelText(en.auth.fields.code), '012345')
+      await user.click(
+        screen.getByRole('button', { name: en.auth.verify.submit })
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        en.auth.errors.tooManyAttempts
+      )
+      return user
+    }
+
+    it('stops code entry but still allows a new code', async () => {
+      await lockOut()
+      expect(screen.getByLabelText(en.auth.fields.code)).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: en.auth.verify.submit })
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: en.auth.verify.resend })
+      ).toBeEnabled()
+    })
+
+    it('reopens entry, empty, once a new code was sent', async () => {
+      const user = await lockOut()
+      await user.click(
+        screen.getByRole('button', { name: en.auth.verify.resend })
+      )
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        en.auth.verify.sent
+      )
+      const code = screen.getByLabelText(en.auth.fields.code)
+      expect(code).toBeEnabled()
+      expect(code).toHaveValue('')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('stays locked when the new code is refused', async () => {
+      const user = await lockOut()
+      mocked.actions.resendEmailForHook.mockResolvedValue({
+        ok: false,
+        status: 429,
+        code: 'AUTH_RESEND_COOLDOWN',
+      })
+      await user.click(
+        screen.getByRole('button', { name: en.auth.verify.resend })
+      )
+      await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2))
+      const alerts = screen.getAllByRole('alert')
+      expect(alerts[0]).toHaveTextContent(en.auth.errors.tooManyAttempts)
+      expect(alerts[1]).toHaveTextContent(en.auth.errors.resendCooldown)
+      expect(screen.getByLabelText(en.auth.fields.code)).toBeDisabled()
+    })
+  })
+
+  it.each([
+    ['AUTH_RESEND_COOLDOWN', en.auth.errors.resendCooldown],
+    [undefined, en.auth.errors.rateLimited],
+  ])('shows the resend refusal for 429 %s', async (code, message) => {
+    const user = userEvent.setup()
+    mocked.actions.resendEmailForHook.mockResolvedValue({
+      ok: false,
+      status: 429,
+      code,
+    })
+    renderAuth(<VerificationForm email="creator@example.com" />)
+    await user.click(
+      screen.getByRole('button', { name: en.auth.verify.resend })
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: en.auth.verify.resend })
+    ).toBeEnabled()
+  })
+
+  it('moves on when a resend finds the account already verified', async () => {
+    const user = userEvent.setup()
+    mocked.actions.resendEmailForHook.mockResolvedValue({
+      ok: false,
+      status: 400,
+      code: 'AUTH_ALREADY_VERIFIED',
+    })
+    renderAuth(
+      <VerificationForm email="creator@example.com" returnTo="/settings" />
+    )
+    await user.click(
+      screen.getByRole('button', { name: en.auth.verify.resend })
+    )
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/settings')
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('clears the local session through the logout mutation', async () => {
     const user = userEvent.setup()
     renderAuth(<LogoutButton />)

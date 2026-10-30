@@ -25,6 +25,8 @@ import {
 } from '@/features/auth/server/session'
 import {
   createCredentialsSchema,
+  createForgotPasswordSchema,
+  createResetPasswordSchema,
   createVerificationSchema,
 } from '@/features/auth/schemas'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
@@ -38,11 +40,6 @@ import type {
 import { ApiError } from '@/lib/api/errors'
 
 const aliasSchema = z.object({ alias: z.string().min(3).max(255) })
-const emailSchema = z.object({ email: z.string().email() })
-const confirmResetSchema = z.object({
-  token: z.string().min(16).max(128),
-  newPassword: z.string().min(8),
-})
 const changePasswordSchema = z.object({
   currentPassword: z.string(),
   newPassword: z.string().min(8),
@@ -163,7 +160,7 @@ export async function setAliasForHook(input: { alias: string }) {
 }
 
 export async function requestPasswordResetForHook(input: { email: string }) {
-  return mutate(emailSchema, input, async ({ email }) => {
+  return mutate(createForgotPasswordSchema(), input, async ({ email }) => {
     await requestPasswordReset(email)
     return null
   })
@@ -172,7 +169,7 @@ export async function requestPasswordResetForHook(input: { email: string }) {
 export async function confirmPasswordResetForHook(
   input: ConfirmPasswordResetPayload
 ) {
-  return mutate(confirmResetSchema, input, async (payload) => {
+  return mutate(createResetPasswordSchema(), input, async (payload) => {
     await confirmPasswordReset(payload)
     return null
   })

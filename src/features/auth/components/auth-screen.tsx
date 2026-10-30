@@ -3,6 +3,8 @@ import { useTranslations } from 'next-intl'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { CredentialsForm } from '@/features/auth/components/credentials-form'
+import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
+import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
 import { VerificationForm } from '@/features/auth/components/verification-form'
 import { safeReturnTo } from '@/features/auth/lib/return-to'
 import { getSession } from '@/features/auth/server/session'
@@ -10,7 +12,8 @@ import { redirect } from '@/i18n/navigation'
 import type { Locale } from '@/i18n/routing'
 
 type Props = {
-  mode: 'login' | 'register' | 'verify-email'
+  mode:
+    'login' | 'register' | 'verify-email' | 'forgot-password' | 'reset-password'
   locale: Locale
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
@@ -54,6 +57,13 @@ export async function AuthScreen({ mode, locale, searchParams }: Props) {
       })
     }
     return <VerificationForm email={session.user.email} returnTo={returnTo} />
+  }
+
+  if (mode === 'forgot-password') {
+    return <ForgotPasswordForm returnTo={returnTo} />
+  }
+  if (mode === 'reset-password') {
+    return <ResetPasswordForm returnTo={returnTo} />
   }
 
   const t = await getTranslations('auth')

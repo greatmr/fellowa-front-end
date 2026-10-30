@@ -19,6 +19,11 @@ const privatePaths = new Set([
  */
 const creatorPagePath = /^\/creators\/[1-9][0-9]{0,9}$/
 
+/** An auth route link that keeps the post-authentication destination. */
+export function authHref(pathname: string, returnTo?: string) {
+  return returnTo ? { pathname, query: { returnTo } } : pathname
+}
+
 /**
  * Only existing private route paths, or a public creator page, can be a
  * post-authentication destination.

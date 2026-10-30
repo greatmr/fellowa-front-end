@@ -25,6 +25,7 @@ import { hookFeedback } from '@/features/auth/lib/hook-feedback'
 import { safeReturnTo } from '@/features/auth/lib/return-to'
 import { createVerificationSchema } from '@/features/auth/schemas'
 import { useRouter } from '@/i18n/navigation'
+import { toLatinDigits } from '@/lib/digits'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
@@ -47,14 +48,20 @@ export function VerificationForm({
   const changeAccount = useLogoutMutation()
   const pending =
     verify.isPending || resend.isPending || changeAccount.isPending
+  const verifyState = hookFeedback(verify.error, true)
   const state =
     lastAction === 'verify'
-      ? hookFeedback(verify.error, true)
+      ? verifyState
       : lastAction === 'resend'
         ? hookFeedback(resend.error, true)
         : hookFeedback(changeAccount.error)
   const expired = state.status === 'error' && state.error === 'expiredSession'
   const disabled = pending || expired
+  // The backend gives no end time, and a new code does not lift the lockout. By
+  // the time it ends the old code has expired, so entry reopens with a new code;
+  // the server still refuses until the lockout is over.
+  const locked =
+    verifyState.status === 'error' && verifyState.error === 'tooManyAttempts'
   const form = useForm<{ code: string }>({
     resolver: zodResolver(
       createVerificationSchema({
@@ -69,7 +76,7 @@ export function VerificationForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (disabled || submitting.current) return
+    if (disabled || locked || submitting.current) return
     submitting.current = true
     setLastAction('verify')
     resend.reset()
@@ -95,10 +102,22 @@ export function VerificationForm({
     if (disabled || submitting.current) return
     submitting.current = true
     setLastAction('resend')
-    verify.reset()
+    if (!locked) verify.reset()
     form.clearErrors('code')
     resend.mutate(undefined, {
-      onSettled: () => {
+      onSuccess: () => {
+        verify.reset()
+        // The previous code no longer works.
+        form.reset({ code: '' })
+        submitting.current = false
+      },
+      onError: (error) => {
+        if (error.code === 'AUTH_ALREADY_VERIFIED') {
+          // Verified elsewhere, for instance in another tab: nothing to resend.
+          resend.reset()
+          router.replace(safeReturnTo(returnTo))
+          return
+        }
         submitting.current = false
       },
     })
@@ -143,7 +162,7 @@ export function VerificationForm({
           aria-busy={verify.isPending}
           className="space-y-5"
         >
-          <fieldset disabled={disabled} className="min-w-0">
+          <fieldset disabled={disabled || locked} className="min-w-0">
             <FormField
               control={form.control}
               name="code"
@@ -157,6 +176,9 @@ export function VerificationForm({
                   >
                     <Input
                       {...field}
+                      onChange={(event) =>
+                        field.onChange(toLatinDigits(event.target.value))
+                      }
                       type="text"
                       dir="ltr"
                       inputMode="numeric"
@@ -178,15 +200,15 @@ export function VerificationForm({
               )}
             />
           </fieldset>
-          {lastAction === 'verify' && !pending && (
-            <AuthFeedback state={state} returnTo={returnTo} />
+          {(lastAction === 'verify' || locked) && !pending && (
+            <AuthFeedback state={verifyState} returnTo={returnTo} />
           )}
           <Button
             type="submit"
             size="lg"
             variant="inverse"
             className="w-full"
-            disabled={disabled}
+            disabled={disabled || locked}
           >
             {verify.isPending && (
               <LoaderCircleIcon

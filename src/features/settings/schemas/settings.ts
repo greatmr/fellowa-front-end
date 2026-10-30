@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import type { PersonalDetails } from '@/features/settings/types/settings'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { toLatinDigits } from '@/lib/digits'
 
 /** Backend limits (`UpdatePersonalDto`, `ResetPasswordDto`). */
 export const FIRST_NAME_MAX = 60
@@ -15,20 +16,6 @@ export class InvalidSettingsResponseError extends Error {
     super('Invalid settings response')
     this.name = 'InvalidSettingsResponseError'
   }
-}
-
-const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
-const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩'
-
-/** Persian or Arabic-Indic digits typed on a phone keyboard become Latin. */
-export function toLatinDigits(value: string): string {
-  return value.replace(/[۰-۹٠-٩]/g, (d) =>
-    String(
-      PERSIAN_DIGITS.includes(d)
-        ? PERSIAN_DIGITS.indexOf(d)
-        : ARABIC_DIGITS.indexOf(d)
-    )
-  )
 }
 
 /** An Iranian mobile number as the prototype validates it: 09 + 9 digits. */
