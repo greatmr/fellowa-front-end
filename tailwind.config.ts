@@ -206,10 +206,10 @@ const config = {
       fontSize,
       fontFamily: {
         /*
-         * Persian-first. `--font-brand` is set by next/font/local once the
-         * font files are self-hosted (task FE-FND-03); until then the named
-         * faces resolve from the visitor's system. The var() carries a
-         * fallback on purpose: an undefined var() would invalidate the whole
+         * Persian-first. `--font-brand` is set on <html> by next/font/local in
+         * the locale layout (self-hosted Vazirmatn, FQ-1). Outside that layout
+         * the named faces resolve from the visitor's system. The var() carries
+         * a fallback on purpose: an undefined var() would invalidate the whole
          * font-family declaration.
          * Never next/font/google — a build-time fetch, unreliable from Iran.
          */

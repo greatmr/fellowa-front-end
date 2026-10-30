@@ -1,0 +1,13 @@
+Vazirmatn variable font (wght axis 100-900), self-hosted for task FE-FND-03.
+Choice recorded in decision FQ-1. Licence: SIL OFL 1.1, full text in OFL.txt.
+
+Source: npm package @fontsource-variable/vazirmatn@5.3.0
+        (Fontsource build of Google Fonts Vazirmatn v16; upstream
+        https://github.com/rastikerdar/vazirmatn)
+Fetched: 2026-10-31 with `npm pack`; files copied unmodified.
+
+SHA-256
+84a382e46c30fb4f73d0e3800c16d0af15888e2731e57fa5f93e2c29a2c6a957  vazirmatn-arabic-wght-normal.woff2
+d29c041cd4294af893cf3c01dfab6d47202c667ab55d702f68782599918c651d  vazirmatn-latin-wght-normal.woff2
+
+The package's latin-ext subset is left out: no fa or en message uses it.

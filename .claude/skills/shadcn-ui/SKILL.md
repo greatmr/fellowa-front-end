@@ -30,7 +30,7 @@ Write every surface so it survives the class flip: semantic tokens only, no fixe
 
 ## Persian typography and RTL
 
-- The font stack in `tailwind.config.ts` is `var(--font-brand, Ravi)`, Ravi, Vazirmatn, other Persian faces, then the system stack. It is **not** fetched from Google Fonts, on purpose. To ship the real face (`FE-FND-03`, choice is `FQ-1`), add woff2 files under `public/fonts/` and load them with `next/font/local` in the locale layout, setting `--font-brand`. Do not switch to `next/font/google`.
+- The font stack in `tailwind.config.ts` is `var(--font-brand, Ravi)`, Ravi, Vazirmatn, other Persian faces, then the system stack. It is **not** fetched from Google Fonts, on purpose. The brand face is Vazirmatn (`FQ-1`), self-hosted from `public/fonts/vazirmatn/` and loaded with `next/font/local` in the locale layout, which sets `--font-brand` on `<html>`. Do not switch to `next/font/google`.
 - `fa` renders RTL; `<html dir>` is set by the locale layout. Correct RTL comes from **logical properties**: `ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`, `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s`/`rounded-e`. `ml-`, `pr-`, `left-`, `text-left` are bugs in `fa` unless the thing genuinely is physically left.
 - Mirror directional glyphs (`rtl:rotate-180` on chevrons, arrows, back buttons). Progress fills, carousels, sliders, drag handles and anything with a direction must be **looked at** in `fa`, not reasoned about.
 - Mixed-direction runs (a Latin handle in a Persian sentence, a URL, an amount with a unit) reorder unless isolated. Check them.

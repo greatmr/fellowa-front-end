@@ -115,7 +115,7 @@ Presentation variant names → ours: `primary`/`pay` → `default` · `dark` →
 
 ## Fonts
 
-`font-sans` = `var(--font-brand, Ravi), Ravi, Vazirmatn, IRANSansX, IRANSans, Tahoma, system…`. `--font-brand` is unset until `FE-FND-03` self-hosts the chosen face with `next/font/local` (Ravi vs Vazirmatn is `FQ-1`); until then a locally installed face is used. The `var()` carries a fallback deliberately — an undefined `var()` with no fallback invalidates the entire `font-family` declaration (the bug this replaced). **Never `next/font/google`**: a build-time fetch, unreliable from Iran.
+`font-sans` = `var(--font-brand, Ravi), Ravi, Vazirmatn, IRANSansX, IRANSans, Tahoma, system…`. `--font-brand` is set on `<html>` by `next/font/local` in `src/app/[locale]/layout.tsx`: Vazirmatn (`FQ-1`), variable `wght` 100–900, arabic and latin subsets, files and OFL licence in `public/fonts/vazirmatn/`. `global-error.tsx` renders its own `<html>` outside that layout, so it uses the named faces from the visitor's system. The `var()` carries a fallback deliberately — an undefined `var()` with no fallback invalidates the entire `font-family` declaration (the bug this replaced). **Never `next/font/google`**: a build-time fetch, unreliable from Iran.
 
 ## RTL
 
