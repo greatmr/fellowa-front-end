@@ -257,6 +257,34 @@
     "clearFilters": "Clear search and filters",
     "publicTitle": "Explore creators"
   },
+  "creatorPage": {
+    "unnamed": "Unnamed creator",
+    "followers": "{count, plural, one {<b>{formatted}</b> follower} other {<b>{formatted}</b> followers}}",
+    "follow": "Follow",
+    "support": "Support",
+    "joinTier": "Join this tier",
+    "signInHint": "Sign in to follow or join a tier.",
+    "comingSoon": "Following and joining open soon.",
+    "editPage": "Edit your page",
+    "toman": "Toman",
+    "tabs": {
+      "posts": "Posts ({count})",
+      "tiers": "Tiers ({count})",
+      "about": "About",
+      "tiersUnknown": "Tiers"
+    },
+    "emptyPosts": "No public posts yet.",
+    "emptyTiers": "No tiers yet.",
+    "emptyAbout": "Nothing here yet.",
+    "links": {
+      "video": "Video",
+      "instagram": "Instagram",
+      "twitter": "X (Twitter)",
+      "youtube": "YouTube",
+      "facebook": "Facebook"
+    },
+    "tiersUnavailable": "Tiers couldn't be loaded. Try again later."
+  },
   "publicLayout": {
     "home": "Fellowa home",
     "mainNav": "Main navigation",

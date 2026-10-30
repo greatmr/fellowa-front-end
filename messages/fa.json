@@ -257,6 +257,34 @@
     "clearFilters": "پاک کردن جستجو و فیلترها",
     "publicTitle": "کاوش کریتورها"
   },
+  "creatorPage": {
+    "unnamed": "کریتور بی‌نام",
+    "followers": "{count, plural, other {<b>{formatted}</b> دنبال‌کننده}}",
+    "follow": "دنبال کردن",
+    "support": "حمایت / عضویت",
+    "joinTier": "عضویت در این پلن",
+    "signInHint": "برای دنبال کردن یا عضویت وارد شو.",
+    "comingSoon": "دنبال کردن و عضویت به‌زودی فعال می‌شود.",
+    "editPage": "ویرایش صفحه‌ات",
+    "toman": "تومان",
+    "tabs": {
+      "posts": "پست‌ها ({count})",
+      "tiers": "پلن‌های عضویت ({count})",
+      "about": "درباره",
+      "tiersUnknown": "پلن‌های عضویت"
+    },
+    "emptyPosts": "هنوز پست عمومی‌ای نیست.",
+    "emptyTiers": "هنوز پلنی نیست.",
+    "emptyAbout": "هنوز چیزی اینجا نیست.",
+    "links": {
+      "video": "ویدیو",
+      "instagram": "اینستاگرام",
+      "twitter": "ایکس (توییتر)",
+      "youtube": "یوتیوب",
+      "facebook": "فیسبوک"
+    },
+    "tiersUnavailable": "پلن‌ها بارگذاری نشد. کمی بعد دوباره امتحان کن."
+  },
   "publicLayout": {
     "home": "صفحه اصلی فلووا",
     "mainNav": "ناوبری اصلی",
