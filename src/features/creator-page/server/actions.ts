@@ -27,7 +27,13 @@ export async function setFollowingAction(input: {
   if (!parsed.success) {
     return { ok: false, status: 400, code: 'INVALID_REQUEST' }
   }
-  const session = await readSession().catch(() => null)
+  let session: Awaited<ReturnType<typeof readSession>>
+  try {
+    session = await readSession()
+  } catch {
+    // The session could not be checked (API down), which is not an expiry.
+    return { ok: false, code: 'SESSION_CHECK_FAILED', isNetworkError: true }
+  }
   if (!session) return { ok: false, status: 401, code: 'SESSION_EXPIRED' }
 
   const { creatorId, follow } = parsed.data
