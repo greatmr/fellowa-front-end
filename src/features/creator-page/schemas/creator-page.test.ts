@@ -26,6 +26,7 @@ const profile = {
   },
   categoryId: 2,
   numFollowers: '12',
+  viewer: null,
 }
 
 describe('creator page responses (FE-PAGE-01)', () => {
@@ -42,7 +43,19 @@ describe('creator page responses (FE-PAGE-01)', () => {
         { kind: 'instagram', url: 'https://instagram.com/dana' },
         { kind: 'youtube', url: 'https://youtube.com/@dana' },
       ],
+      viewerFollows: null,
     })
+  })
+
+  it.each([
+    [{ isFollowing: true }, true],
+    [{ isFollowing: false }, false],
+    [null, null],
+    [undefined, null], // a backend before BE-LAND-09 sends no `viewer` at all
+  ])('maps the viewer state %j (BE-LAND-09)', (viewer, viewerFollows) => {
+    expect(parseCreatorProfile(envelope({ ...profile, viewer }))).toMatchObject(
+      { viewerFollows }
+    )
   })
 
   it('accepts a profile without an about record', () => {

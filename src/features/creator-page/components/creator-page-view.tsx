@@ -11,6 +11,7 @@ import type {
   CreatorPageData,
   CreatorPageViewer,
 } from '@/features/creator-page/server/load-creator-page'
+import { FollowButton } from '@/features/creator-page/components/follow-button'
 import { Link } from '@/i18n/navigation'
 
 /**
@@ -70,7 +71,11 @@ export function CreatorPageView({
             })}
           </p>
         </div>
-        <CreatorActions creatorId={profile.id} viewer={viewer} />
+        <CreatorActions
+          creatorId={profile.id}
+          viewer={viewer}
+          following={profile.viewerFollows ?? false}
+        />
       </header>
 
       {profile.bio ? (
@@ -224,13 +229,18 @@ function signInHref(creatorId: number) {
   } as const
 }
 
-/** Follow / support. Anonymous → sign in and come back; owner → edit page. */
+/**
+ * Follow / support. Anonymous → sign in and come back; signed in → a working
+ * Follow (FE-PAGE-02) and a not-yet-available Support; owner → edit page.
+ */
 function CreatorActions({
   creatorId,
   viewer,
+  following,
 }: {
   creatorId: number
   viewer: CreatorPageViewer
+  following: boolean
 }) {
   const t = useTranslations('creatorPage')
 
@@ -259,9 +269,7 @@ function CreatorActions({
   return (
     <div className="flex flex-col gap-1.5 sm:items-end">
       <div className="flex gap-2">
-        <Button variant="outline" disabled aria-describedby="creator-soon">
-          {t('follow')}
-        </Button>
+        <FollowButton creatorId={creatorId} following={following} />
         <Button variant="inverse" disabled aria-describedby="creator-soon">
           {t('support')}
         </Button>

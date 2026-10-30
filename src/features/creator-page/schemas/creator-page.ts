@@ -42,6 +42,8 @@ const rawProfileSchema = z.object({
   categoryId: id.nullable(),
   /** COUNT(...) arrives from PostgreSQL as a numeric string. */
   numFollowers: z.string().regex(/^\d+$/),
+  /** BE-LAND-09; absent from an older backend, which reads as anonymous. */
+  viewer: z.object({ isFollowing: z.boolean() }).nullish(),
 })
 
 const rawTierSchema = z.object({
@@ -85,6 +87,7 @@ export function parseCreatorProfile(value: unknown): CreatorProfile {
     categoryId: raw.categoryId,
     followerCount: followers,
     links: links.filter((link): link is CreatorLink => link !== null),
+    viewerFollows: raw.viewer?.isFollowing ?? null,
   }
 }
 

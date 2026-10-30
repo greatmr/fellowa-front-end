@@ -12,6 +12,11 @@ export type CreatorProfile = {
   categoryId: number | null
   followerCount: number
   links: CreatorLink[]
+  /**
+   * BE-LAND-09: whether the token's account follows this creator; `null`
+   * when the backend saw no valid token — then the visitor is anonymous.
+   */
+  viewerFollows: boolean | null
 }
 
 export type CreatorLink = {
