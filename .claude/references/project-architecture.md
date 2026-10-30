@@ -85,6 +85,6 @@ The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 - No git hooks, no commitlint, no CI, no Playwright/e2e layer.
 - `front-end/` is a separate git repository; review its diff from that directory.
 - Switch, checkbox and select primitives are missing (`FE-FND-05`, needs packages). `ui/dialog.tsx` has an English sr-only "Close" (`FE-FND-08`).
-- Fonts are **not** loaded from Google Fonts (a build-time fetch, and unreliable from Iran). The stack in `tailwind.config.ts` names `var(--font-brand)`, Ravi, Vazirmatn and falls back (brand face is `FQ-1`); self-host it with `next/font/local` when the files exist.
+- Fonts are **not** loaded from Google Fonts (a build-time fetch, and unreliable from Iran). The brand face is Vazirmatn (`FQ-1`), self-hosted from `public/fonts/vazirmatn/` with `next/font/local` in the locale layout, which sets `--font-brand` for the stack in `tailwind.config.ts`.
 - `npm audit`: 5 high-severity advisories, all dev-only and transitive through `eslint-config-next` → `fast-glob` → `micromatch` → `braces`, no fix in range. Do not `npm audit fix --force`.
 - `npx shadcn add` needs network access to `ui.shadcn.com`. If that is blocked, hand-write the component in the registry's shape (`data-slot`, `cn()` last, `cva` for variants) so a later `shadcn add` can still update it.
