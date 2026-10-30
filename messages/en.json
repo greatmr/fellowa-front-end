@@ -288,6 +288,50 @@
     "followFailed": "That didn't work. Try again.",
     "sessionExpired": "Your session ended. Sign in again."
   },
+  "settings": {
+    "account": {
+      "title": "Account",
+      "email": "Email",
+      "verified": "Verified",
+      "unverified": "Not verified"
+    },
+    "personal": {
+      "title": "Personal details",
+      "description": "Only you can see these.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Mobile number",
+      "phoneHint": "11 digits, starting with 09. Optional.",
+      "saved": "Your details were saved.",
+      "phonePlaceholder": "09121234567"
+    },
+    "password": {
+      "title": "Password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the new password",
+      "hint": "At least {min} characters.",
+      "submit": "Change password",
+      "changed": "Your password was changed."
+    },
+    "appearance": {
+      "title": "Appearance"
+    },
+    "validation": {
+      "firstNameLength": "At most {max} characters.",
+      "lastNameLength": "At most {max} characters.",
+      "phone": "Enter an 11-digit mobile number that starts with 09.",
+      "currentRequired": "Enter your current password.",
+      "newLength": "Use at least {min} characters.",
+      "mismatch": "The two passwords don't match.",
+      "wrongPassword": "That isn't your current password.",
+      "passwordTooLong": "At most {max} characters."
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "saveFailed": "That didn't save. Try again.",
+    "sessionExpired": "Your session ended. Sign in again."
+  },
   "publicLayout": {
     "home": "Fellowa home",
     "mainNav": "Main navigation",

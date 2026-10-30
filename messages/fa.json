@@ -288,6 +288,50 @@
     "followFailed": "انجام نشد. دوباره امتحان کن.",
     "sessionExpired": "نشستت تمام شده. دوباره وارد شو."
   },
+  "settings": {
+    "account": {
+      "title": "حساب کاربری",
+      "email": "ایمیل",
+      "verified": "تأییدشده",
+      "unverified": "تأییدنشده"
+    },
+    "personal": {
+      "title": "اطلاعات شخصی",
+      "description": "این اطلاعات فقط برای خودت نمایش داده می‌شود.",
+      "firstName": "نام",
+      "lastName": "نام خانوادگی",
+      "phone": "شماره موبایل",
+      "phoneHint": "۱۱ رقم و با ۰۹ شروع شود. اختیاری.",
+      "saved": "اطلاعاتت ذخیره شد.",
+      "phonePlaceholder": "۰۹۱۲۱۲۳۴۵۶۷"
+    },
+    "password": {
+      "title": "رمز عبور",
+      "currentPassword": "رمز عبور فعلی",
+      "newPassword": "رمز عبور جدید",
+      "confirmPassword": "تکرار رمز عبور جدید",
+      "hint": "حداقل {min} کاراکتر.",
+      "submit": "تغییر رمز عبور",
+      "changed": "رمز عبورت تغییر کرد."
+    },
+    "appearance": {
+      "title": "ظاهر"
+    },
+    "validation": {
+      "firstNameLength": "حداکثر {max} کاراکتر.",
+      "lastNameLength": "حداکثر {max} کاراکتر.",
+      "phone": "شماره موبایل باید ۱۱ رقم باشد و با ۰۹ شروع شود.",
+      "currentRequired": "رمز عبور فعلی را وارد کن.",
+      "newLength": "حداقل {min} کاراکتر وارد کن.",
+      "mismatch": "دو رمز عبور یکسان نیستند.",
+      "wrongPassword": "رمز عبور فعلی درست نیست.",
+      "passwordTooLong": "حداکثر {max} کاراکتر."
+    },
+    "save": "ذخیره",
+    "saving": "در حال ذخیره…",
+    "saveFailed": "ذخیره نشد. دوباره امتحان کن.",
+    "sessionExpired": "نشستت تمام شده. دوباره وارد شو."
+  },
   "publicLayout": {
     "home": "صفحه اصلی فلووا",
     "mainNav": "ناوبری اصلی",

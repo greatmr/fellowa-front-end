@@ -156,6 +156,19 @@ describe('follow server boundary (FE-PAGE-02)', () => {
     expect(calls).toEqual([])
   })
 
+  it('reports an unreachable session check as a failure, not an expiry', async () => {
+    server.use(
+      http.get(`${apiOrigin}/user/42/profile`, () => HttpResponse.error())
+    )
+
+    expect(await setFollowingAction({ creatorId: 4, follow: true })).toEqual({
+      ok: false,
+      code: 'SESSION_CHECK_FAILED',
+      isNetworkError: true,
+    })
+    expect(calls).toEqual([])
+  })
+
   it('refuses a cross-site request', async () => {
     request.origin = 'https://attacker.example'
 
