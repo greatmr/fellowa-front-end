@@ -399,7 +399,8 @@
       "steps": {
         "basics": {
           "label": "Choose your username",
-          "description": "Claim the username fans will find your page by."
+          "description": "Claim the username fans will find your page by.",
+          "action": "Choose a username"
         },
         "firstTier": {
           "label": "Create your first membership tier",
@@ -533,5 +534,66 @@
     "tagline": "A home for your creative work and the people who believe in it.",
     "copyright": "Fellowa · Made for creators and their communities.",
     "creators": "Creators"
+  },
+  "onboarding": {
+    "metaTitle": "Getting started | Fellowa",
+    "exit": "Back to studio",
+    "progress": "Step {current, number} of {total, number}",
+    "progressLabel": "Getting started steps",
+    "continue": "Continue",
+    "back": "Back",
+    "saving": "Saving…",
+    "errors": {
+      "saveFailed": "That did not save. Check your connection and try again.",
+      "sessionExpired": "Your session has ended.",
+      "signIn": "Sign in again"
+    },
+    "name": {
+      "title": "What is your name?",
+      "description": "This is private and only you can see it. You can change it later in settings.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "lastNameHint": "Optional",
+      "validation": {
+        "firstNameLength": "Your first name must be {min, number} to {max, number} characters.",
+        "lastNameLength": "Your last name can be at most {max, number} characters."
+      }
+    },
+    "username": {
+      "title": "Choose a username",
+      "description": "It is shown on your page, and fans can find you by searching for it.",
+      "label": "Username",
+      "placeholder": "yourname",
+      "hint": "{min, number} to {max, number} characters: English letters, numbers and underscore (_) only.",
+      "storedAs": "It will be saved as <handle>{alias}</handle>",
+      "taken": "This username cannot be used. Try another one.",
+      "rejected": "This username was not accepted. Try another one.",
+      "validation": {
+        "tooShort": "Your username must be at least {min, number} characters.",
+        "tooLong": "Your username can be at most {max, number} characters.",
+        "chars": "Use English letters, numbers and underscore (_) only."
+      }
+    },
+    "socials": {
+      "title": "Where do your fans follow you?",
+      "description": "Add your other pages so fans can be sure this page is really yours.",
+      "usernameSaved": "Your username was saved as <handle>{alias}</handle>",
+      "platforms": {
+        "instagram": "Instagram",
+        "youtube": "YouTube",
+        "x": "X"
+      },
+      "add": "Add",
+      "addLabel": "Add {platform}",
+      "remove": "Remove",
+      "removeLabel": "Remove {platform}",
+      "inputLabel": "{platform} address",
+      "placeholder": "handle",
+      "invalid": "That address does not look right.",
+      "saveRow": "Add {platform}",
+      "cancelRow": "Cancel",
+      "finish": "Finish",
+      "skip": "Skip for now"
+    }
   }
 }

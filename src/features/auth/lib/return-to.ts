@@ -6,6 +6,7 @@ const privatePaths = new Set([
   '/studio/tiers',
   '/studio/page',
   '/studio/payouts',
+  '/onboarding',
   '/memberships',
   '/settings',
   '/feed',

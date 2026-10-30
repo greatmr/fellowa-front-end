@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { safeReturnTo } from './return-to'
 
 describe('safeReturnTo', () => {
-  it.each(['/studio', '/studio/posts/new', '/memberships', '/settings'])(
-    'accepts existing private route %s',
-    (path) => expect(safeReturnTo(path)).toBe(path)
+  it.each([
+    '/studio',
+    '/studio/posts/new',
+    '/memberships',
+    '/settings',
+    '/onboarding',
+  ])('accepts existing private route %s', (path) =>
+    expect(safeReturnTo(path)).toBe(path)
   )
 
   it.each(['/en/studio/tiers', '/fa/studio/tiers'])(

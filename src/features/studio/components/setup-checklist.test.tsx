@@ -80,7 +80,10 @@ describe('SetupChecklist (FE-STUDIO-01, CP-01 / CP-04)', () => {
       'href',
       '/en/studio/posts/new'
     )
-    expect(screen.getAllByRole('link')).toHaveLength(2)
+    expect(
+      screen.getByRole('link', { name: 'Choose a username' })
+    ).toHaveAttribute('href', '/en/onboarding')
+    expect(screen.getAllByRole('link')).toHaveLength(3)
   })
 
   it('holds the publish button back until there is a username, then a tier', () => {

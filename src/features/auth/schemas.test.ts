@@ -1,11 +1,49 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  createAliasSchema,
   createCredentialsSchema,
   createForgotPasswordSchema,
   createResetPasswordSchema,
   createVerificationSchema,
+  normalizeAlias,
 } from './schemas'
+
+describe('alias schema (BE-USER-04)', () => {
+  const parse = (alias: string) => createAliasSchema().safeParse({ alias })
+  const firstError = (alias: string) => parse(alias).error?.issues[0]?.message
+
+  it.each(['abc', 'Studio', 'a_b_9', 'A'.repeat(30)])('accepts %s', (alias) => {
+    expect(parse(alias).success).toBe(true)
+  })
+
+  it('checks the trimmed value and keeps its case', () => {
+    expect(parse('  Studio ').data).toEqual({ alias: 'Studio' })
+    expect(firstError('  a ')).toBe('aliasTooShort')
+  })
+
+  it('names the rule that failed', () => {
+    expect(firstError('')).toBe('aliasTooShort')
+    expect(firstError('ab')).toBe('aliasTooShort')
+    expect(firstError('a'.repeat(31))).toBe('aliasTooLong')
+    expect(firstError('bad-name')).toBe('aliasChars')
+    expect(firstError('bad name')).toBe('aliasChars')
+  })
+
+  it.each([
+    ['Persian letters', 'نام_من'],
+    ['Persian digits', '۱۲۳۴'],
+    ['Arabic digits', '١٢٣٤'],
+    ['a mix with Persian digits', 'studio۱'],
+    ['a character that lowercases to ASCII', 'stu\u212Adio'],
+  ])('refuses %s', (_name, alias) => {
+    expect(firstError(alias)).toBe('aliasChars')
+  })
+
+  it('shows what the backend stores', () => {
+    expect(normalizeAlias(' Studio_9 ')).toBe('studio_9')
+  })
+})
 
 describe('authentication schemas', () => {
   it('trims only email and preserves its case and password whitespace', () => {

@@ -2,7 +2,7 @@
 
 import { z } from 'zod'
 
-import { readSession, validAuthRequestOrigin } from '@/features/auth/server'
+import { authorizedViewerToken } from '@/features/auth/server'
 import {
   changePassword,
   updatePersonal,
@@ -34,31 +34,7 @@ const passwordSchema = z.object({
   newPassword: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
 })
 
-/**
- * Settings mutations (FE-SET-01) act only on the signed-in account: origin
- * check, a validated session, and the viewer id the page rendered for — a
- * different account in the cookie is refused rather than edited.
- */
-async function authorizedToken(
-  viewerId: number
-): Promise<ApiActionResult<string>> {
-  if (!(await validAuthRequestOrigin())) {
-    return { ok: false, status: 403, code: 'INVALID_REQUEST' }
-  }
-  let session: Awaited<ReturnType<typeof readSession>>
-  try {
-    session = await readSession()
-  } catch {
-    // The session could not be checked (API down), which is not an expiry.
-    return { ok: false, code: 'SESSION_CHECK_FAILED', isNetworkError: true }
-  }
-  if (!session) return { ok: false, status: 401, code: 'SESSION_EXPIRED' }
-  if (session.user.id !== viewerId) {
-    return { ok: false, status: 401, code: 'SESSION_CHANGED' }
-  }
-  return { ok: true, data: session.token }
-}
-
+/** Settings mutations (FE-SET-01) act only on the signed-in account. */
 export async function updatePersonalAction(
   viewerId: number,
   input: PersonalDetails
@@ -66,7 +42,7 @@ export async function updatePersonalAction(
   const parsed = personalSchema.safeParse(input)
   if (!parsed.success)
     return { ok: false, status: 400, code: 'INVALID_REQUEST' }
-  const token = await authorizedToken(viewerId)
+  const token = await authorizedViewerToken(viewerId)
   if (!token.ok) return token
   return runApiAction(async () => {
     await updatePersonal(token.data, parsed.data)
@@ -81,7 +57,7 @@ export async function changePasswordAction(
   const parsed = passwordSchema.safeParse(input)
   if (!parsed.success)
     return { ok: false, status: 400, code: 'INVALID_REQUEST' }
-  const token = await authorizedToken(viewerId)
+  const token = await authorizedViewerToken(viewerId)
   if (!token.ok) return token
   return runApiAction(async () => {
     await changePassword(token.data, parsed.data)

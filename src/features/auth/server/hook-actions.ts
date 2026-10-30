@@ -24,6 +24,7 @@ import {
   type AuthSession,
 } from '@/features/auth/server/session'
 import {
+  createAliasSchema,
   createCredentialsSchema,
   createForgotPasswordSchema,
   createResetPasswordSchema,
@@ -39,7 +40,7 @@ import type {
 } from '@/features/auth/types'
 import { ApiError } from '@/lib/api/errors'
 
-const aliasSchema = z.object({ alias: z.string().min(3).max(255) })
+const aliasSchema = createAliasSchema()
 const changePasswordSchema = z.object({
   currentPassword: z.string(),
   newPassword: z.string().min(8),
