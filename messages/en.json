@@ -126,25 +126,150 @@
     "networkBody": "Check your internet connection and try again.",
     "backHome": "Back to home"
   },
-  "home": {
-    "eyebrow": "Create with your community",
-    "title": "Your creativity. Your people. Your own space.",
-    "description": "Fellowa brings your work and your supporters together around a page that is yours. Build closer connections with the people who value what you create.",
-    "studioCta": "Explore the studio",
-    "learnMore": "Discover Fellowa",
-    "whyTitle": "Why Fellowa?",
-    "whyBody": "Creative work grows through meaningful relationships. A dedicated home makes room for your voice, your work, and the people who want to be part of it.",
-    "whyNote": "A place to create, share, and grow together.",
-    "featuresTitle": "Built around your creative work",
-    "featuresBody": "The Fellowa experience brings these ideas together in one place.",
-    "pageTitle": "Your own page",
-    "pageBody": "A dedicated space to introduce yourself, share your story, and bring your creative work together.",
-    "membershipTitle": "A closer community",
-    "membershipBody": "Membership brings creators and their supporters together around shared interests and creative work.",
-    "contentTitle": "A home for your content",
-    "contentBody": "Give your ideas room to grow through writing, audio, images, and the stories behind your work.",
-    "closingTitle": "Make space for what you create",
-    "closingBody": "Take a look around the creator studio."
+  "landing": {
+    "metaTitle": "Fellowa | Support and membership platform for creators",
+    "sample": {
+      "label": "Illustrative example",
+      "perMonth": "Toman / month",
+      "join": "Join"
+    },
+    "hero": {
+      "eyebrow": "A dedicated membership platform for Iranian content creators",
+      "title": "Turn your creativity <br></br>into <highlight>your working capital</highlight>",
+      "description": "Build a page where your fans support you with a monthly membership, reach your exclusive content and stay in direct touch with you.",
+      "cta": "Build your page",
+      "music": {
+        "tag": "Musician",
+        "price": "120,000",
+        "benefit1": "Download exclusive tracks in studio quality",
+        "benefit2": "Demo versions and behind the scenes of each track"
+      },
+      "designer": {
+        "tag": "Designer and illustrator",
+        "price": "80,000",
+        "benefit1": "Source files and layered artwork",
+        "benefit2": "Step-by-step lessons in design techniques",
+        "benefit3": "Access to a private gallery of work in progress"
+      }
+    },
+    "features": {
+      "support": {
+        "eyebrow": "Support",
+        "title": "A simple way to receive support",
+        "text": "Build a dedicated page where your fans can find you and support you. This page is the first step in turning casual followers into real fans.",
+        "action": "Support"
+      },
+      "tiers": {
+        "eyebrow": "Membership",
+        "title": "Set up memberships your way",
+        "text": "Define several membership levels with the prices and benefits you choose, from behind-the-scenes content to private chat. Each fan picks the level that is worth it to them.",
+        "basic": {
+          "name": "Basic tier",
+          "price": "50,000"
+        },
+        "pro": {
+          "name": "Pro tier",
+          "price": "120,000"
+        },
+        "special": {
+          "name": "Special tier",
+          "price": "250,000"
+        }
+      },
+      "content": {
+        "eyebrow": "Content",
+        "title": "Publish different kinds of content",
+        "text": "Publish images, video, audio and writing on one page. No more spreading yourself across several apps; everything is in the place your members already know.",
+        "photoCaption": "Peaks of colour 👀",
+        "postTitle": "Early access",
+        "postBody": "See this week's full episode a day before everyone else!",
+        "locked": "Locked",
+        "audioTitle": "Episode 12 — Behind the scenes",
+        "timeStart": "0:00",
+        "timeEnd": "55:08",
+        "skip": "15"
+      },
+      "chat": {
+        "eyebrow": "Connection",
+        "title": "Nothing stands between you and your fans",
+        "text": "Whatever you publish goes straight to your members, and private chat lets you talk with them more closely.",
+        "fanMessage": "Your new song was amazing 👏",
+        "creatorMessage": "Thanks! I'll post the full version for special members tomorrow",
+        "newMemberTitle": "A new member joined",
+        "newMemberDetail": "Special tier · just now"
+      }
+    },
+    "compare": {
+      "title": "Why Fellowa?",
+      "description": "How today's methods compare with what Fellowa builds for you",
+      "featureHeader": "Features",
+      "currentHeader": "Current methods",
+      "fellowaHeader": "Fellowa",
+      "page": {
+        "feature": "Dedicated page",
+        "current": "Manual and scattered",
+        "fellowa": "All in one place"
+      },
+      "tier": {
+        "feature": "Membership tiers",
+        "current": "Takes a lot of coordination",
+        "fellowa": "Configurable"
+      },
+      "locked": {
+        "feature": "Locked content",
+        "current": "No clear panel",
+        "fellowa": "Tier-based access"
+      },
+      "payment": {
+        "feature": "Payment",
+        "current": "Relies on DMs and receipts",
+        "fellowa": "Through a payment gateway"
+      },
+      "members": {
+        "feature": "Member management",
+        "current": "Hard to manage",
+        "fellowa": "Central and organised"
+      },
+      "contact": {
+        "feature": "Fan contact",
+        "current": "Scattered messages",
+        "fellowa": "Structured"
+      },
+      "revenue": {
+        "feature": "Income tracking",
+        "current": "No dashboard",
+        "fellowa": "Clear and traceable"
+      },
+      "experience": {
+        "feature": "Professional experience",
+        "current": "Inconsistent",
+        "fellowa": "Unified and branded"
+      }
+    },
+    "trust": {
+      "title": "Clear, simple and easy to follow",
+      "control": {
+        "title": "Creators control their page",
+        "text": "You manage your page's members and communication tools yourself."
+      },
+      "receipt": {
+        "title": "Clear receipts and membership status",
+        "text": "Each member's payment, membership period and access level can always be seen and followed up."
+      },
+      "benefits": {
+        "title": "Benefits are clear before paying",
+        "text": "Before joining, a fan can see what benefits each tier has."
+      },
+      "iran": {
+        "title": "Designed for Iran",
+        "text": "The Persian language, payment in Toman and the real needs of Iranian creators are the basis of Fellowa's design."
+      }
+    },
+    "finalCta": {
+      "title": "Your world, made for creating",
+      "cta": "Get started",
+      "login": "Have an account? <link>Log in</link>"
+    }
   },
   "theme": {
     "label": "Appearance",

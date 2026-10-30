@@ -1,14 +1,20 @@
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { HomeIntroduction } from '@/features/landing/components/home-introduction'
+import { LandingPage } from '@/features/landing/components/landing-page'
 
-export default async function HomePage({
-  params,
-}: {
+type Props = {
   params: Promise<{ locale: string }>
-}) {
+}
+
+export async function generateMetadata({ params }: Props) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'landing' })
+  return { title: t('metaTitle') }
+}
+
+export default async function HomePage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <HomeIntroduction />
+  return <LandingPage />
 }
