@@ -7,3 +7,4 @@ export {
   type AuthSession,
 } from '@/features/auth/server/session'
 export { validAuthRequestOrigin } from '@/features/auth/server/request-security'
+export { authorizedViewerToken } from '@/features/auth/server/viewer-token'

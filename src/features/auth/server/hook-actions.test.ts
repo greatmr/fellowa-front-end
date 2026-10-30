@@ -107,7 +107,7 @@ beforeEach(() => {
     http.put(`${apiOrigin}/auth/alias`, async ({ request: upstream }) => {
       upstreamCalls++
       expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
-      expect(await upstream.json()).toEqual({ alias: 'creator-name' })
+      expect(await upstream.json()).toEqual({ alias: 'creator_name' })
       return HttpResponse.json({
         data: { message: 'Alias set successfully' },
         errors: null,
@@ -181,12 +181,25 @@ describe('auth hook server boundary', () => {
       ok: true,
       data: null,
     })
-    expect(await setAliasForHook({ alias: 'creator-name' })).toEqual({
+    expect(await setAliasForHook({ alias: 'creator_name' })).toEqual({
       ok: true,
       data: null,
     })
     expect(upstreamCalls).toBe(5)
   })
+
+  it.each(['ab', 'a'.repeat(31), 'creator-name', 'نام_کاربری', '۱۲۳۴'])(
+    'refuses the alias %s before it reaches the API',
+    async (alias) => {
+      request.cookies.set(sessionCookieName, token())
+      expect(await setAliasForHook({ alias })).toEqual({
+        ok: false,
+        status: 400,
+        code: 'INVALID_REQUEST',
+      })
+      expect(upstreamCalls).toBe(0)
+    }
+  )
 
   it('rejects missing sessions before protected mutations and clears the cookie on logout', async () => {
     expect(

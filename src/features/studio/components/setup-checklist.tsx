@@ -29,11 +29,12 @@ const STEP_ICONS: Record<SetupStepId, LucideIcon> = {
 }
 
 /**
- * Steps whose screen exists link to it. "Basics" and "payout" have no editing
- * screen yet (FE-ONB-01 and FE-PAYOUT-01 are blocked), so they show state
- * only — never a button that leads nowhere.
+ * Steps whose screen exists link to it. "Payout" has no editing screen yet
+ * (FE-PAYOUT-01 is blocked), so it shows state only — never a button that
+ * leads nowhere.
  */
 const STEP_HREFS: Partial<Record<SetupStepId, string>> = {
+  basics: '/onboarding',
   firstTier: '/studio/tiers',
   firstPost: '/studio/posts/new',
 }

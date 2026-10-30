@@ -48,3 +48,39 @@ export function createVerificationSchema(
 ) {
   return z.object({ code: z.string().regex(/^\d{6}$/, messages.code) })
 }
+
+/** The backend's alias rules (`alias-rules.ts`, BE-USER-04; CP-02 [DOC]). */
+export const ALIAS_MIN_LENGTH = 3
+export const ALIAS_MAX_LENGTH = 30
+
+export type AliasValidationMessages = {
+  tooShort: string
+  tooLong: string
+  chars: string
+}
+
+/**
+ * One schema for the form and the server action. Only trimmed: the case is the
+ * backend's to normalize, and the charset check has to see the typed value.
+ */
+export function createAliasSchema(
+  messages: AliasValidationMessages = {
+    tooShort: 'aliasTooShort',
+    tooLong: 'aliasTooLong',
+    chars: 'aliasChars',
+  }
+) {
+  return z.object({
+    alias: z
+      .string()
+      .trim()
+      .min(ALIAS_MIN_LENGTH, messages.tooShort)
+      .max(ALIAS_MAX_LENGTH, messages.tooLong)
+      .regex(/^[A-Za-z0-9_]+$/, messages.chars),
+  })
+}
+
+/** What the backend stores for a valid alias: `Studio` reads back `studio`. */
+export function normalizeAlias(alias: string): string {
+  return alias.trim().toLowerCase()
+}

@@ -399,7 +399,8 @@
       "steps": {
         "basics": {
           "label": "نام کاربری خود را انتخاب کنید",
-          "description": "نام کاربری‌ای را بگیرید که مخاطبان با آن صفحه‌تان را پیدا می‌کنند."
+          "description": "نام کاربری‌ای را بگیرید که مخاطبان با آن صفحه‌تان را پیدا می‌کنند.",
+          "action": "انتخاب نام کاربری"
         },
         "firstTier": {
           "label": "اولین پلن عضویت را بسازید",
@@ -532,5 +533,66 @@
     "tagline": "خانه‌ای برای آثار خلاقانه و آدم‌هایی که به آن‌ها باور دارند.",
     "copyright": "فلووا · برای سازندگان و همراهانشان",
     "creators": "کریتورها"
+  },
+  "onboarding": {
+    "metaTitle": "شروع کار | فلووا",
+    "exit": "بازگشت به استودیو",
+    "progress": "قدم {current, number} از {total, number}",
+    "progressLabel": "مراحل شروع کار",
+    "continue": "ادامه",
+    "back": "برگشت",
+    "saving": "در حال ذخیره…",
+    "errors": {
+      "saveFailed": "ذخیره نشد. اتصالت را بررسی کن و دوباره امتحان کن.",
+      "sessionExpired": "نشستت تمام شده.",
+      "signIn": "دوباره وارد شو"
+    },
+    "name": {
+      "title": "اسمت چیست؟",
+      "description": "این اطلاعات خصوصی است و فقط خودت آن را می‌بینی. بعداً هم از تنظیمات قابل تغییر است.",
+      "firstName": "نام",
+      "lastName": "نام خانوادگی",
+      "lastNameHint": "اختیاری",
+      "validation": {
+        "firstNameLength": "نام باید بین {min, number} تا {max, number} حرف باشد.",
+        "lastNameLength": "نام خانوادگی حداکثر {max, number} حرف است."
+      }
+    },
+    "username": {
+      "title": "یک نام کاربری انتخاب کن",
+      "description": "این نام در صفحه‌ات نشان داده می‌شود و هوادارها می‌توانند با جست‌وجوی آن پیدایت کنند.",
+      "label": "نام کاربری",
+      "placeholder": "yourname",
+      "hint": "{min, number} تا {max, number} کاراکتر؛ فقط حروف انگلیسی، عدد و زیرخط (_).",
+      "storedAs": "به این شکل ذخیره می‌شود: <handle>{alias}</handle>",
+      "taken": "این نام کاربری قابل انتخاب نیست. نام دیگری امتحان کن.",
+      "rejected": "این نام کاربری پذیرفته نشد. نام دیگری امتحان کن.",
+      "validation": {
+        "tooShort": "نام کاربری باید حداقل {min, number} کاراکتر باشد.",
+        "tooLong": "نام کاربری حداکثر {max, number} کاراکتر است.",
+        "chars": "فقط حروف انگلیسی، عدد و زیرخط (_)."
+      }
+    },
+    "socials": {
+      "title": "هوادارهایت کجا دنبالت می‌کنند؟",
+      "description": "صفحه‌هایت را اضافه کن تا هوادارها مطمئن شوند این صفحه واقعاً مال توست.",
+      "usernameSaved": "نام کاربری‌ات ذخیره شد: <handle>{alias}</handle>",
+      "platforms": {
+        "instagram": "اینستاگرام",
+        "youtube": "یوتیوب",
+        "x": "ایکس"
+      },
+      "add": "افزودن",
+      "addLabel": "افزودن {platform}",
+      "remove": "حذف",
+      "removeLabel": "حذف {platform}",
+      "inputLabel": "نشانی {platform}",
+      "placeholder": "handle",
+      "invalid": "این آدرس درست نیست.",
+      "saveRow": "ثبت {platform}",
+      "cancelRow": "انصراف",
+      "finish": "پایان",
+      "skip": "فعلاً رد شو"
+    }
   }
 }
