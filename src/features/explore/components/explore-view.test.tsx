@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type * as NextNavigation from 'next/navigation'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -12,7 +13,8 @@ import type {
 import type { ApiActionResult } from '@/lib/api/action-result'
 import { renderWithIntl } from '../../../../test/render'
 
-vi.mock('next/navigation', () => ({
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof NextNavigation>()),
   useSearchParams: () => new URLSearchParams(window.location.search),
 }))
 
@@ -110,6 +112,14 @@ describe('ExploreView', () => {
     expect(screen.getByText('1,200').closest('p')).toHaveTextContent(
       '1,200 followers'
     )
+  })
+
+  it("links each card to the creator's public page", async () => {
+    action.list.mockResolvedValue(page([creator(4, { alias: 'dana' })]))
+    renderView({ viewerId: null })
+
+    const card = await screen.findByRole('link', { name: /dana/ })
+    expect(card.getAttribute('href')).toMatch(/\/creators\/4$/)
   })
 
   it('formats counts with Persian digits in fa', async () => {
@@ -275,6 +285,22 @@ describe('ExploreView', () => {
           page: 1,
         })
       )
+    })
+
+    it('keeps the selected category while typing a search', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      window.history.replaceState(null, '', '/explore?category=2')
+      const replace = vi.spyOn(window.history, 'replaceState')
+      action.list.mockResolvedValue(page([creator(4)]))
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderView({ viewerId: null })
+
+      await user.type(screen.getByRole('searchbox'), 'da')
+      await act(() => vi.advanceTimersByTimeAsync(300))
+
+      const url = new URL(String(replace.mock.lastCall?.[2]))
+      expect(url.searchParams.get('q')).toBe('da')
+      expect(url.searchParams.get('category')).toBe('2')
     })
 
     it("labels each card with its category's title", async () => {

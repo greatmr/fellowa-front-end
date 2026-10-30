@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { getSession } from '@/features/auth/server/session'
-import { loadExploreCategories } from '@/features/explore/server/categories'
+import { loadExploreCategories } from '@/features/explore/server'
 import { ExploreView } from '@/features/explore/components/explore-view'
 
 export default async function Page({

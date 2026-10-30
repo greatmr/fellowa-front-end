@@ -6,6 +6,7 @@ import type {
   ExploreCreatorPage,
 } from '@/features/explore/types/creator'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { httpUrlOrNull } from '@/lib/url'
 
 export const MAX_ALIAS_SEARCH_LENGTH = 255
 
@@ -22,17 +23,6 @@ const id = z.number().int().positive().safe()
  * object key the backend returns when storage is not configured) becomes
  * `null` for that field instead of failing the whole page.
  */
-function httpUrlOrNull(value: string | null): string | null {
-  if (value === null) return null
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' || url.protocol === 'http:'
-      ? url.href
-      : null
-  } catch {
-    return null
-  }
-}
 const imageUrl = z.string().nullable().transform(httpUrlOrNull)
 
 // ---- Raw response (BE-LAND-06: `PublicProfile`, plus `numFollowers` on /top)

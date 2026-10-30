@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Suspense } from 'react'
 
-import { loadExploreCategories } from '@/features/explore/server/categories'
+import { loadExploreCategories } from '@/features/explore/server'
 import { ExploreView } from '@/features/explore/components/explore-view'
 
 /**
