@@ -174,11 +174,14 @@
 
 /* Override Sonner's bundled palette using the same light/dark semantic tokens.
  * The element qualifier keeps these aliases ahead of Sonner's theme selectors.
+ * The default surface is the presentation's toast (`ui/Toast` @ efc3a57): an
+ * inverse pill whose tone is carried by the icon (`ui/sonner.tsx`), not the
+ * background. The tone variables below only apply to an explicit `richColors`.
  */
 html .toaster[data-sonner-toaster] {
-  --normal-bg: var(--popover);
-  --normal-text: var(--popover-foreground);
-  --normal-border: var(--border);
+  --normal-bg: var(--inverse);
+  --normal-text: var(--inverse-foreground);
+  --normal-border: var(--inverse);
   --success-bg: var(--success-subtle);
   --success-text: var(--success-emphasis);
   --success-border: var(--status-success-border);
@@ -193,6 +196,52 @@ html .toaster[data-sonner-toaster] {
   --info-border: var(--status-info-border);
   --border-radius: --theme(--radius-base);
   font-family: inherit;
+}
+
+/* Presentation toast metrics: px-4 py-3, gap 2.5, body type, medium weight,
+ * panel elevation. Sonner sets these on the toast itself (unlayered), so they
+ * are overridden here rather than through `toastOptions.classNames`.
+ */
+html .toaster[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+  gap: --spacing(2.5);
+  padding: --spacing(3) --spacing(4);
+  font-size: --theme(--text-body);
+  line-height: --theme(--text-body--line-height);
+  font-weight: --theme(--font-weight-medium);
+  box-shadow: --theme(--shadow-panel);
+
+  /* The override above would otherwise also replace Sonner's focus ring. */
+  &:focus-visible {
+    box-shadow:
+      --theme(--shadow-panel),
+      0 0 0 --spacing(0.5) var(--ring);
+  }
+
+  /* Sonner's own colours for these assume a light surface; on the inverse
+   * surface they would be unreadable, so derive them from the same pair. */
+  & [data-description] {
+    color: inherit;
+  }
+  & [data-close-button] {
+    background: var(--normal-bg);
+    border-color: var(--normal-border);
+    color: var(--normal-text);
+  }
+  & [data-close-button]:hover {
+    background: color-mix(in oklab, var(--normal-bg), var(--normal-text) 15%);
+    border-color: color-mix(
+      in oklab,
+      var(--normal-border),
+      var(--normal-text) 15%
+    );
+  }
+  & [data-button]:focus-visible,
+  & [data-close-button]:focus-visible {
+    box-shadow: 0 0 0 --spacing(0.5) var(--ring);
+  }
+  & [data-cancel] {
+    background: color-mix(in oklab, var(--normal-text) 15%, transparent);
+  }
 }
 
 /* Fade the end of a teaser so it reads as cut off (gated posts). */

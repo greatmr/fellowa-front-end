@@ -21,7 +21,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <DirectionProvider dir={direction}>
         <QueryProvider>
           {children}
-          <Toaster position="top-center" richColors />
+          <Toaster />
         </QueryProvider>
       </DirectionProvider>
     </ThemeProvider>
