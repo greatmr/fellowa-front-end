@@ -2,11 +2,14 @@ import { type ClassValue, clsx } from 'clsx'
 import { extendTailwindMerge } from 'tailwind-merge'
 
 import {
+  animation,
   backgroundImage,
+  blur,
   borderRadius,
   boxShadow,
   fontSize,
   maxWidth,
+  transitionTimingFunction,
 } from '../../tailwind.config'
 
 /**
@@ -23,6 +26,10 @@ const twMerge = extendTailwindMerge({
       rounded: [{ rounded: Object.keys(borderRadius) }],
       'bg-image': [{ bg: Object.keys(backgroundImage) }],
       'max-w': [{ 'max-w': Object.keys(maxWidth) }],
+      animate: [{ animate: Object.keys(animation) }],
+      ease: [{ ease: Object.keys(transitionTimingFunction) }],
+      blur: [{ blur: Object.keys(blur) }],
+      'backdrop-blur': [{ 'backdrop-blur': Object.keys(blur) }],
     },
   },
 })

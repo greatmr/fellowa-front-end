@@ -81,13 +81,16 @@ Weights as in the presentation: `font-medium` 500, `font-semibold` 600, `font-bo
 ### Radius, shadow, gradient, motion
 
 - `--radius: 0.625rem` → `rounded-sm` 6 · `rounded-md` **8** · `rounded-lg` 10 · `rounded-xl` 14 · `rounded-card` 20. The presentation's dominant `rounded-[8px]` (controls and cards) is `rounded-md`.
-- Shadows: Tailwind defaults (`shadow-xs` is the presentation's workhorse) plus `shadow-soft`, `shadow-panel` (sheets, popovers, floating panels), `shadow-brand` (glow under a primary CTA).
+- Shadows: Tailwind defaults (`shadow-xs` is the presentation's workhorse) plus `shadow-soft`, `shadow-panel` (sheets, popovers, floating panels), `shadow-brand` (glow under a primary CTA), `shadow-lift` / `shadow-lift-dark` (interactive-card hover, via `card-tactile`). A filled button's default variant adds `hover:shadow-sm`: a caller that sets its own `shadow-*` also sets the matching `hover:shadow-*`.
+- Radii: also `rounded-popover` (12px; popovers and the toast).
+- Blur: `backdrop-blur-overlay` (2px, sheet overlay).
 - Gradients: `bg-cover-brand`, `bg-cover-violet`, `bg-cover-mix` (also the logo mark).
-- Animations: `animate-shimmer`, `animate-toast-in`, `animate-pop-in`, `animate-check-draw` (with `check-path`), `animate-shake` (form error). Radix state animations from `tw-animate-css` (`data-[state=open]:animate-in` …) stay preferred for overlays. A global `prefers-reduced-motion` rule shortens every animation and transition.
+- Timing functions: `ease-spring`, `ease-smooth`, `ease-out-quad`, `ease-bounce` (in CSS: `--theme(--ease-smooth)`); no inline `cubic-bezier` anywhere else.
+- Animations (retimed to presentation `efc3a57`, FE-FND-10): `animate-shimmer`, `animate-toast-in` (no consumer yet: Sonner keeps its own entry transition), `animate-pop-in`, `animate-check-draw` (with `check-path`), `animate-shake` (form error), `animate-page-enter` (route content; CSS, not the `motion` package), `animate-pulse-subtle`, `animate-badge-pop`. Radix state animations from `tw-animate-css` (`data-[state=open]:animate-in` …) stay preferred for overlays. A global `prefers-reduced-motion` rule shortens every animation and transition.
 
 ### Utilities (`globals.css`)
 
-`teaser-fade` (fade-out mask on a gated teaser) · `no-scrollbar` · `scrollbar-thin` (theme-aware) · `skeleton-shimmer` (used by `ui/skeleton`) · `check-path` · `.numeric` (tabular numerals for money and counts; opt-in).
+`teaser-fade` (fade-out mask on a gated teaser) · `no-scrollbar` · `scrollbar-thin` (theme-aware) · `skeleton-shimmer` (used by `ui/skeleton`) · `check-path` · `btn-tactile` (press scale .97, on every button) · `card-tactile` (hover lift on pointer devices; a caller `transition-*` class replaces its transition) · `.numeric` (tabular numerals for money and counts; opt-in).
 
 ## Brand deltas from the registry
 
@@ -95,12 +98,12 @@ Re-apply these after any `shadcn add --overwrite`.
 
 | File | Delta | Why |
 |---|---|---|
-| `ui/button.tsx` | `font-semibold`; sizes `sm` h-9 `text-label`, `default` h-10, `lg` h-12 `text-subtitle`, `icon` size-10, **+`icon-sm`** size-9; `link` uses `text-link`; **+`inverse`**, **+`success`** variants | presentation `Button` sizes and variants |
+| `ui/button.tsx` | `font-semibold`; sizes `sm` h-9 `text-label`, `default` h-10, `lg` h-12 `text-subtitle`, `icon` size-10, **+`icon-sm`** size-9; `link` uses `text-link`; **+`inverse`**, **+`success`** variants; base `btn-tactile` instead of `transition-all`; `default` adds `hover:shadow-sm` | presentation `Button` sizes and variants; press feedback @ `efc3a57` (FE-FND-10) |
 | `ui/badge.tsx` | `px-2.5 text-label font-semibold`; **+tones** `brand violet money amber red neutral` | presentation `Badge` |
 | `ui/input.tsx` | `h-10` | presentation `Input` |
-| `ui/card.tsx` | `rounded-md` (8px), `shadow-xs` | presentation `Card` |
+| `ui/card.tsx` | `rounded-md` (8px), `shadow-xs`; **+`interactive`** prop (`card-tactile cursor-pointer`) | presentation `Card` (`interactive` @ `efc3a57`, FE-FND-10) |
 | `ui/skeleton.tsx` | `skeleton-shimmer` instead of `animate-pulse` | presentation `.skeleton` |
-| `ui/sheet.tsx` | logical `side` (`start`/`end`/`top`/`bottom`, default `end`); required `closeLabel` prop instead of English "Close"; card surface, `shadow-panel` | RTL and i18n hard rules |
+| `ui/sheet.tsx` | logical `side` (`start`/`end`/`top`/`bottom`, default `end`); required `closeLabel` prop instead of English "Close"; card surface, `shadow-panel`; overlay `backdrop-blur-overlay` + 200ms fade; panel `ease-out`, 250ms in / 200ms out | RTL and i18n hard rules; timing @ `efc3a57` (FE-FND-10) |
 | `ui/dialog.tsx` | **pending FE-FND-08:** still renders English "Close" | — |
 | `ui/sonner.tsx` | defaults `position="bottom-center"`, `duration={3200}`, tone `icons` (lucide `CircleCheck`/`CircleAlert`/`Info`/`TriangleAlert`, tints `money-500`·`red-500`·`brand-400`·`amber-500`; `dark:` `money-600`/`amber-700` for ≥3:1 on the white surface) merged under any caller `icons`; i18n region/close labels; the inverse surface, metrics, focus rings, description, close/cancel colours are in `globals.css` (`html .toaster[data-sonner-toaster] …`) — `richColors` stays an opt-in | presentation `ui/Toast` @ `efc3a57` (FE-FND-06) |
 

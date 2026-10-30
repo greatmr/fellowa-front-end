@@ -134,6 +134,8 @@ export const borderRadius = {
   base: '0.625rem',
   /** Large media and profile cards (presentation `--radius-card`). */
   card: '1.25rem',
+  /** Popovers and the toast (presentation `rounded-[12px]`, efc3a57). */
+  popover: '0.75rem',
 } as const
 
 /** Shared shell dimensions, measured from the presentation's studio frame. */
@@ -154,6 +156,35 @@ export const boxShadow = {
   panel: '0 24px 60px -24px rgb(16 16 16 / 0.30)',
   /** Glow under a primary call to action. */
   brand: '0 10px 30px rgb(32 80 192 / 0.30)',
+  /** Hover lift of an interactive card (`card-tactile`), light and dark. */
+  lift: '0 8px 24px -12px rgb(16 16 16 / 0.12)',
+  'lift-dark': '0 8px 24px -12px rgb(0 0 0 / 0.45)',
+} as const
+
+/** Overlay backdrop blur (presentation `Sheet`, efc3a57). */
+export const blur = {
+  overlay: '2px',
+} as const
+
+/** Named timing functions (presentation `--ease-*`, efc3a57). */
+export const transitionTimingFunction = {
+  spring: 'cubic-bezier(.175, .885, .32, 1.275)',
+  smooth: 'cubic-bezier(.16, 1, .3, 1)',
+  'out-quad': 'cubic-bezier(.25, .46, .45, .94)',
+  bounce: 'cubic-bezier(.34, 1.56, .64, 1)',
+} as const
+
+const ease = transitionTimingFunction
+
+export const animation = {
+  shimmer: 'shimmer 1.6s linear infinite',
+  'toast-in': `toast-in .26s ${ease.smooth}`,
+  'pop-in': `pop-in .18s ${ease.smooth}`,
+  'check-draw': 'check-draw .35s ease-out forwards',
+  shake: 'shake 200ms ease-in-out',
+  'page-enter': `page-enter .24s ${ease.smooth} forwards`,
+  'pulse-subtle': 'pulse-subtle 2.2s ease-in-out infinite',
+  'badge-pop': `badge-pop .3s ${ease.spring}`,
 } as const
 
 export const backgroundImage = {
@@ -208,18 +239,33 @@ const config = {
       maxWidth,
       boxShadow,
       backgroundImage,
+      blur,
+      transitionTimingFunction,
       keyframes: {
         shimmer: {
           '0%': { backgroundPosition: '-400px 0' },
           '100%': { backgroundPosition: '400px 0' },
         },
         'toast-in': {
-          from: { opacity: '0', transform: 'translateY(10px) scale(.97)' },
+          from: { opacity: '0', transform: 'translateY(12px) scale(.95)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         'pop-in': {
-          from: { opacity: '0', transform: 'translateY(6px)' },
+          from: { opacity: '0', transform: 'translateY(6px) scale(.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'page-enter': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'pulse-subtle': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '.75', transform: 'scale(.96)' },
+        },
+        'badge-pop': {
+          '0%': { opacity: '0', transform: 'scale(.85)' },
+          '60%': { opacity: '1', transform: 'scale(1.08)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
         'check-draw': {
           from: { strokeDashoffset: '24' },
@@ -231,13 +277,7 @@ const config = {
           '40%, 80%': { transform: 'translateX(6px)' },
         },
       },
-      animation: {
-        shimmer: 'shimmer 1.6s linear infinite',
-        'toast-in': 'toast-in .28s cubic-bezier(.2, .9, .3, 1.2)',
-        'pop-in': 'pop-in .18s ease-out',
-        'check-draw': 'check-draw .45s .1s ease-out forwards',
-        shake: 'shake 200ms ease-in-out',
-      },
+      animation,
     },
   },
 } satisfies Config

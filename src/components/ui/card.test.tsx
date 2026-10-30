@@ -14,6 +14,23 @@ import {
 } from '@/components/ui/card'
 
 describe('Card', () => {
+  it('lifts on hover only when it is interactive', () => {
+    render(
+      <>
+        <Card data-testid="static" />
+        <Card data-testid="interactive" interactive className="shadow-sm" />
+      </>
+    )
+
+    expect(screen.getByTestId('static')).not.toHaveClass('card-tactile')
+    expect(screen.getByTestId('interactive')).toHaveClass(
+      'card-tactile',
+      'cursor-pointer',
+      'shadow-sm'
+    )
+    expect(screen.getByTestId('interactive')).not.toHaveAttribute('interactive')
+  })
+
   it('composes a named region with a description and working header/footer actions', async () => {
     const user = userEvent.setup()
 

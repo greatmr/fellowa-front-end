@@ -194,7 +194,7 @@ html .toaster[data-sonner-toaster] {
   --info-bg: var(--info-subtle);
   --info-text: var(--info-emphasis);
   --info-border: var(--status-info-border);
-  --border-radius: --theme(--radius-base);
+  --border-radius: --theme(--radius-popover);
   font-family: inherit;
 }
 
@@ -282,6 +282,42 @@ html .toaster[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
 @utility check-path {
   stroke-dasharray: 24;
   stroke-dashoffset: 24;
+}
+
+/* Press feedback (presentation `.btn-tactile`, efc3a57): scale to .97 in
+ * 50ms, release over 150ms. A transform, so a pressed button never shifts
+ * layout; the global reduced-motion rule makes both instant.
+ */
+@utility btn-tactile {
+  transition-property:
+    color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: --theme(--ease-smooth);
+  &:active:not(:disabled, [aria-disabled='true']) {
+    transform: scale(0.97);
+    transition-duration: 50ms;
+  }
+}
+
+/* Hover lift for a clickable card (presentation `.card-tactile`). Pointer
+ * devices only, so a tap on touch does not leave the card lifted. The shadow
+ * goes through the shadow utilities so a caller's ring (a selected card, a
+ * focus ring) still composes with it. A caller `transition-*` class replaces
+ * this transition; add the properties back rather than override it.
+ */
+@utility card-tactile {
+  transition-property: transform, box-shadow, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: --theme(--ease-smooth);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(calc(--spacing(0.5) * -1));
+      @apply shadow-lift;
+      @variant dark {
+        @apply shadow-lift-dark;
+      }
+    }
+  }
 }
 
 @layer base {

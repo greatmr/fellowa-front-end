@@ -2,12 +2,20 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+function Card({
+  className,
+  interactive = false,
+  ...props
+}: React.ComponentProps<'div'> & {
+  /** Hover lift for a card that is itself clickable (presentation `Card`). */
+  interactive?: boolean
+}) {
   return (
     <div
       data-slot="card"
       className={cn(
         'flex flex-col gap-6 rounded-md border bg-card py-6 text-card-foreground shadow-xs',
+        interactive && 'card-tactile cursor-pointer',
         className
       )}
       {...props}
