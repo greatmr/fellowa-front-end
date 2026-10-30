@@ -24,9 +24,13 @@ vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
 const { createTierForHook, listTiersForHook } = await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
 
+// Fixed for the file: a token built from the clock on each call would differ
+// across a second boundary, and the handlers compare tokens exactly.
+const tokenExpiry = Math.floor(Date.now() / 1000) + 3600
+
 function token(userId = 42) {
   const payload = Buffer.from(
-    JSON.stringify({ sub: userId, exp: Math.floor(Date.now() / 1000) + 3600 })
+    JSON.stringify({ sub: userId, exp: tokenExpiry })
   ).toString('base64url')
   return `eyJhbGciOiJIUzI1NiJ9.${payload}.backendSignature`
 }
