@@ -8,7 +8,14 @@ import type { ExploreCreator } from '@/features/explore/types/creator'
  * Explore card (presentation `ExploreView` @ dc8467f). Not a link yet: the
  * public creator page it would open is FE-PAGE-01, still blocked.
  */
-export function CreatorCard({ creator }: { creator: ExploreCreator }) {
+export function CreatorCard({
+  creator,
+  categoryTitle,
+}: {
+  creator: ExploreCreator
+  /** From the public category list (BE-LAND-07); `null` when unknown. */
+  categoryTitle: string | null
+}) {
   const t = useTranslations('explore')
   const format = useFormatter()
   const name = creator.alias ?? t('unnamed')
@@ -36,6 +43,9 @@ export function CreatorCard({ creator }: { creator: ExploreCreator }) {
         <h2 className="mt-2 truncate text-subtitle font-bold text-foreground">
           <bdi>{name}</bdi>
         </h2>
+        {categoryTitle ? (
+          <p className="text-label text-muted-foreground">{categoryTitle}</p>
+        ) : null}
         {creator.bio ? (
           <p
             dir="auto"
