@@ -254,7 +254,8 @@
     "followers": "{count, plural, other {<b>{formatted}</b> دنبال‌کننده}}",
     "categoriesLabel": "فیلتر بر اساس دسته‌بندی",
     "allCategories": "همه",
-    "clearFilters": "پاک کردن جستجو و فیلترها"
+    "clearFilters": "پاک کردن جستجو و فیلترها",
+    "publicTitle": "کاوش کریتورها"
   },
   "publicLayout": {
     "home": "صفحه اصلی فلووا",
@@ -265,6 +266,7 @@
     "features": "امکانات",
     "studio": "پنل استودیو",
     "tagline": "خانه‌ای برای آثار خلاقانه و آدم‌هایی که به آن‌ها باور دارند.",
-    "copyright": "فلووا · برای سازندگان و همراهانشان"
+    "copyright": "فلووا · برای سازندگان و همراهانشان",
+    "creators": "کریتورها"
   }
 }

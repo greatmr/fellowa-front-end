@@ -44,6 +44,12 @@ export function PublicMobileNav() {
             {t('features')}
           </Link>
           <Link
+            href="/creators"
+            className="rounded-md px-3 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {t('creators')}
+          </Link>
+          <Link
             href="/studio"
             className="rounded-md px-3 py-3 text-link hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
           >
