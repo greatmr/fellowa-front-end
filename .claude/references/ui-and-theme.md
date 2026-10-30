@@ -102,6 +102,7 @@ Re-apply these after any `shadcn add --overwrite`.
 | `ui/skeleton.tsx` | `skeleton-shimmer` instead of `animate-pulse` | presentation `.skeleton` |
 | `ui/sheet.tsx` | logical `side` (`start`/`end`/`top`/`bottom`, default `end`); required `closeLabel` prop instead of English "Close"; card surface, `shadow-panel` | RTL and i18n hard rules |
 | `ui/dialog.tsx` | **pending FE-FND-08:** still renders English "Close" | — |
+| `ui/sonner.tsx` | defaults `position="bottom-center"`, `duration={3200}`, tone `icons` (lucide `CircleCheck`/`CircleAlert`/`Info`/`TriangleAlert`, tints `money-500`·`red-500`·`brand-400`·`amber-500`; `dark:` `money-600`/`amber-700` for ≥3:1 on the white surface) merged under any caller `icons`; i18n region/close labels; the inverse surface, metrics, focus rings, description, close/cancel colours are in `globals.css` (`html .toaster[data-sonner-toaster] …`) — `richColors` stays an opt-in | presentation `ui/Toast` @ `efc3a57` (FE-FND-06) |
 
 Presentation variant names → ours: `primary`/`pay` → `default` · `dark` → `inverse` · `ghost` (bordered) and `outline` → `outline` · `danger` → `destructive`.
 
