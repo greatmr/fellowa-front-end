@@ -264,7 +264,7 @@
     "support": "Support",
     "joinTier": "Join this tier",
     "signInHint": "Sign in to follow or join a tier.",
-    "comingSoon": "Following and joining open soon.",
+    "comingSoon": "Joining a tier opens soon.",
     "editPage": "Edit your page",
     "toman": "Toman",
     "tabs": {
@@ -283,7 +283,10 @@
       "youtube": "YouTube",
       "facebook": "Facebook"
     },
-    "tiersUnavailable": "Tiers couldn't be loaded. Try again later."
+    "tiersUnavailable": "Tiers couldn't be loaded. Try again later.",
+    "following": "Following",
+    "followFailed": "That didn't work. Try again.",
+    "sessionExpired": "Your session ended. Sign in again."
   },
   "publicLayout": {
     "home": "Fellowa home",

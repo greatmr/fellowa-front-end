@@ -18,14 +18,16 @@ vi.mock('@/features/creator-page/api/creator-page-api', () => ({
   getCreatorTiers: api.tiers,
   getCreatorPosts: api.posts,
 }))
-vi.mock('@/features/auth/server/session', () => ({ getSession: api.session }))
+vi.mock('@/features/auth/server', () => ({
+  readOptionalSessionToken: api.session,
+}))
 vi.mock('@/features/explore/server', () => ({
   loadExploreCategories: api.categories,
 }))
 
 const { loadCreatorPage } = await import('./load-creator-page')
 
-const profile = { id: 4, alias: 'dana', categoryId: 2 }
+const profile = { id: 4, alias: 'dana', categoryId: 2, viewerFollows: null }
 const notFound = () => new ApiError({ message: 'Not found', status: 404 })
 
 beforeEach(() => {
@@ -36,7 +38,7 @@ beforeEach(() => {
   api.categories.mockResolvedValue([{ id: 2, title: 'Music' }])
 })
 
-describe('loadCreatorPage (FE-PAGE-01)', () => {
+describe('loadCreatorPage (FE-PAGE-01/02)', () => {
   it('reads everything for a canonical id and names the category', async () => {
     expect(await loadCreatorPage('4')).toMatchObject({
       profile,
@@ -45,21 +47,40 @@ describe('loadCreatorPage (FE-PAGE-01)', () => {
       categoryTitle: 'Music',
       viewer: 'anonymous',
     })
-    expect(api.profile).toHaveBeenCalledWith(4)
+    expect(api.profile).toHaveBeenCalledWith(4, undefined)
+  })
+
+  it("sends the cookie's token with the profile read", async () => {
+    api.session.mockResolvedValue({ token: 't0ken', userId: 7 })
+    api.profile.mockResolvedValue({ ...profile, viewerFollows: false })
+
+    await loadCreatorPage('4')
+
+    expect(api.profile).toHaveBeenCalledWith(4, 't0ken')
   })
 
   it.each([
-    [null, 'anonymous'],
-    [{ user: { id: 7 } }, 'signedIn'],
-    [{ user: { id: 4 } }, 'owner'],
-  ])('a session of %j is the %s viewer', async (session, viewer) => {
-    api.session.mockResolvedValue(session)
+    ['no cookie', null, null, 'anonymous'],
+    [
+      'a cookie the backend rejected',
+      { token: 't', userId: 7 },
+      null,
+      'anonymous',
+    ],
+    ['another account', { token: 't', userId: 7 }, false, 'signedIn'],
+    ['the owner', { token: 't', userId: 4 }, false, 'owner'],
+  ])(
+    'with %s the viewer is %s',
+    async (_name, session, viewerFollows, viewer) => {
+      api.session.mockResolvedValue(session)
+      api.profile.mockResolvedValue({ ...profile, viewerFollows })
 
-    expect(await loadCreatorPage('4')).toMatchObject({ viewer })
-  })
+      expect(await loadCreatorPage('4')).toMatchObject({ viewer })
+    }
+  )
 
-  it('treats an unverifiable session as anonymous', async () => {
-    api.session.mockRejectedValue(new Error('network'))
+  it('treats an unreadable cookie as anonymous', async () => {
+    api.session.mockRejectedValue(new Error('cookies unavailable'))
 
     expect(await loadCreatorPage('4')).toMatchObject({ viewer: 'anonymous' })
   })

@@ -1,6 +1,17 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import type * as I18nNavigation from '@/i18n/navigation'
+
+// The follow action is tested in follow-button.test.tsx and actions.test.ts.
+vi.mock('@/features/creator-page/server/actions', () => ({
+  setFollowingAction: vi.fn(),
+}))
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nNavigation>()),
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
 
 import type { CreatorPageViewer } from '@/features/creator-page/server/load-creator-page'
 import type {
@@ -20,6 +31,7 @@ const profile: CreatorProfile = {
   categoryId: 2,
   followerCount: 1200,
   links: [{ kind: 'instagram', url: 'https://instagram.com/dana' }],
+  viewerFollows: null,
 }
 const tiers: CreatorTier[] = [
   {
@@ -87,15 +99,28 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     ).toMatch(/\/auth\/login\?returnTo=%2Fcreators%2F4$/)
   })
 
-  it('shows a signed-in visitor the actions as not yet available', () => {
+  it('gives a signed-in visitor a working Follow and a not-yet Support', () => {
     renderPage('signedIn')
 
-    expect(screen.getByRole('button', { name: 'Follow' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Follow' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Support' })).toBeDisabled()
-    expect(
-      screen.getByText('Following and joining open soon.')
-    ).toBeInTheDocument()
+    expect(screen.getByText('Joining a tier opens soon.')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Follow' })).toBeNull()
+  })
+
+  it('shows Following when the backend says the viewer follows', () => {
+    renderWithIntl(
+      <CreatorPageView
+        profile={{ ...profile, viewerFollows: true }}
+        tiers={tiers}
+        posts={posts}
+        categoryTitle={null}
+        viewer="signedIn"
+      />,
+      { locale: 'en' }
+    )
+
+    expect(screen.getByRole('button', { name: 'Following' })).toBeEnabled()
   })
 
   it('offers the owner an edit link and no self-follow or self-join', async () => {
@@ -191,8 +216,6 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     expect(
       within(panel).getByRole('button', { name: 'Join this tier' })
     ).toBeDisabled()
-    expect(
-      within(panel).getByText('Following and joining open soon.')
-    ).toBeVisible()
+    expect(within(panel).getByText('Joining a tier opens soon.')).toBeVisible()
   })
 })

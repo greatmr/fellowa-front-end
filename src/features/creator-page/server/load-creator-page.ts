@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { getSession } from '@/features/auth/server/session'
+import { readOptionalSessionToken } from '@/features/auth/server'
 import {
   getCreatorPosts,
   getCreatorProfile,
@@ -34,9 +34,11 @@ const isNotFound = (error: unknown) =>
   error instanceof ApiError && error.status === 404
 
 /**
- * Everything `/creators/:id` renders, read in parallel. `null` for an id that
- * is not canonical or a creator the backend does not publish (404); any other
- * failure propagates to the route's error boundary.
+ * Everything `/creators/:id` renders, read in parallel. The cookie's token is
+ * sent with the profile read; the backend decides whether it is valid: no
+ * `viewer` in its answer means anonymous, whatever the cookie claimed. `null`
+ * for an id that is not canonical or a creator the backend does not publish
+ * (404); any other failure propagates to the route's error boundary.
  */
 export async function loadCreatorPage(
   rawId: string
@@ -44,18 +46,15 @@ export async function loadCreatorPage(
   const id = creatorIdSchema.safeParse(rawId)
   if (!id.success) return null
 
+  const session = await readOptionalSessionToken().catch(() => null)
   try {
-    const [profile, tiers, posts, viewerId, categories] = await Promise.all([
-      getCreatorProfile(id.data),
+    const [profile, tiers, posts, categories] = await Promise.all([
+      getCreatorProfile(id.data, session?.token),
       getCreatorTiers(id.data).catch((error: unknown) => {
         if (isNotFound(error)) throw error
         return null
       }),
       getCreatorPosts(id.data),
-      getSession().then(
-        (session) => session?.user.id ?? null,
-        () => null
-      ),
       loadExploreCategories(),
     ])
     return {
@@ -65,9 +64,9 @@ export async function loadCreatorPage(
       categoryTitle:
         categories.find((c) => c.id === profile.categoryId)?.title ?? null,
       viewer:
-        viewerId === null
+        profile.viewerFollows === null || !session
           ? 'anonymous'
-          : viewerId === profile.id
+          : session.userId === profile.id
             ? 'owner'
             : 'signedIn',
     }
