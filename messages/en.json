@@ -236,7 +236,43 @@
     "label": "Creator studio",
     "visitHome": "Visit home",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "dashboard": {
+      "title": "Set up your page",
+      "progress": "{done} of {total} steps done",
+      "stepDone": "done",
+      "stepTodo": "to do",
+      "steps": {
+        "basics": {
+          "label": "Choose your username",
+          "description": "Claim the username fans will find your page by."
+        },
+        "firstTier": {
+          "label": "Create your first membership tier",
+          "description": "Set the membership levels and monthly prices supporters can choose.",
+          "action": "Set up tiers"
+        },
+        "firstPost": {
+          "label": "Publish your first post",
+          "description": "Share writing, work or a welcome message with your audience.",
+          "action": "Create a post"
+        },
+        "payout": {
+          "label": "Add your payout details",
+          "description": "Add the IBAN your earnings will be paid out to."
+        },
+        "publish": {
+          "label": "Publish your page",
+          "description": "Make your page public. You can keep editing it any time.",
+          "action": "Publish page"
+        }
+      },
+      "publishNeedsUsername": "Choose a username before you publish.",
+      "publishNeedsTier": "Create a membership tier before you publish.",
+      "publishFailed": "The page could not be published. Try again.",
+      "published": "Your page is now public.",
+      "sessionExpired": "Your session has ended. Sign in again."
+    }
   },
   "explore": {
     "description": "Find Persian-speaking creators and support their work.",
