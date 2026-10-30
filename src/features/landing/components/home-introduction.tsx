@@ -39,7 +39,11 @@ export function HomeIntroduction() {
               {t('description')}
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button asChild size="lg" className="rounded-full shadow-brand">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full shadow-brand hover:shadow-brand"
+              >
                 <Link href="/studio">
                   {t('studioCta')}
                   <ArrowUpRightIcon

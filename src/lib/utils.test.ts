@@ -23,4 +23,32 @@ describe('cn with the Fellowa scales', () => {
     expect(cn('bg-cover-brand', 'bg-cover-mix')).toBe('bg-cover-mix')
     expect(cn('bg-card', 'bg-cover-mix')).toBe('bg-card bg-cover-mix')
   })
+
+  it('resolves the motion tokens against their defaults (FE-FND-10)', () => {
+    expect(cn('animate-pop-in', 'animate-page-enter')).toBe(
+      'animate-page-enter'
+    )
+    expect(cn('animate-spin', 'animate-badge-pop')).toBe('animate-badge-pop')
+    expect(cn('ease-out', 'ease-smooth')).toBe('ease-smooth')
+    expect(cn('shadow-xs', 'shadow-lift')).toBe('shadow-lift')
+    expect(cn('rounded-md', 'rounded-popover')).toBe('rounded-popover')
+    expect(cn('backdrop-blur-sm', 'backdrop-blur-overlay')).toBe(
+      'backdrop-blur-overlay'
+    )
+  })
+
+  it('gives every button press feedback without the old transition-all', () => {
+    const classes = cn(buttonVariants()).split(' ')
+    expect(classes).toContain('btn-tactile')
+    expect(classes).toContain('hover:shadow-sm')
+    expect(classes).not.toContain('transition-all')
+  })
+
+  it("lets a caller's hover shadow replace the default hover shadow", () => {
+    const classes = cn(
+      buttonVariants({ className: 'shadow-brand hover:shadow-brand' })
+    ).split(' ')
+    expect(classes).toContain('hover:shadow-brand')
+    expect(classes).not.toContain('hover:shadow-sm')
+  })
 })
