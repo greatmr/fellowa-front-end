@@ -39,7 +39,11 @@ const {
 const { readSession, sessionCookieName } = await import('./session')
 afterAll(() => vi.unstubAllEnvs())
 
-function token(userId = 42, expiry = Math.floor(Date.now() / 1000) + 3600) {
+// Fixed for the file: a token built from the clock on each call would differ
+// across a second boundary, and the handlers compare tokens exactly.
+const tokenExpiry = Math.floor(Date.now() / 1000) + 3600
+
+function token(userId = 42, expiry = tokenExpiry) {
   const payload = Buffer.from(
     JSON.stringify({ sub: userId, exp: expiry })
   ).toString('base64url')
@@ -348,7 +352,7 @@ describe('auth hook server boundary', () => {
               payload: {
                 sub: 42,
                 email: 'creator@example.com',
-                exp: Math.floor(Date.now() / 1000) + 3600,
+                exp: tokenExpiry,
               },
             },
             errors: null,
