@@ -92,6 +92,23 @@ export async function readSession(): Promise<AuthSession | null> {
 // React.cache deduplicates only within an RSC request; no persistent data cache.
 export const getSession = cache(readSession)
 
+/**
+ * The cookie's token and its claimed subject, without the profile round-trip.
+ * Unverified: only for optional-auth reads of public data, where the backend
+ * checks the signature itself and treats a bad token as anonymous. Never use
+ * it to authorize anything.
+ */
+export async function readOptionalSessionToken(): Promise<{
+  token: string
+  userId: number
+} | null> {
+  await connection()
+  const token = (await cookies()).get(sessionCookieName)?.value
+  if (!token) return null
+  const hints = readTokenHints(token)
+  return hints ? { token, userId: hints.userId } : null
+}
+
 export async function saveSession(session: AuthSession): Promise<void> {
   const cookieStore = await cookies()
   const maxAge = Math.min(

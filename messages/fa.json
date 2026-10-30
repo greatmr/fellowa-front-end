@@ -238,6 +238,22 @@
     "collapseSidebar": "جمع کردن نوار کناری",
     "expandSidebar": "باز کردن نوار کناری"
   },
+  "explore": {
+    "description": "کریتورهای فارسی‌زبان را پیدا کن و از کارشان حمایت کن.",
+    "searchLabel": "جستجوی کریتورها",
+    "searchPlaceholder": "جستجوی نام کاربری کریتور",
+    "loading": "در حال بارگذاری کریتورها",
+    "errorTitle": "فهرست کریتورها بارگذاری نشد",
+    "retry": "تلاش دوباره",
+    "noResultsTitle": "کریتوری با این جستجو پیدا نشد",
+    "clearSearch": "پاک کردن جستجو",
+    "noCreatorsTitle": "هنوز کریتوری برای نمایش نیست",
+    "noCreatorsBody": "صفحه‌های منتشرشده‌ی کریتورها اینجا نمایش داده می‌شوند.",
+    "loadMore": "نمایش بیشتر",
+    "loadingMore": "در حال بارگذاری…",
+    "unnamed": "کریتور بی‌نام",
+    "followers": "{count, plural, other {<b>{formatted}</b> دنبال‌کننده}}"
+  },
   "publicLayout": {
     "home": "صفحه اصلی فلووا",
     "mainNav": "ناوبری اصلی",
