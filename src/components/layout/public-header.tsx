@@ -38,6 +38,12 @@ export function PublicHeader({
           >
             {t('features')}
           </Link>
+          <Link
+            href="/creators"
+            className="rounded-sm text-body font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {t('creators')}
+          </Link>
         </nav>
         <div className="flex items-center gap-2">
           {authNavigation}

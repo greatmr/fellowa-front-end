@@ -254,7 +254,8 @@
     "followers": "{count, plural, one {<b>{formatted}</b> follower} other {<b>{formatted}</b> followers}}",
     "categoriesLabel": "Filter by category",
     "allCategories": "All",
-    "clearFilters": "Clear search and filters"
+    "clearFilters": "Clear search and filters",
+    "publicTitle": "Explore creators"
   },
   "publicLayout": {
     "home": "Fellowa home",
@@ -265,6 +266,7 @@
     "features": "Features",
     "studio": "Open studio",
     "tagline": "A home for your creative work and the people who believe in it.",
-    "copyright": "Fellowa · Made for creators and their communities."
+    "copyright": "Fellowa · Made for creators and their communities.",
+    "creators": "Creators"
   }
 }
