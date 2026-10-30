@@ -1,7 +1,8 @@
 'use client'
 
-import { useFormatter, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
+import { useFormatMoney } from '@/components/common/money'
 import { Button } from '@/components/ui/button'
 import type { Tier } from '@/features/tiers/types/tier'
 
@@ -13,7 +14,7 @@ type Props = {
 
 export function TierCard({ tier, onEdit, onDelete }: Props) {
   const t = useTranslations('tiers')
-  const format = useFormatter()
+  const formatMoney = useFormatMoney()
 
   return (
     <article className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-5 shadow-sm">
@@ -22,7 +23,7 @@ export function TierCard({ tier, onEdit, onDelete }: Props) {
           {tier.title}
         </h2>
         <p className="text-body font-semibold text-primary">
-          {format.number(tier.priceToman)} {t('toman')}
+          {formatMoney(tier.priceToman)}
         </p>
         {tier.description ? (
           <p className="text-body-sm whitespace-pre-wrap text-muted-foreground">

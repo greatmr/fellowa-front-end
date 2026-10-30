@@ -53,6 +53,8 @@ Font sizes → the named scale in `ui-and-theme.md` (`text-[12px]` → `text-lab
 | `session.isCreator` | creator capability = owns a page (`FEL-USER-S01`); no role flag, no mode switch |
 | `mockData.ts`, `topics.ts`, Unsplash avatar URLs | server data from the API; images through `next/image` with an allow-listed host |
 | `types.ts` | types from `../back-end/docs/modules/<m>/api.md` + the real DTOs |
-| `toFaDigits`, `formatToman`, `parseFaNumber` | next-intl formatters; money display helper `FE-FND-07` (blocked on `O-16`) |
+| `toFaDigits` | next-intl `format.number` (the active locale supplies the digits); no digit map |
+| `formatToman` | `useFormatMoney` / `<Money />` in `components/common/money.tsx` (`FE-FND-07`); no other money formatter |
+| `parseFaNumber`, `toEnglishDigits` | `toLatinDigits` in `lib/digits.ts`, for input only |
 | hardcoded Persian strings | keys in `messages/fa.json` **and** `messages/en.json` |
 | `text-right`, `right-0.5`, `-translate-x-5`, `left-0` | logical: `text-start`, `end-0.5`, `rtl:` variants, `start-0`/`end-0` |

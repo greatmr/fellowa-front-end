@@ -16,15 +16,5 @@ export default getRequestConfig(async ({ requestLocale }) => {
     // Every date is shown in Tehran time (owner decision 2026-10-30); the
     // client provider inherits it, so server and browser renders agree.
     timeZone: TIME_ZONE,
-    // Server-side money and date formatting defaults. Amounts are stored as
-    // integer Toman by the backend; never divide or re-scale them here.
-    formats: {
-      number: {
-        toman: {
-          style: 'decimal',
-          maximumFractionDigits: 0,
-        },
-      },
-    },
   }
 })

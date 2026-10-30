@@ -115,7 +115,8 @@
     "save": "Save",
     "close": "Close",
     "skipToContent": "Skip to content",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "money": "{amount} <unit>Toman</unit>"
   },
   "errors": {
     "unexpectedTitle": "Something went wrong",
@@ -281,7 +282,6 @@
     "create": "Create tier",
     "edit": "Edit",
     "delete": "Delete",
-    "toman": "Toman",
     "emptyTitle": "No membership tiers yet",
     "emptyBody": "Create a tier to set a price and benefits for your members.",
     "loadError": "Could not load your tiers",
@@ -456,7 +456,6 @@
     "signInHint": "Sign in to follow or join a tier.",
     "comingSoon": "Joining a tier opens soon.",
     "editPage": "Edit your page",
-    "toman": "Toman",
     "tabs": {
       "posts": "Posts ({count})",
       "tiers": "Tiers ({count})",

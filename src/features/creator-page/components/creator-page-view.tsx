@@ -3,6 +3,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
+import { Money } from '@/components/common/money'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -153,10 +154,10 @@ export function CreatorPageView({
                         {tier.title}
                       </h2>
                       <p className="numeric text-title-sm font-extrabold">
-                        {format.number(tier.priceToman)}{' '}
-                        <span className="text-body font-medium text-muted-foreground">
-                          {t('toman')}
-                        </span>
+                        <Money
+                          amountToman={tier.priceToman}
+                          unitClassName="text-body font-medium text-muted-foreground"
+                        />
                       </p>
                       {tier.description ? (
                         <p
