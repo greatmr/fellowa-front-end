@@ -49,6 +49,8 @@ A purchase is: create the membership as **pending** → send the user to the gat
 ## Dates and locale
 
 - The backend stores `timestamptz`. **Jalali (Persian calendar) is display-only** — convert when rendering, never store, send, compare or round-trip a Jalali string.
+- **Every date is displayed in `Asia/Tehran`** (owner decision 2026-10-30): `TIME_ZONE` in `src/i18n/time-zone.ts`, set once in `src/i18n/request.ts` (the client provider inherits it) and in `test/render.tsx`. Never pass a per-call `timeZone`.
+- **Money is Toman** (owner decision 2026-10-30): tier prices and every chargeable amount from the backend are integer Toman; a backend comment saying "Rials" is wrong and was corrected.
 - The product language is Persian, RTL. `fa` is the default locale; `en` exists so copy is never hardcoded.
 
 ## Rules that follow from the domain

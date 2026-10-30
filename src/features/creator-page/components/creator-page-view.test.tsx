@@ -157,6 +157,18 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     expect(screen.getByText('No tiers yet.')).toBeVisible()
   })
 
+  it('dates posts in Tehran time (owner decision 2026-10-30)', () => {
+    // 22:00 UTC on the 30th is 01:30 on the 31st in Tehran (UTC+3:30).
+    renderPage('anonymous', {
+      posts: [{ ...posts[0], createdAt: '2026-10-30T22:00:00.000Z' }],
+    })
+
+    expect(screen.getByText('Oct 31, 2026')).toHaveAttribute(
+      'dateTime',
+      '2026-10-30T22:00:00.000Z'
+    )
+  })
+
   it('keeps the page when only the tier list failed', async () => {
     const user = userEvent.setup()
     renderPage('anonymous', { tiers: null })
