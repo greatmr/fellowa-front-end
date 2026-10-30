@@ -3,29 +3,34 @@
 import { SearchIcon, SearchXIcon, UsersIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
-import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useExploreCreatorsQuery } from '@/features/explore/api/explore-hooks'
 import { CreatorCard } from '@/features/explore/components/creator-card'
 import { MAX_ALIAS_SEARCH_LENGTH } from '@/features/explore/schemas/creator'
-import type { ExploreCreator } from '@/features/explore/types/creator'
+import type {
+  ExploreCategory,
+  ExploreCreator,
+} from '@/features/explore/types/creator'
 
 const SEARCH_DEBOUNCE_MS = 300
 
 /**
- * Write `?q=` without a server round-trip: Next's `useSearchParams` follows
- * `history.replaceState`, so the query re-keys while the route stays put.
+ * Write a filter to the URL without a server round-trip: Next's
+ * `useSearchParams` follows `history.replaceState`, so the query re-keys
+ * while the route stays put.
  */
-function replaceSearchParam(value: string) {
+function replaceSearchParams(changes: Record<'q' | 'category', string | null>) {
   const url = new URL(window.location.href)
-  if (value) url.searchParams.set('q', value)
-  else url.searchParams.delete('q')
+  for (const [name, value] of Object.entries(changes)) {
+    if (value) url.searchParams.set(name, value)
+    else url.searchParams.delete(name)
+  }
   window.history.replaceState(window.history.state, '', url)
 }
 
@@ -36,18 +41,30 @@ function uniqueById(items: ExploreCreator[]) {
 }
 
 /**
- * Explore (FE-EXPL-01; presentation `ExploreView` @ dc8467f). Ranked list by
- * default, alias search via `?q=`. Category chips and the interests card are
- * not ported: the API has no category filter or public category list, and
- * interests are out of scope (FQ-4).
+ * Explore (FE-EXPL-01; presentation `ExploreView` @ dc8467f), shared by the
+ * signed-in studio explore and the public one. Ranked list by default, alias
+ * search via `?q=`, category chips via `?category=` (BE-LAND-07/08). The
+ * interests card is not ported (FQ-4). `viewerId` null is the anonymous list.
  */
-export function ExploreView({ viewerId }: { viewerId: number | null }) {
+export function ExploreView({
+  viewerId,
+  categories,
+  heading,
+}: {
+  viewerId: number | null
+  categories: ExploreCategory[]
+  heading: ReactNode
+}) {
   const t = useTranslations('explore')
-  const studio = useTranslations('studio')
   const searchParams = useSearchParams()
   const alias = (searchParams.get('q') ?? '')
     .trim()
     .slice(0, MAX_ALIAS_SEARCH_LENGTH)
+  const requestedCategory = Number(searchParams.get('category'))
+  // Only a category the backend listed is honoured; anything else is "all".
+  const categoryId = categories.some((c) => c.id === requestedCategory)
+    ? requestedCategory
+    : null
   const [draft, setDraft] = useState(alias)
   const [syncedAlias, setSyncedAlias] = useState(alias)
 
@@ -62,26 +79,39 @@ export function ExploreView({ viewerId }: { viewerId: number | null }) {
   useEffect(() => {
     const next = draft.trim()
     if (next === alias) return
-    const timer = setTimeout(() => replaceSearchParam(next), SEARCH_DEBOUNCE_MS)
+    const timer = setTimeout(
+      () =>
+        replaceSearchParams({
+          q: next || null,
+          category: searchParams.get('category'),
+        }),
+      SEARCH_DEBOUNCE_MS
+    )
     return () => clearTimeout(timer)
-  }, [alias, draft])
+  }, [alias, draft, searchParams])
 
-  const creators = useExploreCreatorsQuery(viewerId, alias)
+  const creators = useExploreCreatorsQuery(viewerId, alias, categoryId)
   const items = uniqueById(
     creators.data?.pages.flatMap((page) => page.items) ?? []
   )
+  const categoryTitle = (id: number | null) =>
+    categories.find((c) => c.id === id)?.title ?? null
 
-  function clearSearch() {
+  function selectCategory(id: number | null) {
+    replaceSearchParams({
+      q: alias || null,
+      category: id === null ? null : String(id),
+    })
+  }
+
+  function clearFilters() {
     setDraft('')
-    replaceSearchParam('')
+    replaceSearchParams({ q: null, category: null })
   }
 
   return (
     <>
-      <StudioPageHeader
-        title={studio('pages.explore.title')}
-        category={studio('pages.explore.category')}
-      />
+      {heading}
       <p className="text-body text-muted-foreground">{t('description')}</p>
 
       <div className="relative mt-5">
@@ -99,6 +129,33 @@ export function ExploreView({ viewerId }: { viewerId: number | null }) {
           className="h-12 rounded-full ps-10"
         />
       </div>
+
+      {categories.length > 0 ? (
+        <div
+          role="group"
+          aria-label={t('categoriesLabel')}
+          className="mt-4 flex flex-wrap gap-1.5"
+        >
+          {[{ id: null, title: t('allCategories') }, ...categories].map(
+            (category) => {
+              const selected = category.id === categoryId
+              return (
+                <Button
+                  key={category.id ?? 'all'}
+                  type="button"
+                  size="sm"
+                  variant={selected ? 'inverse' : 'outline'}
+                  aria-pressed={selected}
+                  onClick={() => selectCategory(category.id)}
+                  className="h-8 rounded-full px-3.5"
+                >
+                  {category.title}
+                </Button>
+              )
+            }
+          )}
+        </div>
+      ) : null}
 
       <div
         className="mt-5"
@@ -125,13 +182,13 @@ export function ExploreView({ viewerId }: { viewerId: number | null }) {
             }
           />
         ) : items.length === 0 ? (
-          alias ? (
+          alias || categoryId !== null ? (
             <EmptyState
               icon={<SearchXIcon />}
               title={t('noResultsTitle')}
               action={
-                <Button variant="ghost" onClick={clearSearch}>
-                  {t('clearSearch')}
+                <Button variant="ghost" onClick={clearFilters}>
+                  {t('clearFilters')}
                 </Button>
               }
             />
@@ -147,7 +204,10 @@ export function ExploreView({ viewerId }: { viewerId: number | null }) {
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((creator) => (
                 <li key={creator.id} className="flex">
-                  <CreatorCard creator={creator} />
+                  <CreatorCard
+                    creator={creator}
+                    categoryTitle={categoryTitle(creator.categoryId)}
+                  />
                 </li>
               ))}
             </ul>

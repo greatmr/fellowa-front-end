@@ -13,13 +13,24 @@ import type { ApiError } from '@/lib/api/errors'
  */
 export const exploreKeys = {
   all: ['explore'] as const,
-  creators: (viewerId: number | null, alias: string) =>
-    ['explore', 'creators', viewerId ?? 'anonymous', alias] as const,
+  creators: (
+    viewerId: number | null,
+    alias: string,
+    categoryId: number | null
+  ) =>
+    [
+      'explore',
+      'creators',
+      viewerId ?? 'anonymous',
+      alias,
+      categoryId ?? 'all',
+    ] as const,
 }
 
 export function useExploreCreatorsQuery(
   viewerId: number | null,
-  alias: string
+  alias: string,
+  categoryId: number | null
 ) {
   return useInfiniteQuery<
     ExploreCreatorPage,
@@ -28,10 +39,14 @@ export function useExploreCreatorsQuery(
     ReturnType<typeof exploreKeys.creators>,
     number
   >({
-    queryKey: exploreKeys.creators(viewerId, alias),
+    queryKey: exploreKeys.creators(viewerId, alias, categoryId),
     queryFn: async ({ pageParam }) =>
       unwrapApiActionResult(
-        await listExploreCreatorsForHook(viewerId, { alias, page: pageParam })
+        await listExploreCreatorsForHook(viewerId, {
+          alias,
+          categoryId,
+          page: pageParam,
+        })
       ),
     initialPageParam: 1,
     getNextPageParam: (last) => last.nextPage ?? undefined,

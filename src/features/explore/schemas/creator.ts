@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type {
+  ExploreCategory,
   ExploreCreator,
   ExploreCreatorPage,
 } from '@/features/explore/types/creator'
@@ -42,6 +43,7 @@ const rawCreatorSchema = z.object({
   avatar: imageUrl,
   header: imageUrl,
   about: z.object({ bio: z.string().nullable() }).nullable(),
+  categoryId: id.nullable(),
   /** COUNT(...) arrives from PostgreSQL as a numeric string. */
   numFollowers: z.string().regex(/^\d+$/).optional(),
 })
@@ -67,8 +69,19 @@ function toCreator(raw: z.infer<typeof rawCreatorSchema>): ExploreCreator {
     avatarUrl: raw.avatar,
     coverUrl: raw.header,
     bio: raw.about?.bio ?? null,
+    categoryId: raw.categoryId,
     followerCount: followers,
   }
+}
+
+const rawCategoryListSchema = z.array(
+  z.object({ id, title: z.string().min(1) })
+)
+
+export function parseExploreCategories(value: unknown): ExploreCategory[] {
+  return parseEnvelope(rawCategoryListSchema, value, invalid).map(
+    ({ id, title }) => ({ id, title })
+  )
 }
 
 export function parseExploreCreatorPage(value: unknown): ExploreCreatorPage {
@@ -82,5 +95,6 @@ export function parseExploreCreatorPage(value: unknown): ExploreCreatorPage {
 
 export const exploreQuerySchema = z.object({
   alias: z.string().trim().max(MAX_ALIAS_SEARCH_LENGTH),
+  categoryId: id.nullable(),
   page: z.number().int().min(1).max(10_000),
 })

@@ -246,13 +246,15 @@
     "errorTitle": "فهرست کریتورها بارگذاری نشد",
     "retry": "تلاش دوباره",
     "noResultsTitle": "کریتوری با این جستجو پیدا نشد",
-    "clearSearch": "پاک کردن جستجو",
     "noCreatorsTitle": "هنوز کریتوری برای نمایش نیست",
     "noCreatorsBody": "صفحه‌های منتشرشده‌ی کریتورها اینجا نمایش داده می‌شوند.",
     "loadMore": "نمایش بیشتر",
     "loadingMore": "در حال بارگذاری…",
     "unnamed": "کریتور بی‌نام",
-    "followers": "{count, plural, other {<b>{formatted}</b> دنبال‌کننده}}"
+    "followers": "{count, plural, other {<b>{formatted}</b> دنبال‌کننده}}",
+    "categoriesLabel": "فیلتر بر اساس دسته‌بندی",
+    "allCategories": "همه",
+    "clearFilters": "پاک کردن جستجو و فیلترها"
   },
   "publicLayout": {
     "home": "صفحه اصلی فلووا",

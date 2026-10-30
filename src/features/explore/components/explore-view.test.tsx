@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  ExploreCategory,
   ExploreCreator,
   ExploreCreatorPage,
   ExploreQuery,
@@ -38,9 +38,14 @@ const creator = (id: number, extra: Partial<ExploreCreator> = {}) => ({
   avatarUrl: null,
   coverUrl: null,
   bio: null,
+  categoryId: null,
   followerCount: null,
   ...extra,
 })
+const categories: ExploreCategory[] = [
+  { id: 2, title: 'Music' },
+  { id: 5, title: 'Art' },
+]
 const page = (
   items: ExploreCreator[],
   nextPage: number | null = null
@@ -49,12 +54,24 @@ const page = (
   data: { items, total: items.length, nextPage },
 })
 
-function renderView(ui: ReactElement, locale: 'fa' | 'en' = 'en') {
+function renderView(
+  {
+    viewerId,
+    withCategories = categories,
+  }: { viewerId: number | null; withCategories?: ExploreCategory[] },
+  locale: 'fa' | 'en' = 'en'
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   return renderWithIntl(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={client}>
+      <ExploreView
+        viewerId={viewerId}
+        categories={withCategories}
+        heading={<h1>Explore</h1>}
+      />
+    </QueryClientProvider>,
     { locale }
   )
 }
@@ -76,12 +93,16 @@ describe('ExploreView', () => {
         }),
       ])
     )
-    renderView(<ExploreView viewerId={42} />)
+    renderView({ viewerId: 42 })
 
     expect(
       await screen.findByRole('heading', { level: 2, name: 'dana' })
     ).toBeInTheDocument()
-    expect(action.list).toHaveBeenCalledWith(42, { alias: '', page: 1 })
+    expect(action.list).toHaveBeenCalledWith(42, {
+      alias: '',
+      categoryId: null,
+      page: 1,
+    })
     expect(screen.getByText('Painter of small things')).toHaveAttribute(
       'dir',
       'auto'
@@ -93,7 +114,7 @@ describe('ExploreView', () => {
 
   it('formats counts with Persian digits in fa', async () => {
     action.list.mockResolvedValue(page([creator(4, { followerCount: 1200 })]))
-    renderView(<ExploreView viewerId={null} />, 'fa')
+    renderView({ viewerId: null }, 'fa')
 
     expect(await screen.findByText(/دنبال‌کننده/)).toHaveTextContent('۱٬۲۰۰')
   })
@@ -104,10 +125,14 @@ describe('ExploreView', () => {
     const replace = vi.spyOn(window.history, 'replaceState')
     action.list.mockResolvedValue(page([creator(4)]))
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     await waitFor(() =>
-      expect(action.list).toHaveBeenCalledWith(null, { alias: 'da', page: 1 })
+      expect(action.list).toHaveBeenCalledWith(null, {
+        alias: 'da',
+        categoryId: null,
+        page: 1,
+      })
     )
     await user.type(screen.getByRole('searchbox'), 'n')
     expect(replace).not.toHaveBeenCalled()
@@ -120,19 +145,21 @@ describe('ExploreView', () => {
     const replace = vi.spyOn(window.history, 'replaceState')
     action.list.mockResolvedValue(page([]))
     const user = userEvent.setup()
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     expect(
       await screen.findByText('No creator matches this search')
     ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Clear search' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Clear search and filters' })
+    )
     expect(String(replace.mock.lastCall?.[2])).toMatch(/\/explore$/)
     expect(screen.getByRole('searchbox')).toHaveValue('')
   })
 
   it('says so when there are no creators at all', async () => {
     action.list.mockResolvedValue(page([]))
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     expect(
       await screen.findByText('No creators to show yet')
@@ -143,7 +170,7 @@ describe('ExploreView', () => {
     action.list.mockResolvedValueOnce({ ok: false, status: 500 })
     action.list.mockResolvedValueOnce(page([creator(4, { alias: 'dana' })]))
     const user = userEvent.setup()
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     expect(
       await screen.findByText('Creators could not be loaded')
@@ -156,7 +183,7 @@ describe('ExploreView', () => {
 
   it('marks the list busy while it loads', () => {
     action.list.mockReturnValue(new Promise(() => {}))
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     expect(screen.getByRole('list', { name: 'Loading creators' })).toBeVisible()
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()
@@ -169,14 +196,18 @@ describe('ExploreView', () => {
         : page([creator(2), creator(3)])
     )
     const user = userEvent.setup()
-    renderView(<ExploreView viewerId={42} />)
+    renderView({ viewerId: 42 })
 
     await user.click(await screen.findByRole('button', { name: 'Show more' }))
 
     expect(
       await screen.findByRole('heading', { level: 2, name: 'creator3' })
     ).toBeInTheDocument()
-    expect(action.list).toHaveBeenLastCalledWith(42, { alias: '', page: 2 })
+    expect(action.list).toHaveBeenLastCalledWith(42, {
+      alias: '',
+      categoryId: null,
+      page: 2,
+    })
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3)
     expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
   })
@@ -186,7 +217,7 @@ describe('ExploreView', () => {
       n === 1 ? page([creator(1)], 2) : { ok: false, status: 503 }
     )
     const user = userEvent.setup()
-    renderView(<ExploreView viewerId={null} />)
+    renderView({ viewerId: null })
 
     await user.click(await screen.findByRole('button', { name: 'Show more' }))
 
@@ -196,5 +227,74 @@ describe('ExploreView', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'creator1' })
     ).toBeVisible()
+  })
+
+  describe('categories (BE-LAND-07/08)', () => {
+    it('filters by the chosen category through the URL', async () => {
+      const replace = vi.spyOn(window.history, 'replaceState')
+      action.list.mockResolvedValue(page([creator(4)]))
+      const user = userEvent.setup()
+      renderView({ viewerId: null })
+
+      const all = await screen.findByRole('button', { name: 'All' })
+      expect(all).toHaveAttribute('aria-pressed', 'true')
+      await user.click(screen.getByRole('button', { name: 'Art' }))
+
+      expect(String(replace.mock.lastCall?.[2])).toMatch(
+        /\/explore\?category=5$/
+      )
+    })
+
+    it('asks for the category in the URL and marks its chip', async () => {
+      window.history.replaceState(null, '', '/explore?category=2')
+      action.list.mockResolvedValue(page([creator(4, { categoryId: 2 })]))
+      renderView({ viewerId: null })
+
+      await waitFor(() =>
+        expect(action.list).toHaveBeenCalledWith(null, {
+          alias: '',
+          categoryId: 2,
+          page: 1,
+        })
+      )
+      expect(screen.getByRole('button', { name: 'Music' })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    })
+
+    it('ignores a category the backend did not list', async () => {
+      window.history.replaceState(null, '', '/explore?category=999')
+      action.list.mockResolvedValue(page([]))
+      renderView({ viewerId: null })
+
+      await waitFor(() =>
+        expect(action.list).toHaveBeenCalledWith(null, {
+          alias: '',
+          categoryId: null,
+          page: 1,
+        })
+      )
+    })
+
+    it("labels each card with its category's title", async () => {
+      action.list.mockResolvedValue(
+        page([creator(4, { alias: 'dana', categoryId: 5 }), creator(7)])
+      )
+      renderView({ viewerId: null })
+
+      await screen.findByRole('heading', { level: 2, name: 'dana' })
+      expect(screen.getAllByText('Art')).toHaveLength(2) // the chip and the card label
+    })
+
+    it('shows no chips when the category list is unavailable', async () => {
+      action.list.mockResolvedValue(page([creator(4)]))
+      renderView({ viewerId: null, withCategories: [] })
+
+      await screen.findByRole('heading', { level: 2, name: 'creator4' })
+      expect(
+        screen.queryByRole('group', { name: 'Filter by category' })
+      ).toBeNull()
+    })
   })
 })

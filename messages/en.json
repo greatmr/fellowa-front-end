@@ -246,13 +246,15 @@
     "errorTitle": "Creators could not be loaded",
     "retry": "Try again",
     "noResultsTitle": "No creator matches this search",
-    "clearSearch": "Clear search",
     "noCreatorsTitle": "No creators to show yet",
     "noCreatorsBody": "Published creator pages will appear here.",
     "loadMore": "Show more",
     "loadingMore": "Loading…",
     "unnamed": "Unnamed creator",
-    "followers": "{count, plural, one {<b>{formatted}</b> follower} other {<b>{formatted}</b> followers}}"
+    "followers": "{count, plural, one {<b>{formatted}</b> follower} other {<b>{formatted}</b> followers}}",
+    "categoriesLabel": "Filter by category",
+    "allCategories": "All",
+    "clearFilters": "Clear search and filters"
   },
   "publicLayout": {
     "home": "Fellowa home",

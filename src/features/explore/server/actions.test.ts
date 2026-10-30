@@ -101,7 +101,11 @@ describe('explore server boundary', () => {
     request.cookie = token()
 
     expect(
-      await listExploreCreatorsForHook(null, { alias: '', page: 1 })
+      await listExploreCreatorsForHook(null, {
+        alias: '',
+        categoryId: null,
+        page: 1,
+      })
     ).toEqual({
       ok: true,
       data: {
@@ -112,6 +116,7 @@ describe('explore server boundary', () => {
             avatarUrl: 'https://cdn.fellowa.test/a.png',
             coverUrl: null,
             bio: 'Painter',
+            categoryId: 2,
             followerCount: 1200,
           },
         ],
@@ -127,7 +132,11 @@ describe('explore server boundary', () => {
   it("sends the viewer's own token, without a profile round-trip", async () => {
     request.cookie = token(42)
 
-    await listExploreCreatorsForHook(42, { alias: '', page: 2 })
+    await listExploreCreatorsForHook(42, {
+      alias: '',
+      categoryId: null,
+      page: 2,
+    })
 
     expect(seen).toEqual([
       {
@@ -148,7 +157,11 @@ describe('explore server boundary', () => {
       request.cookie = cookie()
 
       expect(
-        await listExploreCreatorsForHook(42, { alias: '', page: 2 })
+        await listExploreCreatorsForHook(42, {
+          alias: '',
+          categoryId: null,
+          page: 2,
+        })
       ).toEqual({ ok: false, status: 401, code: 'SESSION_CHANGED' })
       expect(seen).toEqual([])
     }
@@ -157,6 +170,7 @@ describe('explore server boundary', () => {
   it('searches by alias on the canonical list', async () => {
     const result = await listExploreCreatorsForHook(null, {
       alias: ' da ',
+      categoryId: null,
       page: 1,
     })
 
@@ -170,10 +184,32 @@ describe('explore server boundary', () => {
     })
   })
 
+  it('sends the category filter on both lists (BE-LAND-08)', async () => {
+    await listExploreCreatorsForHook(null, {
+      alias: '',
+      categoryId: 5,
+      page: 1,
+    })
+    await listExploreCreatorsForHook(null, {
+      alias: 'da',
+      categoryId: 5,
+      page: 1,
+    })
+
+    expect(seen.map(({ path, search }) => ({ path, search }))).toEqual([
+      { path: '/api/landing/creators/top', search: '?categoryId=5&page=1' },
+      {
+        path: '/api/landing/creators',
+        search: '?alias=da&categoryId=5&page=1',
+      },
+    ])
+  })
+
   it.each([
-    [{ alias: '', page: 0 }, null],
-    [{ alias: 'x'.repeat(256), page: 1 }, null],
-    [{ alias: '', page: 1 }, -1],
+    [{ alias: '', categoryId: null, page: 0 }, null],
+    [{ alias: 'x'.repeat(256), categoryId: null, page: 1 }, null],
+    [{ alias: '', categoryId: 0, page: 1 }, null],
+    [{ alias: '', categoryId: null, page: 1 }, -1],
   ])(
     'rejects invalid input %j for viewer %j without calling the API',
     async (input, viewer) => {
@@ -192,7 +228,11 @@ describe('explore server boundary', () => {
       topReturns([{ ...creator, avatar }])
 
       expect(
-        await listExploreCreatorsForHook(null, { alias: '', page: 1 })
+        await listExploreCreatorsForHook(null, {
+          alias: '',
+          categoryId: null,
+          page: 1,
+        })
       ).toMatchObject({
         ok: true,
         data: { items: [{ id: 4, avatarUrl: null }] },
@@ -207,7 +247,11 @@ describe('explore server boundary', () => {
     topReturns([item])
 
     expect(
-      await listExploreCreatorsForHook(null, { alias: '', page: 1 })
+      await listExploreCreatorsForHook(null, {
+        alias: '',
+        categoryId: null,
+        page: 1,
+      })
     ).toEqual({ ok: false, code: 'INVALID_EXPLORE_RESPONSE' })
   })
 
@@ -222,7 +266,11 @@ describe('explore server boundary', () => {
     )
 
     expect(
-      await listExploreCreatorsForHook(null, { alias: '', page: 1 })
+      await listExploreCreatorsForHook(null, {
+        alias: '',
+        categoryId: null,
+        page: 1,
+      })
     ).toMatchObject({ ok: false, status: 500 })
   })
 })
