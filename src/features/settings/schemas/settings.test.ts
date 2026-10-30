@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { toLatinDigits } from '@/lib/digits'
+
 import {
   createPasswordSchema,
   createPersonalSchema,
   normalizeMobile,
   parsePersonal,
-  toLatinDigits,
 } from './settings'
 
 const personal = createPersonalSchema({

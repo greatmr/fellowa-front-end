@@ -12,7 +12,8 @@
       "submit": "Sign in",
       "pending": "Signing in…",
       "switchPrompt": "New to Fellowa?",
-      "switchLink": "Create an account"
+      "switchLink": "Create an account",
+      "forgotLink": "Forgot your password?"
     },
     "register": {
       "title": "Join Fellowa",
@@ -25,7 +26,9 @@
     "fields": {
       "email": "Email address",
       "password": "Password",
-      "code": "Verification code"
+      "code": "Verification code",
+      "resetToken": "Reset token",
+      "newPassword": "New password"
     },
     "emailHint": "Use the email address for your account.",
     "password": {
@@ -38,7 +41,8 @@
       "email": "Enter a valid email address.",
       "passwordRequired": "Enter your password.",
       "passwordLength": "Use at least 8 characters for your password.",
-      "code": "Enter the six-digit code from your email."
+      "code": "Enter the six-digit code from your email.",
+      "resetToken": "Paste the full reset token from your email."
     },
     "errors": {
       "invalidCredentials": "The email address or password is incorrect.",
@@ -49,9 +53,11 @@
       "invalidResponse": "The request could not be completed. Please try again.",
       "expiredSession": "Your session has expired. Please sign in again.",
       "invalidCode": "The code is incorrect or has expired. Try again or request a new code.",
-      "alreadyVerified": "This email address is already verified. Sign in to continue.",
       "invalidRequest": "Check the information you entered and try again.",
-      "unexpected": "The request could not be completed. Please try again."
+      "unexpected": "The request could not be completed. Please try again.",
+      "tooManyAttempts": "Too many incorrect attempts. Wait a while, then request a new code and try again.",
+      "resendCooldown": "A code was sent a moment ago. Check your inbox and spam folder, or wait a little and request another.",
+      "invalidResetToken": "This reset token is incorrect, expired or already used. Check it or request a new one."
     },
     "verify": {
       "title": "Check your email",
@@ -63,6 +69,29 @@
       "sent": "A new code has been sent. Check your inbox and spam folder.",
       "changeAccount": "Sign in with another account",
       "codeHint": "Enter all six digits. Request a new code if it has expired."
+    },
+    "forgot": {
+      "title": "Forgot your password?",
+      "description": "Enter the email address for your account and we will send you a reset token.",
+      "submit": "Send reset token",
+      "pending": "Sending…",
+      "sentTitle": "Check your email",
+      "sent": "If an account uses this email address, a reset token is on its way. Check your inbox and spam folder. The token expires soon and works only once.",
+      "haveToken": "Enter your reset token",
+      "tryAgain": "Use a different email address",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "description": "Paste the reset token from your email and choose a new password.",
+      "tokenHint": "Copy the whole token from the email we sent you.",
+      "submit": "Reset password",
+      "pending": "Resetting…",
+      "doneTitle": "Password changed",
+      "done": "Your password has been changed. Sign in with your new password.",
+      "login": "Go to sign in",
+      "needToken": "Need a new token?",
+      "requestToken": "Request one"
     },
     "nav": {
       "login": "Sign in",
