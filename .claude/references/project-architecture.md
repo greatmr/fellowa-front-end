@@ -31,7 +31,7 @@ src/
   app/globals.css      Tailwind entry: @config, semantic tokens per theme (via --theme()), utilities
   components/ui/       shadcn primitives (+ brand deltas): avatar badge button card dialog
                        dropdown-menu form input label separator sheet skeleton sonner tabs textarea
-  components/common/   app composites: empty-state, error-state
+  components/common/   app composites: empty-state, error-state, money (the one money formatter)
   components/providers/ app-providers (theme + query + toaster), query-provider
   features/<feature>/  api · components · server · schemas · types (auth and tiers implemented)
   hooks/               shared hooks (none yet)

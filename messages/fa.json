@@ -115,7 +115,8 @@
     "save": "ذخیره",
     "close": "بستن",
     "skipToContent": "رفتن به محتوای اصلی",
-    "notifications": "اعلان‌ها"
+    "notifications": "اعلان‌ها",
+    "money": "{amount} <unit>تومان</unit>"
   },
   "errors": {
     "unexpectedTitle": "مشکلی پیش آمد",
@@ -281,7 +282,6 @@
     "create": "ایجاد پلن",
     "edit": "ویرایش",
     "delete": "حذف",
-    "toman": "تومان",
     "emptyTitle": "هنوز پلنی ندارید",
     "emptyBody": "برای اعضای خود پلنی با قیمت و مزایا بسازید.",
     "loadError": "بارگذاری پلن‌ها ناموفق بود",
@@ -456,7 +456,6 @@
     "signInHint": "برای دنبال کردن یا عضویت وارد شو.",
     "comingSoon": "عضویت در پلن‌ها به‌زودی فعال می‌شود.",
     "editPage": "ویرایش صفحه‌ات",
-    "toman": "تومان",
     "tabs": {
       "posts": "پست‌ها ({count})",
       "tiers": "پلن‌های عضویت ({count})",
