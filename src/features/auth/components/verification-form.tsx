@@ -147,7 +147,7 @@ export function VerificationForm({
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-headline font-extrabold">{t('verify.title')}</h1>
+        <h1 className="text-headline font-bold">{t('verify.title')}</h1>
         <p className="text-body text-muted-foreground">
           {t('verify.description')}
         </p>

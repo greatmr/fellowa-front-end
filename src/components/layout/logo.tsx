@@ -23,7 +23,7 @@ export function Logo({ className }: { className?: string }) {
           />
         </svg>
       </span>
-      <span className="text-subtitle font-extrabold tracking-tight text-foreground group-data-[collapsed=true]/sidebar:sr-only">
+      <span className="text-subtitle font-bold tracking-tight text-foreground group-data-[collapsed=true]/sidebar:sr-only">
         {t('appName')}
       </span>
     </span>

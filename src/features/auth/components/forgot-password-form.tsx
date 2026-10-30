@@ -78,7 +78,7 @@ export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
   if (sent) {
     return (
       <div className="space-y-6">
-        <h1 className="text-center text-headline font-extrabold">
+        <h1 className="text-center text-headline font-bold">
           {t('forgot.sentTitle')}
         </h1>
         <p
@@ -110,7 +110,7 @@ export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-headline font-extrabold">{t('forgot.title')}</h1>
+        <h1 className="text-headline font-bold">{t('forgot.title')}</h1>
         <p className="text-body text-muted-foreground">
           {t('forgot.description')}
         </p>
