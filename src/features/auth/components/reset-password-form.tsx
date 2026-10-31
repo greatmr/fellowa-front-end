@@ -75,7 +75,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string }) {
   if (done) {
     return (
       <div className="space-y-6">
-        <h1 className="text-center text-headline font-extrabold">
+        <h1 className="text-center text-headline font-bold">
           {t('reset.doneTitle')}
         </h1>
         <p
@@ -99,7 +99,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-headline font-extrabold">{t('reset.title')}</h1>
+        <h1 className="text-headline font-bold">{t('reset.title')}</h1>
         <p className="text-body text-muted-foreground">
           {t('reset.description')}
         </p>

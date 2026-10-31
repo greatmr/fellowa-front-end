@@ -58,7 +58,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           >
             <SparklesIcon className="size-10" />
           </div>
-          <h2 className="text-display font-extrabold">{t('brandTitle')}</h2>
+          <h2 className="text-display font-bold">{t('brandTitle')}</h2>
           <p className="text-subtitle leading-relaxed text-inverse-foreground/80">
             {t('brandBody')}
           </p>

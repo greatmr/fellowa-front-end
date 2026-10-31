@@ -53,7 +53,7 @@ export function CreatorPageView({
               {name.slice(0, 1).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <h1 className="text-title font-extrabold text-foreground">
+          <h1 className="text-title font-bold text-foreground">
             <bdi>{name}</bdi>
           </h1>
           <p className="flex flex-wrap gap-x-1.5 text-body-sm text-muted-foreground">
@@ -153,7 +153,7 @@ export function CreatorPageView({
                       <h2 dir="auto" className="text-subtitle font-bold">
                         {tier.title}
                       </h2>
-                      <p className="numeric text-title-sm font-extrabold">
+                      <p className="numeric text-title-sm font-bold">
                         <Money
                           amountToman={tier.priceToman}
                           unitClassName="text-body font-medium text-muted-foreground"

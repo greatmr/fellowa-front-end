@@ -26,7 +26,7 @@ export default async function Page({
           viewerId={null}
           categories={categories}
           heading={
-            <h1 className="text-title font-extrabold text-foreground">
+            <h1 className="text-title font-bold text-foreground">
               {t('publicTitle')}
             </h1>
           }

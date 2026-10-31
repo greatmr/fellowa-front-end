@@ -42,7 +42,7 @@ export default function GlobalError({
           >
             <ErrorLayout
               brand={
-                <span className="text-subtitle font-extrabold">
+                <span className="text-subtitle font-bold">
                   {messages.common.appName}
                 </span>
               }
