@@ -14,7 +14,7 @@ export async function SessionGate({
 }) {
   const session = await getSession()
   if (!session) {
-    return redirect({ href: '/auth/login', locale })
+    return redirect({ href: '/auth', locale })
   }
   if (!session.user.isVerified) {
     return redirect({ href: '/auth/verify-email', locale })

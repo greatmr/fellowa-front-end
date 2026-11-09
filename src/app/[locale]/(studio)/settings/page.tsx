@@ -16,7 +16,7 @@ export default async function Page({
   setRequestLocale(locale)
   const session = await getSession()
   if (!session) {
-    return redirect({ href: '/auth/login', locale: locale as Locale })
+    return redirect({ href: '/auth', locale: locale as Locale })
   }
   const [t, settings] = await Promise.all([
     getTranslations('studio'),

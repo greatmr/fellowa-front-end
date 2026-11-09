@@ -1,39 +1,70 @@
 'use client'
 
-import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
+import { toast } from 'sonner'
 
+import type { GoogleErrorKind } from '@/features/auth/lib/google-error'
 import { deadlineIn, type Deadline } from '@/features/auth/lib/phone'
-import { phoneSignInDestination } from '@/features/auth/lib/return-to'
+import { authHref, phoneSignInDestination } from '@/features/auth/lib/return-to'
 import type { PhoneCodeSent, PhoneSignIn } from '@/features/auth/types'
 import { useRouter } from '@/i18n/navigation'
 
+import { useAuthFlow } from './auth-flow-context'
 import { PhoneCodeStep } from './phone-code-step'
 import { PhoneEntryStep } from './phone-entry-step'
 import { PhonePasswordStep } from './phone-password-step'
 
-type Target = { phone: string; hasPassword: boolean; wait: Deadline }
-type Step = 'phone' | 'code' | 'password'
+export type PhoneStep = 'entry' | 'otp' | 'password'
+
+const PATHS = {
+  entry: '/auth',
+  otp: '/auth/otp',
+  password: '/auth/password',
+} as const satisfies Record<PhoneStep, string>
 
 /**
  * Phone-first sign-in and sign-up (FE-AUTH-01, FQ-16; presentation
- * `AuthContainer` @ fdb5f6c). The number and the resend wait live only in this
- * component; the session is the httpOnly cookie the server actions set.
+ * `AuthContainer` @ fdb5f6c), one route per step: `/auth`, `/auth/otp`,
+ * `/auth/password`. The number and the resend wait live in the auth layout's
+ * memory; the session is the httpOnly cookie the server actions set. A step
+ * reached without a number (a reload, a shared link) goes back to `/auth`.
  */
-export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
+export function PhoneAuthFlow({
+  step,
+  returnTo,
+  google,
+}: {
+  step: PhoneStep
+  returnTo?: string
+  google?: { enabled: boolean; locale: string; error: GoogleErrorKind | null }
+}) {
+  const t = useTranslations('auth.phone.toast')
   const router = useRouter()
-  const [step, setStep] = useState<Step>('phone')
-  const [target, setTarget] = useState<Target | null>(null)
+  const { target, setTarget, setSignedInPhone } = useAuthFlow()
+  const missingTarget = step !== 'entry' && !target
+
+  useEffect(() => {
+    if (missingTarget) router.replace(authHref(PATHS.entry, returnTo))
+  }, [missingTarget, returnTo, router])
+
+  function go(next: PhoneStep) {
+    router.push(authHref(PATHS[next], returnTo))
+  }
 
   function codeSent(sent: PhoneCodeSent) {
-    setTarget({
+    setTarget(() => ({
       phone: sent.phone,
       hasPassword: sent.hasPassword,
       wait: deadlineIn(sent.resendAfterSeconds),
-    })
-    setStep(sent.hasPassword ? 'password' : 'code')
+    }))
+    go(sent.hasPassword ? 'password' : 'otp')
   }
 
   function signedIn(result: PhoneSignIn) {
+    const completing = result.isNewUser || result.needsProfile
+    setSignedInPhone(completing ? result.phone : null)
+    toast.success(t(result.isNewUser ? 'verified' : 'welcomeBack'))
     router.replace(phoneSignInDestination(result, returnTo))
   }
 
@@ -41,7 +72,7 @@ export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
     setTarget((current) => current && { ...current, wait })
   }
 
-  if (!target || step === 'phone') {
+  if (step === 'entry') {
     return (
       <PhoneEntryStep
         initialPhone={target?.phone}
@@ -50,14 +81,17 @@ export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
           // be refused as rate-limited); go back to where it was.
           if (!target || target.phone !== phone) return false
           if (Date.now() >= target.wait.until) return false
-          setStep(target.hasPassword ? 'password' : 'code')
+          go(target.hasPassword ? 'password' : 'otp')
           return true
         }}
         returnTo={returnTo}
+        google={google}
         onCodeSent={codeSent}
       />
     )
   }
+
+  if (!target) return null
 
   if (step === 'password') {
     return (
@@ -67,9 +101,9 @@ export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
         onSignedIn={signedIn}
         onUseCode={(sent) => {
           if (sent) waitUntil(deadlineIn(sent.resendAfterSeconds))
-          setStep('code')
+          go('otp')
         }}
-        onChangePhone={() => setStep('phone')}
+        onChangePhone={() => go('entry')}
       />
     )
   }
@@ -81,8 +115,8 @@ export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
       wait={target.wait}
       onResent={waitUntil}
       onSignedIn={signedIn}
-      onEditPhone={() => setStep('phone')}
-      onUsePassword={() => setStep('password')}
+      onEditPhone={() => go('entry')}
+      onUsePassword={() => go('password')}
     />
   )
 }

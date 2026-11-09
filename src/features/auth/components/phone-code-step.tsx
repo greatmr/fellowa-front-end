@@ -22,6 +22,7 @@ import type { PhoneSignIn } from '@/features/auth/types'
 import { toLatinDigits } from '@/lib/digits'
 import { cn } from '@/lib/utils'
 
+import { AuthScreenHeading } from './auth-heading'
 import { PhoneFeedback, PhoneNumber, useDuration } from './phone-ui'
 
 const empty = () => Array<string>(PHONE_CODE_LENGTH).fill('')
@@ -200,24 +201,26 @@ export function PhoneCodeStep({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t('code.title')}</h1>
-        <p className="text-body leading-relaxed text-muted-foreground">
-          {t.rich('code.sentTo', {
-            length: PHONE_CODE_LENGTH,
-            phone: () => <PhoneNumber phone={phone} />,
-          })}{' '}
-          <Button
-            type="button"
-            variant="link"
-            className="h-auto p-0 font-bold"
-            onClick={onEditPhone}
-            disabled={pending}
-          >
-            {t('code.editNumber')}
-          </Button>
-        </p>
-      </div>
+      <AuthScreenHeading
+        title={t('code.title')}
+        description={
+          <>
+            {t.rich('code.sentTo', {
+              length: PHONE_CODE_LENGTH,
+              phone: () => <PhoneNumber phone={phone} />,
+            })}{' '}
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto p-0 font-bold"
+              onClick={onEditPhone}
+              disabled={pending}
+            >
+              {t('code.editNumber')}
+            </Button>
+          </>
+        }
+      />
 
       <form
         noValidate

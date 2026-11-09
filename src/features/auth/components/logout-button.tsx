@@ -22,7 +22,7 @@ export function LogoutButton() {
     logout.mutate(undefined, {
       onSuccess: () => {
         logout.reset()
-        router.replace('/auth/login')
+        router.replace('/auth')
       },
       onError: () => {
         submitting.current = false

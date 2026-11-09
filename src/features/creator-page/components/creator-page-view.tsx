@@ -225,7 +225,7 @@ export function CreatorPageView({
 
 function signInHref(creatorId: number) {
   return {
-    pathname: '/auth/login',
+    pathname: '/auth',
     query: { returnTo: `/creators/${creatorId}` },
   } as const
 }

@@ -1,72 +1,65 @@
-import type { ReactNode } from 'react'
-import { ArrowLeftIcon, SparklesIcon } from 'lucide-react'
+import { Suspense, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Logo } from '@/components/layout/logo'
 import { SkipLink } from '@/components/layout/skip-link'
 import { Link } from '@/i18n/navigation'
 
-/** The presentation's form-and-brand composition, without demo creator data. */
+import { AuthBackButton, AuthBackSpacer } from './auth-back-button'
+import { AuthFlowProvider } from './auth-flow-context'
+import { AuthVisual } from './auth-visual'
+import { SampleCreatorCards } from './sample-creator-cards'
+
+/**
+ * The auth frame (presentation `AuthLayout` @ fdb5f6c): the form column with
+ * the logo and, after the first step, a round back button; the dark visual
+ * column on wide screens. It holds the flow's in-memory state across the
+ * per-step routes. The prototype has no theme switch here; settings has one.
+ */
 export function AuthLayout({ children }: { children: ReactNode }) {
   const t = useTranslations('auth.layout')
 
   return (
-    <div className="grid min-h-dvh bg-background text-foreground lg:grid-cols-2">
-      <SkipLink />
-      <div className="flex min-w-0 flex-col px-5 py-6 sm:px-10 lg:px-14 lg:py-10">
-        <header className="flex items-center justify-between gap-6">
-          <Link
-            href="/"
-            aria-label={t('home')}
-            className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <AuthFlowProvider>
+      <div className="relative flex min-h-dvh w-full flex-col bg-background text-foreground lg:flex-row">
+        <SkipLink />
+        <div className="relative flex flex-1 flex-col justify-between bg-card px-6 py-6 lg:min-h-dvh lg:w-1/2 lg:max-w-1/2 lg:px-14 lg:py-10">
+          <header className="z-20 flex w-full items-center justify-between">
+            <Link
+              href="/"
+              aria-label={t('home')}
+              title={t('home')}
+              className="group rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Logo />
+            </Link>
+            <Suspense fallback={<AuthBackSpacer />}>
+              <AuthBackButton />
+            </Suspense>
+          </header>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto flex w-full max-w-100 flex-1 flex-col justify-center py-8 outline-none lg:py-12"
           >
-            <Logo />
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-md text-body font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            {t('home')}
-            <ArrowLeftIcon className="size-4 rtl:rotate-180" aria-hidden />
-          </Link>
-        </header>
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12 outline-none lg:py-16"
-        >
-          {children}
-        </main>
-        <footer className="mx-auto w-full max-w-sm">
-          <ThemeSwitch />
-        </footer>
-      </div>
-      <aside className="relative hidden overflow-hidden bg-inverse p-12 text-inverse-foreground lg:flex lg:items-center lg:justify-center">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-24 -top-24 size-96 rounded-full bg-brand-600/30 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -start-20 -bottom-20 size-80 rounded-full bg-violet-600/30 blur-3xl"
-        />
-        <div className="relative max-w-sm space-y-8">
-          <div
-            aria-hidden
-            className="inline-flex rounded-card border border-inverse-foreground/20 bg-inverse-foreground/10 p-5 shadow-panel"
-          >
-            <SparklesIcon className="size-10" />
-          </div>
-          <h2 className="text-display font-bold">{t('brandTitle')}</h2>
-          <p className="text-subtitle leading-relaxed text-inverse-foreground/80">
-            {t('brandBody')}
-          </p>
-          <p className="border-s-2 border-brand-400 ps-4 text-body text-inverse-foreground/80">
-            {t('brandNote')}
-          </p>
+            {children}
+          </main>
+          <div aria-hidden className="hidden h-4 lg:block" />
         </div>
-      </aside>
-    </div>
+        <aside
+          aria-hidden
+          className="relative hidden overflow-hidden bg-auth-visual lg:flex lg:w-1/2 lg:items-center lg:justify-center"
+        >
+          <div className="pointer-events-none absolute -start-32 -top-32 size-96 rounded-full bg-money-500/25 blur-3xl" />
+          <div className="pointer-events-none absolute -end-20 top-1/4 size-96 rounded-full bg-brand-600/35 blur-3xl" />
+          <div className="pointer-events-none absolute start-1/4 bottom-10 size-80 rounded-full bg-violet-600/30 blur-3xl" />
+          <div className="pointer-events-none absolute end-10 -bottom-20 size-72 rounded-full bg-amber-500/15 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 dot-grid opacity-15" />
+          <div className="relative z-10 flex w-full max-w-115 items-center justify-center p-8">
+            <AuthVisual samples={<SampleCreatorCards />} />
+          </div>
+        </aside>
+      </div>
+    </AuthFlowProvider>
   )
 }

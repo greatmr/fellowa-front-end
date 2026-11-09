@@ -24,6 +24,7 @@ import { Link } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
+import { AuthScreenHeading } from './auth-heading'
 
 /**
  * Asks for a reset token. The backend answers the same for an unknown email,
@@ -78,9 +79,7 @@ export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
   if (sent) {
     return (
       <div className="space-y-6">
-        <h1 className="text-center text-headline font-bold">
-          {t('forgot.sentTitle')}
-        </h1>
+        <AuthScreenHeading title={t('forgot.sentTitle')} />
         <p
           role="status"
           className="rounded-md border border-success-border bg-success-subtle p-3 text-body text-success-emphasis"
@@ -109,12 +108,10 @@ export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t('forgot.title')}</h1>
-        <p className="text-body text-muted-foreground">
-          {t('forgot.description')}
-        </p>
-      </div>
+      <AuthScreenHeading
+        title={t('forgot.title')}
+        description={t('forgot.description')}
+      />
       <Form {...form}>
         <form
           onSubmit={submit}

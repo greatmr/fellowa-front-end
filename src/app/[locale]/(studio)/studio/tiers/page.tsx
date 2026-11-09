@@ -13,8 +13,7 @@ export default async function Page({
   const { locale } = await params
   setRequestLocale(locale)
   const session = await getSession()
-  if (!session)
-    return redirect({ href: '/auth/login', locale: locale as Locale })
+  if (!session) return redirect({ href: '/auth', locale: locale as Locale })
   if (!session.user.isVerified) {
     return redirect({ href: '/auth/verify-email', locale: locale as Locale })
   }

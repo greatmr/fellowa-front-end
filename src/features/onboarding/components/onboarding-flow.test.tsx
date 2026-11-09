@@ -206,7 +206,7 @@ describe('name step', () => {
 
     expect(
       await screen.findByRole('link', { name: 'Sign in again' })
-    ).toHaveAttribute('href', '/en/auth/login?returnTo=%2Fonboarding')
+    ).toHaveAttribute('href', '/en/auth?returnTo=%2Fonboarding')
     expect(sent).toEqual([])
   })
 })

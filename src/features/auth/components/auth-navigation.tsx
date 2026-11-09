@@ -14,10 +14,10 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/auth/login">{t('nav.login')}</Link>
+          <Link href="/auth">{t('nav.login')}</Link>
         </Button>
         <Button asChild size="sm">
-          <Link href="/auth/register">{t('nav.register')}</Link>
+          <Link href="/auth">{t('nav.register')}</Link>
         </Button>
       </div>
     )

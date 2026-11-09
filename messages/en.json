@@ -1,10 +1,10 @@
 {
   "auth": {
     "layout": {
-      "home": "Back to home",
-      "brandTitle": "Your creativity. Your community.",
-      "brandBody": "A home for your work and the people who believe in it.",
-      "brandNote": "Make space for the things you love to create."
+      "home": "Fellowa home",
+      "back": "Back",
+      "progress": "Step {current, number} of {total, number}",
+      "progressLabel": "Account setup progress"
     },
     "login": {
       "title": "Welcome back",
@@ -112,13 +112,19 @@
       "entry": {
         "title": "Sign in or sign up",
         "description": "Welcome to Fellowa. Enter your mobile number to sign in or create an account.",
+        "descriptionWithGoogle": "Welcome to Fellowa. Enter your mobile number, or sign in quickly with Google.",
         "label": "Mobile number",
         "placeholder": "0912 345 6789",
         "submit": "Continue and get a code",
         "pending": "Sending code…",
         "emailPrompt": "Have an email account?",
         "emailLink": "Sign in with email",
-        "legal": "By signing in or signing up to Fellowa, you accept the <strong>Terms of use</strong> and the <strong>Privacy policy</strong>."
+        "legal": "By signing in or signing up to Fellowa, you accept the <strong>Terms of use</strong> and the <strong>Privacy policy</strong>.",
+        "googleTitle": "Quick sign-in with Google",
+        "googleSubtitle": "Your Google account",
+        "googleAction": "Sign in",
+        "googlePending": "Taking you to Google…",
+        "divider": "or with your mobile number"
       },
       "code": {
         "title": "Enter the verification code",
@@ -147,13 +153,12 @@
         "changeNumber": "Change mobile number"
       },
       "account": {
-        "progress": "Step {current, number} of {total, number}",
-        "progressLabel": "Account setup progress",
         "title": "Complete your account",
         "description": "Complete your account's basic information",
+        "phoneLine": "Your mobile number: <phone></phone>",
         "nameLabel": "Your name (or an alias)",
         "namePlaceholder": "For example: Alireza Mohammadi",
-        "nameHint": "Owners of the pages you support see this name.",
+        "nameHint": "Shown at the top of your page for your supporters.",
         "passwordLabel": "Password",
         "optional": "(optional)",
         "skipLink": "Skip (set it later in settings)",
@@ -161,7 +166,7 @@
         "passwordHint": "Without a password you can always sign in with a one-time SMS code, or set one later in settings.",
         "submit": "Continue to the next step",
         "pending": "Saving…",
-        "skip": "Continue without a password"
+        "skip": "Continue without a password (skip)"
       },
       "validation": {
         "phone": "Enter an 11-digit mobile number that starts with 09.",
@@ -182,7 +187,58 @@
         "smsUnavailable": "Text messages can't be sent right now. Try again in a little while.",
         "invalidCredentials": "The password is incorrect. You can sign in with a one-time code instead.",
         "passwordAlreadySet": "This account already has a password. Continue without one, or change it in settings."
+      },
+      "googleErrors": {
+        "failed": "Google sign-in did not finish. Try again.",
+        "emailNotVerified": "This Google account's email is not verified. Verify it with Google first, or sign in with your mobile number.",
+        "usePassword": "A Fellowa account already uses this email. Sign in with your email and password.",
+        "alreadyLinked": "This email is linked to a different Google account. Use that account, or sign in with your mobile number."
+      },
+      "toast": {
+        "verified": "Your mobile number is verified!",
+        "welcomeBack": "Welcome back!",
+        "saved": "Saved.",
+        "skipped": "Password skipped. You can set one later in settings.",
+        "pageCreated": "Your studio page is ready!"
       }
+    },
+    "samples": {
+      "musician": {
+        "tag": "Musician",
+        "tier": "Premium membership",
+        "benefit1": "Download exclusive studio tracks",
+        "benefit2": "Demos and behind-the-scenes of each track"
+      },
+      "podcaster": {
+        "tag": "Podcaster",
+        "tier": "Die-hard supporters",
+        "benefit1": "Extra, uncut episodes",
+        "benefit2": "Early access to new episodes",
+        "benefit3": "A members-only chat group"
+      },
+      "perMonth": "/month"
+    },
+    "preview": {
+      "badge": "Live page preview",
+      "kind": "Creator page",
+      "noSocials": "No social links added",
+      "supporters": "{count, number} supporters"
+    },
+    "url": {
+      "title": "Create your page",
+      "description": "You can always edit this later.",
+      "label": "Choose your page address (URL)",
+      "prefix": "fellowa.ir/",
+      "placeholder": "yourname",
+      "chars": "English letters, numbers and _ only",
+      "tooShort": "The address must be at least {min, number} characters.",
+      "taken": "This address is already taken.",
+      "reserved": "This address cannot be used.",
+      "available": "This address is available.",
+      "rejected": "This address was not accepted. Try another one.",
+      "submit": "Continue",
+      "pending": "Creating your page…",
+      "back": "Back"
     }
   },
   "common": {

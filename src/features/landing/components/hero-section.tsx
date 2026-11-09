@@ -105,7 +105,7 @@ export function HeroSection() {
             size="lg"
             className="rounded-full shadow-brand hover:shadow-brand"
           >
-            <Link href="/auth/register">{t('cta')}</Link>
+            <Link href="/auth">{t('cta')}</Link>
           </Button>
         </div>
 
