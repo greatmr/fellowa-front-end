@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as I18nNavigation from '@/i18n/navigation'
+
 import { renderWithIntl } from '../../../../test/render'
 
 // The server boundary is covered by server/actions.test.ts; the real hooks run.
@@ -11,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   updatePersonal: vi.fn(),
   changePassword: vi.fn(),
   updatePageName: vi.fn(),
+  setFirstPassword: vi.fn(),
+  refresh: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }))
@@ -18,6 +22,11 @@ vi.mock('@/features/settings/server/actions', () => ({
   updatePersonalAction: mocks.updatePersonal,
   changePasswordAction: mocks.changePassword,
   updatePageNameAction: mocks.updatePageName,
+  setFirstPasswordAction: mocks.setFirstPassword,
+}))
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nNavigation>()),
+  useRouter: () => ({ refresh: mocks.refresh }),
 }))
 vi.mock('sonner', () => ({
   toast: { success: mocks.toastSuccess, error: mocks.toastError },
@@ -26,6 +35,7 @@ vi.mock('sonner', () => ({
 const { PersonalForm } = await import('./personal-form')
 const { PasswordForm } = await import('./password-form')
 const { PageNameForm } = await import('./page-name-form')
+const { FirstPasswordForm } = await import('./first-password-form')
 const { SettingsView } = await import('./settings-view')
 
 function renderForm(ui: ReactElement) {
@@ -192,6 +202,82 @@ describe('PasswordForm', () => {
   })
 })
 
+describe('FirstPasswordForm (FE-AUTH-05)', () => {
+  async function fill(next = 'first-pass', repeat = next) {
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Password'), next)
+    await user.type(screen.getByLabelText('Repeat the password'), repeat)
+    await user.click(screen.getByRole('button', { name: 'Set password' }))
+  }
+
+  it('asks for no current password', () => {
+    renderForm(<FirstPasswordForm viewerId={42} email={null} />)
+
+    expect(screen.queryByLabelText('Current password')).toBeNull()
+    expect(screen.getByText('At least 8 characters.')).toBeVisible()
+  })
+
+  it('sends only the new password, then reads the page again', async () => {
+    mocks.setFirstPassword.mockResolvedValue({ ok: true, data: null })
+    renderForm(<FirstPasswordForm viewerId={42} email={null} />)
+
+    await fill()
+
+    await waitFor(() =>
+      expect(mocks.setFirstPassword).toHaveBeenCalledWith(42, {
+        password: 'first-pass',
+      })
+    )
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Your password was set.')
+    expect(mocks.refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reads the page again when the account already has a password', async () => {
+    mocks.setFirstPassword.mockResolvedValue({
+      ok: false,
+      status: 409,
+      code: 'AUTH_PASSWORD_ALREADY_SET',
+    })
+    renderForm(<FirstPasswordForm viewerId={42} email={null} />)
+
+    await fill()
+
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce())
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      'This account already has a password. You can change it here.'
+    )
+    expect(mocks.toastSuccess).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [401, 'Your session ended. Sign in again.'],
+    [500, "That didn't save. Try again."],
+  ])('reports a %i without reading the page again', async (status, text) => {
+    mocks.setFirstPassword.mockResolvedValue({ ok: false, status })
+    renderForm(<FirstPasswordForm viewerId={42} email={null} />)
+
+    await fill()
+
+    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith(text))
+    expect(mocks.refresh).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['short', 'short', 'Use at least 8 characters.'],
+    ['first-pass', 'other-pass', "The two passwords don't match."],
+  ])(
+    'refuses %j / %j before calling the server',
+    async (next, repeat, message) => {
+      renderForm(<FirstPasswordForm viewerId={42} email={null} />)
+
+      await fill(next, repeat)
+
+      expect(await screen.findByText(message)).toBeVisible()
+      expect(mocks.setFirstPassword).not.toHaveBeenCalled()
+    }
+  )
+})
+
 describe('PageNameForm (FE-AUTH-03)', () => {
   const field = () => screen.getByLabelText('Page name')
   const save = () => screen.getByRole('button', { name: 'Save' })
@@ -292,6 +378,7 @@ describe('SettingsView page name section', () => {
         isVerified
         personal={{ firstName: '', lastName: '', phoneNumber: '' }}
         page={page}
+        password={{ hasPassword: true, hasDisplayName: true }}
         heading={<h1>Settings</h1>}
       />
     )
@@ -320,5 +407,46 @@ describe('SettingsView page name section', () => {
       "Your page name couldn't be loaded. Try again later."
     )
     expect(screen.getByLabelText('First name')).toBeInTheDocument()
+  })
+})
+
+describe('SettingsView password section (FE-AUTH-05)', () => {
+  const view = (password: { hasPassword: boolean; hasDisplayName: boolean }) =>
+    renderForm(
+      <SettingsView
+        viewerId={42}
+        email={null}
+        isVerified
+        personal={{ firstName: '', lastName: '', phoneNumber: '' }}
+        page={{ hasPage: true, pageName: null }}
+        password={password}
+        heading={<h1>Settings</h1>}
+      />
+    )
+
+  it('changes an existing password with the current one', () => {
+    view({ hasPassword: true, hasDisplayName: true })
+
+    expect(screen.getByLabelText('Current password')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Set a password' })).toBeNull()
+  })
+
+  it('sets a first password without the current one', () => {
+    view({ hasPassword: false, hasDisplayName: true })
+
+    expect(
+      screen.getByRole('heading', { name: 'Set a password' })
+    ).toBeVisible()
+    expect(screen.queryByLabelText('Current password')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Set password' })).toBeVisible()
+  })
+
+  it('asks an account with no name for one first, then comes back', () => {
+    view({ hasPassword: false, hasDisplayName: false })
+
+    expect(screen.queryByRole('button', { name: 'Set password' })).toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'Add your name' }).getAttribute('href')
+    ).toMatch(/\/auth\/account\?returnTo=%2Fsettings$/)
   })
 })

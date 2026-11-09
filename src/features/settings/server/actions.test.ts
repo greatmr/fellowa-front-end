@@ -21,9 +21,15 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { changePasswordAction, updatePageNameAction, updatePersonalAction } =
-  await import('./actions')
+const {
+  changePasswordAction,
+  setFirstPasswordAction,
+  updatePageNameAction,
+  updatePersonalAction,
+} = await import('./actions')
 const { getPageName, getPersonal } = await import('../api/settings-api')
+const { loadSettings } = await import('./load-settings')
+const { readSession } = await import('@/features/auth/server/session')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -35,6 +41,12 @@ function token(userId = 42) {
     JSON.stringify({ sub: userId, exp: tokenExpiry })
   ).toString('base64url')
   return `eyJhbGciOiJIUzI1NiJ9.${payload}.backendSignature`
+}
+
+/** The owner profile's password state (BE-AUTH-10) and name, per test. */
+const owner: { displayName: string | null; hasPassword: boolean } = {
+  displayName: 'Sara',
+  hasPassword: true,
 }
 
 const sent: {
@@ -49,27 +61,37 @@ const failure = (status: number, code: string) =>
     { status }
   )
 
+const record = async (r: Request) =>
+  sent.push({
+    method: r.method,
+    path: new URL(r.url).pathname,
+    body: await r.json(),
+    auth: r.headers.get('authorization'),
+  })
+
 beforeEach(() => {
   request.origin = 'https://fellowa.test'
   request.cookie = token()
+  owner.displayName = 'Sara'
+  owner.hasPassword = true
   sent.length = 0
-  const record = async (r: Request) =>
-    sent.push({
-      method: r.method,
-      path: new URL(r.url).pathname,
-      body: await r.json(),
-      auth: r.headers.get('authorization'),
-    })
   server.use(
+    // The owner shape of `GET /user/:id/profile` (`toSelfProfile`).
     http.get(`${apiOrigin}/user/:id/profile`, ({ params }) =>
       HttpResponse.json({
         data: {
           id: Number(params.id),
           email: 'me@example.com',
           alias: null,
+          pageName: null,
+          displayName: owner.displayName,
           isVerified: true,
-          displayName: 'Sara',
-          hasPassword: true,
+          isPublish: false,
+          hasPassword: owner.hasPassword,
+          categoryId: null,
+          personal: null,
+          about: null,
+          images: { profile: null, header: null },
         },
         errors: null,
       })
@@ -230,6 +252,142 @@ describe('settings server boundary (FE-SET-01)', () => {
     ).toMatchObject({ ok: false, status: 400 })
     expect(sent).toEqual([])
   })
+})
+
+describe('setFirstPasswordAction (FE-AUTH-05, BE-AUTH-10)', () => {
+  beforeEach(() => {
+    owner.hasPassword = false
+    server.use(
+      http.put(`${apiOrigin}/auth/account`, async ({ request: r }) => {
+        await record(r)
+        return HttpResponse.json({
+          data: {
+            message: 'Account updated',
+            displayName: 'Sara',
+            hasPassword: true,
+          },
+          errors: null,
+        })
+      })
+    )
+  })
+
+  it('sends the current name from the profile with the new password', async () => {
+    expect(
+      await setFirstPasswordAction(42, { password: 'first-pass' })
+    ).toEqual({ ok: true, data: null })
+    expect(sent).toEqual([
+      {
+        method: 'PUT',
+        path: '/api/auth/account',
+        body: { displayName: 'Sara', password: 'first-pass' },
+        auth: `Bearer ${token()}`,
+      },
+    ])
+  })
+
+  it('passes "already has a password" through as its code', async () => {
+    server.use(
+      http.put(`${apiOrigin}/auth/account`, () =>
+        failure(409, 'AUTH_PASSWORD_ALREADY_SET')
+      )
+    )
+
+    expect(
+      await setFirstPasswordAction(42, { password: 'first-pass' })
+    ).toEqual({
+      ok: false,
+      status: 409,
+      code: 'AUTH_PASSWORD_ALREADY_SET',
+      isNetworkError: false,
+    })
+  })
+
+  it.each([[null], ['S']])(
+    'refuses the stored name %j, which the endpoint would refuse, without calling the API',
+    async (displayName) => {
+      owner.displayName = displayName
+
+      expect(
+        await setFirstPasswordAction(42, { password: 'first-pass' })
+      ).toEqual({ ok: false, status: 400, code: 'INVALID_REQUEST' })
+      expect(sent).toEqual([])
+    }
+  )
+
+  it('sends the stored name trimmed, as the endpoint stores it', async () => {
+    owner.displayName = ' Sara '
+
+    await setFirstPasswordAction(42, { password: 'first-pass' })
+    expect(sent[0]?.body).toEqual({
+      displayName: 'Sara',
+      password: 'first-pass',
+    })
+  })
+
+  it.each([['short'], ['x'.repeat(201)]])(
+    'refuses the password %j without calling the API',
+    async (password) => {
+      expect(await setFirstPasswordAction(42, { password })).toEqual({
+        ok: false,
+        status: 400,
+        code: 'INVALID_REQUEST',
+      })
+      expect(sent).toEqual([])
+    }
+  )
+
+  it('refuses another signed-in account without calling the API', async () => {
+    request.cookie = token(7)
+
+    expect(
+      await setFirstPasswordAction(42, { password: 'first-pass' })
+    ).toEqual({ ok: false, status: 401, code: 'SESSION_CHANGED' })
+    expect(sent).toEqual([])
+  })
+})
+
+describe('loadSettings password state (FE-AUTH-05)', () => {
+  beforeEach(() => {
+    server.use(
+      http.get(`${apiOrigin}/user/personal`, () =>
+        failure(404, 'USER_PERSONAL_NOT_FOUND')
+      ),
+      http.get(`${apiOrigin}/user/about`, () =>
+        HttpResponse.json({ data: { id: null, pageName: null }, errors: null })
+      )
+    )
+  })
+
+  async function passwordState() {
+    const session = await readSession()
+    if (!session) throw new Error('expected a session')
+    return (await loadSettings(session)).password
+  }
+
+  it.each([
+    [{ displayName: 'Sara', hasPassword: true }, true, true],
+    [{ displayName: 'Sara', hasPassword: false }, false, true],
+    [{ displayName: null, hasPassword: false }, false, false],
+    // One character: stored by Google sign-up, refused by `PUT /auth/account`.
+    [{ displayName: 'S', hasPassword: false }, false, false],
+  ])(
+    'reads %o from the profile the session already reads',
+    async (profile, hasPassword, hasDisplayName) => {
+      Object.assign(owner, profile)
+      const profileReads: string[] = []
+      server.events.on('request:start', ({ request: r }) => {
+        if (new URL(r.url).pathname.endsWith('/profile')) {
+          profileReads.push(r.url)
+        }
+      })
+
+      expect(await passwordState()).toEqual({ hasPassword, hasDisplayName })
+      // No second request: loadSettings reuses the session's profile read.
+      expect(profileReads).toHaveLength(1)
+      server.events.removeAllListeners()
+    }
+  )
 })
 
 describe('getPersonal (BE-USER-06)', () => {

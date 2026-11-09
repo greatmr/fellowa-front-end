@@ -651,6 +651,17 @@
       "submit": "Change password",
       "changed": "Your password was changed."
     },
+    "firstPassword": {
+      "title": "Set a password",
+      "description": "With a password, you can also sign in with it next time.",
+      "newPassword": "Password",
+      "confirmPassword": "Repeat the password",
+      "submit": "Set password",
+      "set": "Your password was set.",
+      "alreadySet": "This account already has a password. You can change it here.",
+      "needsName": "Add your name first, then set a password.",
+      "needsNameAction": "Add your name"
+    },
     "appearance": {
       "title": "Appearance"
     },

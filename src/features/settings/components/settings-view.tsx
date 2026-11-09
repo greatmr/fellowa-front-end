@@ -6,11 +6,13 @@ import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { FirstPasswordForm } from '@/features/settings/components/first-password-form'
 import { PageNameForm } from '@/features/settings/components/page-name-form'
 import { PasswordForm } from '@/features/settings/components/password-form'
 import { PersonalForm } from '@/features/settings/components/personal-form'
 import type {
   PageNameState,
+  PasswordState,
   PersonalDetails,
 } from '@/features/settings/types/settings'
 import { Link } from '@/i18n/navigation'
@@ -21,7 +23,8 @@ import { Link } from '@/i18n/navigation'
  * the page's public name here (FE-AUTH-03, FQ-17), edited only once the
  * account has a page. The private first/last name are a separate, owner-only
  * record (Q-63). Its sign-in provider banner (Google / phone code) and phone
- * sign-in are not ported.
+ * sign-in are not ported. An account without a password sets its first one
+ * here (FE-AUTH-05); one with a password changes it.
  */
 export function SettingsView({
   viewerId,
@@ -29,6 +32,7 @@ export function SettingsView({
   isVerified,
   personal,
   page,
+  password,
   heading,
 }: {
   viewerId: number
@@ -37,6 +41,7 @@ export function SettingsView({
   personal: PersonalDetails
   /** `null` when it could not be read. */
   page: PageNameState | null
+  password: PasswordState
   heading: ReactNode
 }) {
   const t = useTranslations('settings')
@@ -99,9 +104,38 @@ export function SettingsView({
         <PersonalForm viewerId={viewerId} initial={personal} />
       </Section>
 
-      <Section title={t('password.title')}>
-        <PasswordForm viewerId={viewerId} email={email} />
-      </Section>
+      {password.hasPassword ? (
+        <Section title={t('password.title')}>
+          <PasswordForm viewerId={viewerId} email={email} />
+        </Section>
+      ) : (
+        <Section
+          title={t('firstPassword.title')}
+          description={t('firstPassword.description')}
+        >
+          {password.hasDisplayName ? (
+            <FirstPasswordForm viewerId={viewerId} email={email} />
+          ) : (
+            // `PUT /auth/account` needs the account's name; the account step
+            // takes a name and a password together, then comes back here.
+            <div className="grid justify-items-start gap-3">
+              <p className="text-body-sm text-muted-foreground">
+                {t('firstPassword.needsName')}
+              </p>
+              <Button asChild variant="outline">
+                <Link
+                  href={{
+                    pathname: '/auth/account',
+                    query: { returnTo: '/settings' },
+                  }}
+                >
+                  {t('firstPassword.needsNameAction')}
+                </Link>
+              </Button>
+            </div>
+          )}
+        </Section>
+      )}
 
       <Section title={t('appearance.title')}>
         <ThemeSwitch />

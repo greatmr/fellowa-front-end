@@ -143,6 +143,18 @@ export function createCompleteAccountSchema(
   })
 }
 
+/**
+ * The account's stored name as `PUT /auth/account` takes it back (trimmed,
+ * 2–80), or `null` when it would refuse it: no name yet (Q-63), or a shorter
+ * one that Google or an older form stored.
+ */
+export function reusableDisplayName(stored: string | null): string | null {
+  if (stored === null) return null
+  const parsed =
+    createCompleteAccountSchema().shape.displayName.safeParse(stored)
+  return parsed.success ? parsed.data : null
+}
+
 /** The backend's alias rules (`alias-rules.ts`, BE-USER-04; CP-02 [DOC]). */
 export const ALIAS_MIN_LENGTH = 3
 export const ALIAS_MAX_LENGTH = 30
