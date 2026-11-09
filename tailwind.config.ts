@@ -106,6 +106,16 @@ const palette = {
     950: '#0A0A0B',
   },
   mist: '#90949B',
+  /**
+   * Google's mark (sign-in button, FE-AUTH-04). Brand-mandated values, used
+   * only for the "G" glyph.
+   */
+  google: {
+    blue: '#4285F4',
+    green: '#34A853',
+    yellow: '#FBBC05',
+    red: '#EA4335',
+  },
 } as const
 
 /**
@@ -193,6 +203,14 @@ export const backgroundImage = {
   'cover-violet':
     'radial-gradient(120% 140% at 15% 15%, #B292E7 0%, #753BD1 45%, #351A61 100%)',
   'cover-mix': 'linear-gradient(135deg, #2050C0 0%, #753BD1 100%)',
+  /**
+   * The auth frame's visual column and its back sample card (presentation
+   * `AuthLayout` @ fdb5f6c). Slate values outside the palette, named here as
+   * design drift (presentation-sync, FE-AUTH-04). Dark in both themes.
+   */
+  'auth-visual':
+    'linear-gradient(to bottom right, #10172A 0%, #1E293B 50%, #0F172A 100%)',
+  'auth-sample': 'linear-gradient(to top right, #1E293B 0%, #334155 100%)',
   shimmer:
     'linear-gradient(90deg, rgb(16 16 16 / 0.05) 25%, rgb(16 16 16 / 0.10) 37%, rgb(16 16 16 / 0.05) 63%)',
   'shimmer-dark':

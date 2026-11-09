@@ -278,6 +278,24 @@ html .toaster[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
   }
 }
 
+/* Dot grid over a dark surface (presentation auth visual column and preview
+ * cover, FE-AUTH-04). Pair with an opacity utility. */
+@utility dot-grid {
+  background-image: radial-gradient(
+    --theme(--color-white) 1px,
+    transparent 1px
+  );
+  background-size: --spacing(6) --spacing(6);
+}
+
+@utility dot-grid-sm {
+  background-image: radial-gradient(
+    --theme(--color-white) 1px,
+    transparent 1px
+  );
+  background-size: --spacing(3) --spacing(3);
+}
+
 /* Stroke-draw for a success check mark; pair with animate-check-draw. */
 @utility check-path {
   stroke-dasharray: 24;
