@@ -208,7 +208,7 @@ describe('React Query auth forms', () => {
       screen.getByRole('link', { name: en.auth.login.phoneLink })
     ).toHaveAttribute(
       'href',
-      expect.stringContaining('/auth/login?returnTo=%2Fsettings')
+      expect.stringContaining('/auth?returnTo=%2Fsettings')
     )
     unmount()
     renderAuth(<CredentialsForm mode="register" />)
@@ -359,9 +359,7 @@ describe('React Query auth forms', () => {
     const user = userEvent.setup()
     renderAuth(<LogoutButton />)
     await user.click(screen.getByRole('button', { name: en.auth.nav.logout }))
-    await waitFor(() =>
-      expect(mocked.replace).toHaveBeenCalledWith('/auth/login')
-    )
+    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/auth'))
     expect(mocked.actions.logoutForHook).toHaveBeenCalledWith(undefined)
   })
 })

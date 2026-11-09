@@ -19,7 +19,7 @@ export function StepError({ error }: { error: ApiError }) {
           {t('sessionExpired')}{' '}
           <Link
             href={{
-              pathname: '/auth/login',
+              pathname: '/auth',
               query: { returnTo: '/onboarding' },
             }}
             className="font-semibold underline underline-offset-4"

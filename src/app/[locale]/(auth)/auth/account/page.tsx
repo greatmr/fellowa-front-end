@@ -11,6 +11,7 @@ import { routing } from '@/i18n/routing'
 
 type Props = {
   params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -19,13 +20,16 @@ export async function generateMetadata({ params }: Props) {
   return { title: t('phone.account.title') }
 }
 
-export default async function CompleteAccountPage({ params }: Props) {
+export default async function CompleteAccountPage({
+  params,
+  searchParams,
+}: Props) {
   const { locale } = await params
   if (!hasLocale(routing.locales, locale)) notFound()
   setRequestLocale(locale)
   return (
     <Suspense fallback={<AuthScreenFallback />}>
-      <AccountScreen locale={locale} />
+      <AccountScreen locale={locale} searchParams={searchParams} />
     </Suspense>
   )
 }

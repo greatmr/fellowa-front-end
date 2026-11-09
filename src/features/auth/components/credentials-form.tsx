@@ -28,6 +28,7 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
 import { PasswordInput } from './password-input'
+import { AuthScreenHeading } from './auth-heading'
 
 export function CredentialsForm({
   mode,
@@ -91,12 +92,10 @@ export function CredentialsForm({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t(`${mode}.title`)}</h1>
-        <p className="text-body text-muted-foreground">
-          {t(`${mode}.description`)}
-        </p>
-      </div>
+      <AuthScreenHeading
+        title={t(`${mode}.title`)}
+        description={t(`${mode}.description`)}
+      />
       <Form {...form}>
         <form
           onSubmit={submit}
@@ -192,7 +191,7 @@ export function CredentialsForm({
       </p>
       <p className="text-center text-body">
         <Link
-          href={authHref('/auth/login', returnTo)}
+          href={authHref('/auth', returnTo)}
           className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
           {t(`${mode}.phoneLink`)}

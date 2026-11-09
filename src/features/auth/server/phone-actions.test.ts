@@ -25,6 +25,7 @@ const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
 const {
+  aliasAvailabilityForHook,
   completeAccountForHook,
   phoneLoginForHook,
   requestPhoneCodeForHook,
@@ -227,6 +228,8 @@ describe('verify', () => {
       ok: true,
       data: {
         user: { id: 77, email: null, alias: null, isVerified: true },
+        // The verified number, for the account step's line (FE-AUTH-04).
+        phone: '09121234567',
         isNewUser: true,
         needsProfile: true,
         hasPassword: false,
@@ -301,6 +304,8 @@ describe('login with password', () => {
       ok: true,
       data: {
         user: { id: 77, email: null, alias: null, isVerified: true },
+        // The verified number, for the account step's line (FE-AUTH-04).
+        phone: '09121234567',
         isNewUser: false,
         needsProfile: false,
         hasPassword: false,
@@ -395,5 +400,96 @@ describe('complete account', () => {
         password: 'longer-pw',
       })
     ).toEqual({ ok: false, status, code, isNetworkError: false })
+  })
+})
+
+describe('alias availability (BE-AUTH-09)', () => {
+  /** `GET /auth/alias/availability`: all four keys, always. */
+  function availability(data: Record<string, unknown>) {
+    return HttpResponse.json({ data, errors: null })
+  }
+  let asked: { alias: string | null; auth: string | null }[] = []
+
+  beforeEach(() => {
+    asked = []
+    request.cookies.set(sessionCookieName, token())
+  })
+
+  function respond(response: () => Response) {
+    server.use(
+      http.get(`${apiOrigin}/auth/alias/availability`, ({ request: req }) => {
+        asked.push({
+          alias: new URL(req.url).searchParams.get('alias'),
+          auth: req.headers.get('authorization'),
+        })
+        return response()
+      })
+    )
+  }
+
+  it('asks with the session token and the alias as typed', async () => {
+    respond(() =>
+      availability({
+        alias: 'studio',
+        available: false,
+        reason: 'taken',
+        suggestions: ['studio_', 'studio_art', 'studio1405'],
+      })
+    )
+    expect(await aliasAvailabilityForHook({ alias: 'Studio' })).toEqual({
+      ok: true,
+      data: {
+        alias: 'studio',
+        available: false,
+        reason: 'taken',
+        suggestions: ['studio_', 'studio_art', 'studio1405'],
+      },
+    })
+    expect(asked).toEqual([{ alias: 'Studio', auth: `Bearer ${token()}` }])
+  })
+
+  it('passes on an available alias with no reason', async () => {
+    respond(() =>
+      availability({
+        alias: 'sara',
+        available: true,
+        reason: null,
+        suggestions: [],
+      })
+    )
+    const result = await aliasAvailabilityForHook({ alias: 'sara' })
+    expect(result.ok && result.data.available).toBe(true)
+  })
+
+  it('passes the throttle on as a 429, for the step to treat as unknown', async () => {
+    respond(() => failure(429, 'ThrottlerException', 'TOO_MANY_REQUESTS'))
+    expect(await aliasAvailabilityForHook({ alias: 'sara' })).toMatchObject({
+      ok: false,
+      status: 429,
+    })
+  })
+
+  it('refuses a malformed answer', async () => {
+    respond(() => availability({ alias: 'sara', available: true }))
+    expect(await aliasAvailabilityForHook({ alias: 'sara' })).toMatchObject({
+      ok: false,
+      code: 'INVALID_AUTH_RESPONSE',
+    })
+  })
+
+  it('checks Origin and the session before asking', async () => {
+    respond(() => availability({}))
+    request.origin = 'https://attacker.example'
+    expect(await aliasAvailabilityForHook({ alias: 'sara' })).toMatchObject({
+      ok: false,
+      status: 403,
+    })
+    request.origin = 'https://fellowa.test'
+    request.cookies.clear()
+    expect(await aliasAvailabilityForHook({ alias: 'sara' })).toMatchObject({
+      ok: false,
+      status: 401,
+    })
+    expect(asked).toEqual([])
   })
 })

@@ -54,16 +54,16 @@ describe('LandingPage', () => {
 
       expect(screen.getByRole('link', { name: copy.hero.cta })).toHaveAttribute(
         'href',
-        `${prefix}/auth/register`
+        `${prefix}/auth`
       )
       expect(
         screen.getByRole('link', { name: copy.finalCta.cta })
-      ).toHaveAttribute('href', `${prefix}/auth/register`)
+      ).toHaveAttribute('href', `${prefix}/auth`)
       expect(
         screen.getByRole('link', {
           name: locale === 'fa' ? 'وارد شو' : 'Log in',
         })
-      ).toHaveAttribute('href', `${prefix}/auth/login`)
+      ).toHaveAttribute('href', `${prefix}/auth`)
 
       const browseLinks = [
         screen.getByRole('link', { name: copy.features.support.action }),

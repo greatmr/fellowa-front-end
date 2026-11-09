@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import {
   changePassword,
+  checkAliasAvailability,
   completeAccount,
   confirmPasswordReset,
   exchangeGoogleCode,
@@ -55,6 +56,7 @@ import type {
 import { ApiError } from '@/lib/api/errors'
 
 const aliasSchema = createAliasSchema()
+const aliasQuerySchema = z.object({ alias: z.string().max(64) })
 const changePasswordSchema = z.object({
   currentPassword: z.string(),
   newPassword: z.string().min(8),
@@ -174,6 +176,14 @@ export async function setAliasForHook(input: { alias: string }) {
   })
 }
 
+/** A read, but behind the same origin check as the auth mutations. */
+export async function aliasAvailabilityForHook(input: { alias: string }) {
+  return mutate(aliasQuerySchema, input, async ({ alias }) => {
+    const session = await activeSession()
+    return checkAliasAvailability(session.token, alias)
+  })
+}
+
 export async function requestPasswordResetForHook(input: { email: string }) {
   return mutate(createForgotPasswordSchema(), input, async ({ email }) => {
     await requestPasswordReset(email)
@@ -244,6 +254,7 @@ async function phoneSession(
   const { token, isNewUser, needsProfile, hasPassword } = signIn
   return {
     user: await establishSession(token),
+    phone: signIn.user.phone,
     isNewUser,
     needsProfile,
     hasPassword,

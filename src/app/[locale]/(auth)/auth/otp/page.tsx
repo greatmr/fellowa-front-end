@@ -17,7 +17,7 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'auth' })
-  return { title: t('phone.entry.title') }
+  return { title: t('phone.code.title') }
 }
 
 export default async function AuthenticationPage({
@@ -29,7 +29,7 @@ export default async function AuthenticationPage({
   setRequestLocale(locale)
   return (
     <Suspense fallback={<AuthScreenFallback />}>
-      <AuthScreen mode="register" locale={locale} searchParams={searchParams} />
+      <AuthScreen mode="otp" locale={locale} searchParams={searchParams} />
     </Suspense>
   )
 }

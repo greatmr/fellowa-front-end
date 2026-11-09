@@ -25,6 +25,7 @@ import { Link } from '@/i18n/navigation'
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
 import { PasswordInput } from './password-input'
+import { AuthScreenHeading } from './auth-heading'
 
 const EMPTY = { token: '', newPassword: '' }
 
@@ -75,9 +76,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string }) {
   if (done) {
     return (
       <div className="space-y-6">
-        <h1 className="text-center text-headline font-bold">
-          {t('reset.doneTitle')}
-        </h1>
+        <AuthScreenHeading title={t('reset.doneTitle')} />
         <p
           role="status"
           className="rounded-md border border-success-border bg-success-subtle p-3 text-body text-success-emphasis"
@@ -98,12 +97,10 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t('reset.title')}</h1>
-        <p className="text-body text-muted-foreground">
-          {t('reset.description')}
-        </p>
-      </div>
+      <AuthScreenHeading
+        title={t('reset.title')}
+        description={t('reset.description')}
+      />
       <Form {...form}>
         <form
           onSubmit={submit}

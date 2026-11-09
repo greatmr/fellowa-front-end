@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query'
 
 import {
+  aliasAvailabilityForHook,
   changePasswordForHook,
   completeAccountForHook,
   confirmPasswordResetForHook,
@@ -27,6 +28,7 @@ import {
   verifyPhoneCodeForHook,
 } from '@/features/auth/server/hook-actions'
 import type {
+  AliasAvailability,
   AuthUser,
   CompleteAccountPayload,
   ConfirmPasswordResetPayload,
@@ -50,6 +52,8 @@ export const authKeys = {
   profileAll: ['auth', 'own-profile'] as const,
   profile: (userId: number) => ['auth', 'own-profile', userId] as const,
   mutation: (name: string) => ['auth', name] as const,
+  aliasAvailability: (alias: string) =>
+    ['auth', 'alias-availability', alias] as const,
 }
 
 type MutationOptions<TData, TVariables> = Omit<
@@ -126,6 +130,23 @@ export function useSetAliasMutation(
   options?: MutationOptions<null, { alias: string }>
 ) {
   return useAuthMutation('set-alias', setAliasForHook, 'profile', options)
+}
+
+/**
+ * The live address check (BE-AUTH-09). One request per alias: answers are
+ * cached for the session's flow (the route is strictly throttled), and no
+ * retry, so a 429 reads as "unknown" at once.
+ */
+export function useAliasAvailabilityQuery(alias: string, enabled: boolean) {
+  return useQuery<AliasAvailability, ApiError>({
+    queryKey: authKeys.aliasAvailability(alias),
+    queryFn: async () =>
+      unwrapApiActionResult(await aliasAvailabilityForHook({ alias })),
+    enabled: enabled && alias.length > 0,
+    staleTime: 60_000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  })
 }
 
 export function useRequestPasswordResetMutation(

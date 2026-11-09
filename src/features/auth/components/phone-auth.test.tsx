@@ -1,14 +1,19 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useEffect, useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
+import { AuthFlowProvider, useAuthFlow } from './auth-flow-context'
 import { CompleteAccountForm } from './complete-account-form'
-import { PhoneAuthFlow } from './phone-auth-flow'
+import { PhoneAuthFlow, type PhoneStep } from './phone-auth-flow'
 import { renderAuth } from './test-utils'
 
 const mocked = vi.hoisted(() => ({
   replace: vi.fn(),
+  push: vi.fn(),
+  /** The harness's "router": moves it to another step route. */
+  go: null as null | ((href: unknown) => void),
   actions: {
     requestPhoneCodeForHook: vi.fn(),
     verifyPhoneCodeForHook: vi.fn(),
@@ -17,10 +22,60 @@ const mocked = vi.hoisted(() => ({
   },
 }))
 vi.mock('@/features/auth/server/hook-actions', () => mocked.actions)
+vi.mock('@/features/auth/server/google-actions', () => ({
+  startGoogleSignInAction: vi.fn(),
+}))
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useRouter: () => ({ replace: mocked.replace }),
+  useRouter: () => ({
+    replace: (href: unknown) => {
+      mocked.replace(href)
+      mocked.go?.(href)
+    },
+    push: (href: unknown) => {
+      mocked.push(href)
+      mocked.go?.(href)
+    },
+  }),
 }))
+
+const STEP_PATHS: Record<string, PhoneStep> = {
+  '/auth': 'entry',
+  '/auth/otp': 'otp',
+  '/auth/password': 'password',
+}
+const pathOf = (href: unknown) =>
+  typeof href === 'object' && href !== null && 'pathname' in href
+    ? String(href.pathname)
+    : String(href)
+
+/** The per-step routes, as the auth layout and the App Router hold them. */
+function Routes({
+  start = '/auth',
+  ...props
+}: Omit<ComponentProps<typeof PhoneAuthFlow>, 'step'> & { start?: string }) {
+  const [path, setPath] = useState(start)
+  useEffect(() => {
+    mocked.go = (href) => setPath(pathOf(href))
+    return () => {
+      mocked.go = null
+    }
+  }, [])
+  const step = STEP_PATHS[path]
+  return step ? (
+    <PhoneAuthFlow step={step} {...props} />
+  ) : (
+    <p data-testid="left">{path}</p>
+  )
+}
+
+function renderFlow(props: ComponentProps<typeof Routes> = {}) {
+  return renderAuth(
+    <AuthFlowProvider>
+      <Routes {...props} />
+    </AuthFlowProvider>
+  )
+}
 
 const t = en.auth.phone
 const phone = '09121234567'
@@ -39,6 +94,7 @@ const signIn = (isNewUser: boolean, needsProfile = isNewUser) => ({
   ok: true,
   data: {
     user: { id: 77, email: null, alias: null, isVerified: true },
+    phone,
     isNewUser,
     needsProfile,
     hasPassword: false,
@@ -73,7 +129,7 @@ function setup() {
 }
 
 async function toCodeScreen(user: ReturnType<typeof setup>, returnTo?: string) {
-  renderAuth(<PhoneAuthFlow returnTo={returnTo} />)
+  renderFlow({ returnTo })
   await user.type(screen.getByLabelText(t.entry.label), '۰۹۱۲ ۱۲۳ ۴۵۶۷')
   await user.click(screen.getByRole('button', { name: t.entry.submit }))
   await screen.findByRole('heading', { name: t.code.title })
@@ -85,7 +141,7 @@ const digitBoxes = () =>
 describe('phone entry (LoginOrSignupScreen)', () => {
   it('waits for a valid number, and sends it normalised', async () => {
     const user = setup()
-    renderAuth(<PhoneAuthFlow />)
+    renderFlow()
     const submit = screen.getByRole('button', { name: t.entry.submit })
     expect(submit).toBeDisabled()
     await user.type(screen.getByLabelText(t.entry.label), '0912')
@@ -105,7 +161,7 @@ describe('phone entry (LoginOrSignupScreen)', () => {
   it('offers the password screen when the account has one', async () => {
     const user = setup()
     mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
-    renderAuth(<PhoneAuthFlow />)
+    renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
     await user.click(screen.getByRole('button', { name: t.entry.submit }))
     expect(
@@ -133,7 +189,7 @@ describe('phone entry (LoginOrSignupScreen)', () => {
   ])('shows %o as its own message and stays', async (result, message) => {
     const user = setup()
     mocked.actions.requestPhoneCodeForHook.mockResolvedValue(result)
-    renderAuth(<PhoneAuthFlow />)
+    renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
     await user.click(screen.getByRole('button', { name: t.entry.submit }))
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
@@ -143,7 +199,7 @@ describe('phone entry (LoginOrSignupScreen)', () => {
   })
 
   it('keeps the email sign-in reachable', () => {
-    renderAuth(<PhoneAuthFlow returnTo="/settings" />)
+    renderFlow({ returnTo: '/settings' })
     expect(
       screen.getByRole('link', { name: t.entry.emailLink })
     ).toHaveAttribute(
@@ -153,6 +209,82 @@ describe('phone entry (LoginOrSignupScreen)', () => {
     expect(
       screen.queryByRole('button', { name: /google/i })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('per-step routes (AuthContainer)', () => {
+  it('moves to /auth/otp with the destination, then signs in back to it', async () => {
+    const user = setup()
+    await toCodeScreen(user, '/creators/5')
+    expect(mocked.push).toHaveBeenCalledWith({
+      pathname: '/auth/otp',
+      query: { returnTo: '/creators/5' },
+    })
+  })
+
+  it('sends a code or password route reached without a number back to /auth', async () => {
+    renderFlow({ start: '/auth/otp', returnTo: '/creators/5' })
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith({
+        pathname: '/auth',
+        query: { returnTo: '/creators/5' },
+      })
+    )
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+  })
+
+  it('opens /auth/password for an account with a password', async () => {
+    const user = setup()
+    mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
+    renderFlow()
+    await user.type(screen.getByLabelText(t.entry.label), phone)
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    expect(mocked.push).toHaveBeenCalledWith('/auth/password')
+  })
+})
+
+describe('Google on the entry screen', () => {
+  const google = { enabled: true, locale: 'en', error: null }
+
+  it('comes first, above the "or with your mobile" divider', () => {
+    renderFlow({ google, returnTo: '/creators/5' })
+    const button = screen.getByRole('button', {
+      name: new RegExp(t.entry.googleTitle),
+    })
+    const divider = screen.getByText(t.entry.divider)
+    const phoneField = screen.getByLabelText(t.entry.label)
+    expect(
+      button.compareDocumentPosition(divider) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      divider.compareDocumentPosition(phoneField) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(screen.getByText(t.entry.descriptionWithGoogle)).toBeInTheDocument()
+    const form = button.closest('form')
+    expect(form?.querySelector('input[name="returnTo"]')).toHaveValue(
+      '/creators/5'
+    )
+    expect(form?.querySelector('input[name="locale"]')).toHaveValue('en')
+  })
+
+  it('is absent when Google is not configured', () => {
+    renderFlow({ google: { ...google, enabled: false } })
+    expect(
+      screen.queryByRole('button', { name: new RegExp(t.entry.googleTitle) })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(t.entry.divider)).not.toBeInTheDocument()
+    expect(screen.getByText(t.entry.description)).toBeInTheDocument()
+  })
+
+  it.each([
+    ['failed', t.googleErrors.failed],
+    ['emailNotVerified', t.googleErrors.emailNotVerified],
+    ['usePassword', t.googleErrors.usePassword],
+    ['alreadyLinked', t.googleErrors.alreadyLinked],
+  ] as const)('explains a %s Google sign-in', (error, message) => {
+    renderFlow({ google: { ...google, error } })
+    expect(screen.getByRole('alert')).toHaveTextContent(message)
   })
 })
 
@@ -203,8 +335,12 @@ describe('code (VerifyCodeScreen)', () => {
     mocked.actions.verifyPhoneCodeForHook.mockResolvedValue(signIn(true))
     await toCodeScreen(user, '/creators/5')
     await user.type(digitBoxes()[0]!, '12345')
+    // The destination travels with it (FQ-17: back to the page after).
     await waitFor(() =>
-      expect(mocked.replace).toHaveBeenCalledWith('/auth/account')
+      expect(mocked.replace).toHaveBeenCalledWith({
+        pathname: '/auth/account',
+        query: { returnTo: '/creators/5' },
+      })
     )
   })
 
@@ -321,7 +457,7 @@ describe('code (VerifyCodeScreen)', () => {
 describe('password (PhonePasswordLoginScreen)', () => {
   async function toPasswordScreen(user: ReturnType<typeof setup>) {
     mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
-    renderAuth(<PhoneAuthFlow />)
+    renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
     await user.click(screen.getByRole('button', { name: t.entry.submit }))
     await screen.findByRole('heading', { name: t.password.title })
@@ -367,23 +503,77 @@ describe('password (PhonePasswordLoginScreen)', () => {
   })
 })
 
+/** The account step, with what the code step left in the flow's memory. */
+function renderAccount({
+  next = '/auth/url',
+  firstOfSteps = true,
+  signedInPhone = null,
+}: {
+  next?: ComponentProps<typeof CompleteAccountForm>['next']
+  firstOfSteps?: boolean
+  signedInPhone?: string | null
+} = {}) {
+  function Seeded() {
+    const flow = useAuthFlow()
+    const { setSignedInPhone } = flow
+    useEffect(() => {
+      setSignedInPhone(signedInPhone)
+    }, [setSignedInPhone])
+    return flow.signedInPhone === signedInPhone ? (
+      <CompleteAccountForm next={next} firstOfSteps={firstOfSteps} />
+    ) : null
+  }
+  return renderAuth(
+    <AuthFlowProvider>
+      <Seeded />
+    </AuthFlowProvider>
+  )
+}
+
 describe('complete account (CompleteAccountScreen)', () => {
-  it('sends the name without a password on skip, then opens onboarding', async () => {
+  it('shows the verified number and the page-name hint (FQ-17)', async () => {
+    renderAccount({ signedInPhone: phone })
+    expect(await screen.findByText('0912 123 4567')).toBeInTheDocument()
+    expect(screen.getByText(/Your mobile number:/)).toBeInTheDocument()
+    expect(screen.getByText(t.account.nameHint)).toBeInTheDocument()
+  })
+
+  it('without the number (a reload), shows the prototype fallback line', async () => {
+    renderAccount()
+    expect(await screen.findByText(t.account.description)).toBeInTheDocument()
+  })
+
+  it('goes back to the page it started from, with no step count', async () => {
     const user = setup()
-    renderAuth(<CompleteAccountForm />)
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
+    renderAccount({ next: '/creators/5', firstOfSteps: false })
+    await user.type(await screen.findByLabelText(t.account.nameLabel), 'Sara')
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: t.account.skip }))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/creators/5')
+    )
+  })
+
+  it('sends the name without a password on skip, then the address step', async () => {
+    const user = setup()
+    renderAccount()
+    expect(await screen.findByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '1'
     )
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuemax',
+      '2'
+    )
     const skip = screen.getByRole('button', { name: t.account.skip })
     expect(skip).toBeDisabled()
-    await user.type(screen.getByLabelText(t.account.nameLabel), '  Sara ')
+    await user.type(
+      await screen.findByLabelText(t.account.nameLabel),
+      '  Sara '
+    )
     await user.click(skip)
     await waitFor(() =>
-      expect(mocked.replace).toHaveBeenCalledWith({
-        pathname: '/onboarding',
-        query: { step: 'username' },
-      })
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/url')
     )
     expect(mocked.actions.completeAccountForHook).toHaveBeenCalledWith({
       displayName: 'Sara',
@@ -392,8 +582,10 @@ describe('complete account (CompleteAccountScreen)', () => {
 
   it('asks for a name before the skip link does anything', async () => {
     const user = setup()
-    renderAuth(<CompleteAccountForm />)
-    await user.click(screen.getByRole('button', { name: t.account.skipLink }))
+    renderAccount()
+    await user.click(
+      await screen.findByRole('button', { name: t.account.skipLink })
+    )
     expect(
       await screen.findByText(
         t.validation.displayNameLength
@@ -406,8 +598,8 @@ describe('complete account (CompleteAccountScreen)', () => {
 
   it('holds the password to the API minimum of 8', async () => {
     const user = setup()
-    renderAuth(<CompleteAccountForm />)
-    await user.type(screen.getByLabelText(t.account.nameLabel), 'Sara')
+    renderAccount()
+    await user.type(await screen.findByLabelText(t.account.nameLabel), 'Sara')
     await user.type(screen.getByLabelText(/^Password/), 'sixsix')
     await user.click(screen.getByRole('button', { name: t.account.submit }))
     expect(
@@ -430,8 +622,8 @@ describe('complete account (CompleteAccountScreen)', () => {
     mocked.actions.completeAccountForHook.mockResolvedValue(
       fail(409, 'AUTH_PASSWORD_ALREADY_SET')
     )
-    renderAuth(<CompleteAccountForm />)
-    await user.type(screen.getByLabelText(t.account.nameLabel), 'Sara')
+    renderAccount()
+    await user.type(await screen.findByLabelText(t.account.nameLabel), 'Sara')
     await user.type(screen.getByLabelText(/^Password/), 'longer-pw')
     await user.click(screen.getByRole('button', { name: t.account.submit }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -445,8 +637,8 @@ describe('complete account (CompleteAccountScreen)', () => {
     mocked.actions.completeAccountForHook.mockResolvedValue(
       fail(404, 'USER_NOT_FOUND')
     )
-    renderAuth(<CompleteAccountForm />)
-    await user.type(screen.getByLabelText(t.account.nameLabel), 'Sara')
+    renderAccount()
+    await user.type(await screen.findByLabelText(t.account.nameLabel), 'Sara')
     await user.click(screen.getByRole('button', { name: t.account.skip }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       en.auth.sessionExpired.title

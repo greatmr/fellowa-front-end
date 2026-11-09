@@ -25,11 +25,7 @@ export function AuthFeedback({
         <p className="font-semibold">{t('sessionExpired.title')}</p>
         <p>{t('sessionExpired.body')}</p>
         <Link
-          href={
-            returnTo
-              ? { pathname: '/auth/login', query: { returnTo } }
-              : '/auth/login'
-          }
+          href={returnTo ? { pathname: '/auth', query: { returnTo } } : '/auth'}
           className="font-semibold underline underline-offset-4"
         >
           {t('sessionExpired.login')}

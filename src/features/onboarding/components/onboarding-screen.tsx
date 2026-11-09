@@ -16,7 +16,7 @@ export async function OnboardingScreen({
   const session = await getSession()
   if (!session) {
     return redirect({
-      href: { pathname: '/auth/login', query: { returnTo: '/onboarding' } },
+      href: { pathname: '/auth', query: { returnTo: '/onboarding' } },
       locale,
     })
   }

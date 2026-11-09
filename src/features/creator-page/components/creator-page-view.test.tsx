@@ -90,13 +90,13 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     for (const name of ['Follow', 'Support']) {
       const link = screen.getByRole('link', { name })
       expect(link.getAttribute('href')).toMatch(
-        /\/auth\/login\?returnTo=%2Fcreators%2F4$/
+        /\/auth\?returnTo=%2Fcreators%2F4$/
       )
     }
     await user.click(screen.getByRole('tab', { name: /Tiers/ }))
     expect(
       screen.getByRole('link', { name: 'Join this tier' }).getAttribute('href')
-    ).toMatch(/\/auth\/login\?returnTo=%2Fcreators%2F4$/)
+    ).toMatch(/\/auth\?returnTo=%2Fcreators%2F4$/)
   })
 
   it('gives a signed-in visitor a working Follow and a not-yet Support', () => {

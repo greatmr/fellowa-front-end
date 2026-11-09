@@ -15,6 +15,7 @@ import type {
   PhoneVerifyPayload,
   ResetPasswordPayload,
   SetAliasPayload,
+  AliasAvailability,
   VerificationCodePayload,
   VerifyTokenPayload,
 } from '@/features/auth/types'
@@ -56,13 +57,23 @@ const phoneCodeSentSchema = z.object({
   resendAfterSeconds: seconds,
   expiresInSeconds: seconds,
 })
-/** Only what the client routes on; `user` comes from the profile check. */
+/**
+ * Only what the client routes on; the account itself comes from the profile
+ * check. `user.phone` is the verified number, for the account step's line.
+ */
 const phoneSignInSchema = z.object({
   token: z.string().min(1),
   isNewUser: z.boolean(),
   needsProfile: z.boolean(),
   hasPassword: z.boolean(),
+  user: z.object({ phone: z.string().nullable() }),
 })
+const aliasAvailabilitySchema = z.object({
+  alias: z.string(),
+  available: z.boolean(),
+  reason: z.enum(['too_short', 'invalid', 'reserved', 'taken']).nullable(),
+  suggestions: z.array(z.string()).max(3),
+}) satisfies z.ZodType<AliasAvailability>
 const completedAccountSchema = z.object({
   displayName: z.string(),
   hasPassword: z.boolean(),
@@ -117,6 +128,18 @@ export async function setCreatorAlias(token: string, alias: string) {
     withBearer(token)
   )
   parseEnvelope(messageSchema, response, invalid)
+}
+
+/** `GET /auth/alias/availability` (BE-AUTH-09), the alias as typed. */
+export async function checkAliasAvailability(
+  token: string,
+  alias: string
+): Promise<AliasAvailability> {
+  const response = await apiGet<unknown>('/auth/alias/availability', {
+    ...withBearer(token),
+    params: { alias },
+  })
+  return parseEnvelope(aliasAvailabilitySchema, response, invalid)
 }
 
 export async function requestPasswordReset(email: string) {

@@ -22,6 +22,7 @@ import {
 import type { Deadline } from '@/features/auth/lib/phone'
 import type { PhoneCodeSent, PhoneSignIn } from '@/features/auth/types'
 
+import { AuthScreenHeading } from './auth-heading'
 import { PasswordInput } from './password-input'
 import { PhoneFeedback, PhoneNumber } from './phone-ui'
 
@@ -96,14 +97,12 @@ export function PhonePasswordStep({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t('password.title')}</h1>
-        <p className="text-body text-muted-foreground">
-          {t.rich('password.description', {
-            phone: () => <PhoneNumber phone={phone} />,
-          })}
-        </p>
-      </div>
+      <AuthScreenHeading
+        title={t('password.title')}
+        description={t.rich('password.description', {
+          phone: () => <PhoneNumber phone={phone} />,
+        })}
+      />
       <Form {...form}>
         <form
           onSubmit={submit}

@@ -29,6 +29,7 @@ import { toLatinDigits } from '@/lib/digits'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
+import { AuthScreenHeading } from './auth-heading'
 
 export function VerificationForm({
   email,
@@ -134,7 +135,7 @@ export function VerificationForm({
       onSuccess: () => {
         changeAccount.reset()
         router.replace({
-          pathname: '/auth/login',
+          pathname: '/auth',
           query: { returnTo: safeReturnTo(returnTo) },
         })
       },
@@ -147,10 +148,10 @@ export function VerificationForm({
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-headline font-bold">{t('verify.title')}</h1>
-        <p className="text-body text-muted-foreground">
-          {t('verify.description')}
-        </p>
+        <AuthScreenHeading
+          title={t('verify.title')}
+          description={t('verify.description')}
+        />
         {email && (
           <p className="text-body font-semibold">
             <bdi dir="ltr">{email}</bdi>

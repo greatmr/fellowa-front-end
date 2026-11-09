@@ -36,13 +36,13 @@ export function FinalCtaSection() {
             variant="inverse"
             className="w-full max-w-xs rounded-full"
           >
-            <Link href="/auth/register">{t('cta')}</Link>
+            <Link href="/auth">{t('cta')}</Link>
           </Button>
           <p className="mt-5 text-body-sm text-muted-foreground">
             {t.rich('login', {
               link: (chunks) => (
                 <Link
-                  href="/auth/login"
+                  href="/auth"
                   className="rounded-sm font-bold text-foreground underline focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   {chunks}

@@ -49,7 +49,22 @@ export type PhoneCodeSent = {
 /** A phone sign-in, without the token, which stays in the session cookie. */
 export type PhoneSignIn = {
   user: AuthUser
+  /** The verified number (`user.phone` of the response), shown once, never stored. */
+  phone: string | null
   isNewUser: boolean
   needsProfile: boolean
   hasPassword: boolean
+}
+
+/**
+ * `GET /auth/alias/availability` (BE-AUTH-09): whether `PUT /auth/alias` with
+ * this input would succeed now. A snapshot, not a reservation.
+ */
+export type AliasAvailability = {
+  /** Normalized when the format is valid; the trimmed input otherwise. */
+  alias: string
+  available: boolean
+  reason: 'too_short' | 'invalid' | 'reserved' | 'taken' | null
+  /** Only for `taken`: 0–3 valid, free aliases. */
+  suggestions: string[]
 }
