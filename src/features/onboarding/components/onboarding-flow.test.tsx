@@ -79,6 +79,8 @@ beforeEach(() => {
           email: 'me@example.com',
           alias: null,
           isVerified: true,
+          displayName: 'Sara',
+          hasPassword: true,
         },
         errors: null,
       })
@@ -611,6 +613,8 @@ describe('loadOnboarding', () => {
       email: 'me@example.com',
       alias: 'studio',
       isVerified: true,
+      displayName: 'Sara',
+      hasPassword: true,
     },
   }
 

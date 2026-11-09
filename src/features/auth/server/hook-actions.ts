@@ -210,7 +210,7 @@ export async function changePasswordForHook(input: ResetPasswordPayload) {
 
 export async function exchangeGoogleCodeForHook(input: GoogleAuthPayload) {
   return mutate(googleSchema, input, async (payload) =>
-    establishSession(await exchangeGoogleCode(payload))
+    establishSession((await exchangeGoogleCode(payload)).token)
   )
 }
 

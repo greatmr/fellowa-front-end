@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { exchangeGoogleCode } from '@/features/auth/api/auth-api'
 import type { GoogleErrorKind } from '@/features/auth/lib/google-error'
 import {
-  afterAccountDestination,
+  googleSignInDestination,
   requestedReturnTo,
 } from '@/features/auth/lib/return-to'
 import { authenticateToken, saveSession } from '@/features/auth/server/session'
@@ -178,13 +178,12 @@ export async function completeGoogleSignIn(params: {
   if (params.error || !params.code || !redirectUri) return back('failed')
 
   try {
-    const token = await exchangeGoogleCode({ code: params.code, redirectUri })
-    const session = await authenticateToken(token)
-    await saveSession(session)
-    return {
-      href: afterAccountDestination(session.user, returnTo),
-      locale,
-    }
+    const signIn = await exchangeGoogleCode({
+      code: params.code,
+      redirectUri,
+    })
+    await saveSession(await authenticateToken(signIn.token))
+    return { href: googleSignInDestination(signIn, returnTo), locale }
   } catch (error) {
     return back(errorKind(error))
   }

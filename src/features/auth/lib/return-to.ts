@@ -66,11 +66,9 @@ export function returnsToPage(returnTo?: string): boolean {
 }
 
 /**
- * After the account step, or a Google sign-in: back to the page it started
- * from, or on to the page address step (`/auth/url`). An account that already
- * has a page skips that step. (The prototype sends a new Google account
- * straight to the address step; `POST /auth/google` does not say whether the
- * account is new, so having no page stands in for it.)
+ * After the account step: back to the page it started from, or on to the page
+ * address step (`/auth/url`). An account that already has a page skips that
+ * step.
  */
 export function afterAccountDestination(
   user: { alias: string | null },
@@ -87,6 +85,21 @@ export function choosesPageAddress(
   returnTo?: string
 ) {
   return user.alias === null && !returnsToPage(returnTo)
+}
+
+/**
+ * Where a Google sign-in lands (FE-AUTH-05, BE-AUTH-10). A new account goes on
+ * to the page address step, as in the prototype (Google gave the name), or
+ * back to the page it started from (FQ-17). A returning account goes to its
+ * destination, page or not: the studio checklist asks for the address.
+ */
+export function googleSignInDestination(
+  result: { isNewUser: boolean },
+  returnTo?: string
+): AuthHref {
+  return result.isNewUser && !returnsToPage(returnTo)
+    ? authHref('/auth/url', returnTo)
+    : safeReturnTo(returnTo)
 }
 
 /**

@@ -56,6 +56,8 @@ beforeEach(() => {
         email: 'me@example.com',
         alias: 'sara',
         isVerified: true,
+        displayName: 'Sara',
+        hasPassword: true,
         isPublish: false,
         personal: { phoneNumber: '09121234567' },
       })

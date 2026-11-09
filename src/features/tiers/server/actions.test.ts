@@ -48,6 +48,8 @@ beforeEach(() => {
           email: 'creator@example.com',
           alias: null,
           isVerified: true,
+          displayName: 'Sara',
+          hasPassword: true,
         },
         errors: null,
       })
