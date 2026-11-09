@@ -82,7 +82,11 @@ export function SettingsView({
               {t('pageName.noPage')}
             </p>
             <Button asChild variant="outline">
-              <Link href="/onboarding">{t('pageName.noPageAction')}</Link>
+              <Link
+                href={{ pathname: '/onboarding', query: { step: 'username' } }}
+              >
+                {t('pageName.noPageAction')}
+              </Link>
             </Button>
           </div>
         )}

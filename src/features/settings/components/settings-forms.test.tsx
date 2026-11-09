@@ -310,7 +310,7 @@ describe('SettingsView page name section', () => {
       screen
         .getByRole('link', { name: 'Choose a page address' })
         .getAttribute('href')
-    ).toMatch(/\/onboarding$/)
+    ).toMatch(/\/onboarding\?step=username$/)
   })
 
   it('degrades only this section when the name could not be read', () => {
