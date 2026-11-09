@@ -14,11 +14,15 @@ import type {
 } from '@/features/creator-page/server/load-creator-page'
 import { FollowButton } from '@/features/creator-page/components/follow-button'
 import { Link } from '@/i18n/navigation'
+import { publicPageTitle } from '@/lib/page-name'
 
 /**
  * Public creator page (FE-PAGE-01; presentation `CreatorProfileView` visitor
  * mode @ dc8467f). Not ported: goals and crypto wallets (FQ-2, FQ-3), tips,
  * single-post purchase (deferred), member counts, the sticky scroll header.
+ * The name is the page's public name (FQ-17), else `@alias`; the alias line
+ * under a public name stands in for the prototype's `fellowa.ir/<handle>`,
+ * since public routes are numeric (C-9).
  */
 export function CreatorPageView({
   profile,
@@ -29,7 +33,8 @@ export function CreatorPageView({
 }: CreatorPageData) {
   const t = useTranslations('creatorPage')
   const format = useFormatter()
-  const name = profile.alias ?? t('unnamed')
+  const title = publicPageTitle(profile)
+  const name = title?.name ?? t('unnamed')
 
   return (
     <article>
@@ -50,12 +55,19 @@ export function CreatorPageView({
               <AvatarImage src={profile.avatarUrl} alt="" />
             ) : null}
             <AvatarFallback className="text-title font-bold">
-              {name.slice(0, 1).toUpperCase()}
+              {title?.initial ?? name.slice(0, 1)}
             </AvatarFallback>
           </Avatar>
-          <h1 className="text-title font-bold text-foreground">
-            <bdi>{name}</bdi>
-          </h1>
+          <div className="grid gap-0.5">
+            <h1 className="text-title font-bold text-foreground">
+              <bdi>{name}</bdi>
+            </h1>
+            {title && !title.isAlias && profile.alias ? (
+              <p className="text-body-sm text-muted-foreground">
+                <bdi dir="ltr">@{profile.alias}</bdi>
+              </p>
+            ) : null}
+          </div>
           <p className="flex flex-wrap gap-x-1.5 text-body-sm text-muted-foreground">
             {categoryTitle ? (
               <>

@@ -4,10 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import type { ExploreCreator } from '@/features/explore/types/creator'
 import { Link } from '@/i18n/navigation'
+import { publicPageTitle } from '@/lib/page-name'
 
 /**
  * Explore card (presentation `ExploreView` @ dc8467f). The whole card links
- * to the public creator page, `/creators/:id` (FE-PAGE-01).
+ * to the public creator page, `/creators/:id` (FE-PAGE-01). The name is the
+ * page's public name (FQ-17), else `@alias`.
  */
 export function CreatorCard({
   creator,
@@ -19,7 +21,8 @@ export function CreatorCard({
 }) {
   const t = useTranslations('explore')
   const format = useFormatter()
-  const name = creator.alias ?? t('unnamed')
+  const title = publicPageTitle(creator)
+  const name = title?.name ?? t('unnamed')
 
   return (
     <Link
@@ -42,7 +45,7 @@ export function CreatorCard({
               <AvatarImage src={creator.avatarUrl} alt="" />
             ) : null}
             <AvatarFallback className="text-subtitle font-bold">
-              {name.slice(0, 1).toUpperCase()}
+              {title?.initial ?? name.slice(0, 1)}
             </AvatarFallback>
           </Avatar>
           <h2 className="mt-2 truncate text-subtitle font-bold text-foreground">

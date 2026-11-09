@@ -27,6 +27,8 @@ const url = z.string().nullish().transform(httpUrlOrNull)
 const rawProfileSchema = z.object({
   id,
   alias: z.string().nullable(),
+  /** BE-USER-07 (FQ-17): the public name; `null` or absent means none yet. */
+  pageName: z.string().nullish(),
   avatar: url,
   header: url,
   about: z
@@ -81,6 +83,7 @@ export function parseCreatorProfile(value: unknown): CreatorProfile {
   return {
     id: raw.id,
     alias: raw.alias,
+    pageName: raw.pageName ?? null,
     avatarUrl: raw.avatar,
     coverUrl: raw.header,
     bio: about?.bio ?? null,

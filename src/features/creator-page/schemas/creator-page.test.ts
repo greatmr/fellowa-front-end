@@ -14,6 +14,7 @@ const envelope = (data: unknown) => ({ data, errors: null })
 const profile = {
   id: 4,
   alias: 'dana',
+  pageName: 'Dana Studio',
   avatar: 'https://cdn.fellowa.test/a.png',
   header: 'avatars/4/h.png',
   about: {
@@ -34,6 +35,7 @@ describe('creator page responses (FE-PAGE-01)', () => {
     expect(parseCreatorProfile(envelope(profile))).toEqual({
       id: 4,
       alias: 'dana',
+      pageName: 'Dana Studio',
       avatarUrl: 'https://cdn.fellowa.test/a.png',
       coverUrl: null,
       bio: 'Painter',
@@ -56,6 +58,22 @@ describe('creator page responses (FE-PAGE-01)', () => {
     expect(parseCreatorProfile(envelope({ ...profile, viewer }))).toMatchObject(
       { viewerFollows }
     )
+  })
+
+  it.each([
+    ['a string', 'Dana Studio', 'Dana Studio'],
+    ['null', null, null],
+    ['missing', undefined, null],
+  ])('maps a page name that is %s (BE-USER-07)', (_name, pageName, mapped) => {
+    expect(
+      parseCreatorProfile(envelope({ ...profile, pageName }))
+    ).toMatchObject({ pageName: mapped })
+  })
+
+  it('refuses a page name that is not a string', () => {
+    expect(() =>
+      parseCreatorProfile(envelope({ ...profile, pageName: 7 }))
+    ).toThrow(InvalidCreatorPageResponseError)
   })
 
   it('accepts a profile without an about record', () => {

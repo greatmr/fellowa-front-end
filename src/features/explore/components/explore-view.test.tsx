@@ -34,9 +34,13 @@ vi.mock('@/features/explore/server/actions', () => ({
 
 const { ExploreView } = await import('./explore-view')
 
-const creator = (id: number, extra: Partial<ExploreCreator> = {}) => ({
+const creator = (
+  id: number,
+  extra: Partial<ExploreCreator> = {}
+): ExploreCreator => ({
   id,
   alias: `creator${id}`,
+  pageName: null,
   avatarUrl: null,
   coverUrl: null,
   bio: null,
@@ -98,7 +102,7 @@ describe('ExploreView', () => {
     renderView({ viewerId: 42 })
 
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'dana' })
+      await screen.findByRole('heading', { level: 2, name: '@dana' })
     ).toBeInTheDocument()
     expect(action.list).toHaveBeenCalledWith(42, {
       alias: '',
@@ -112,6 +116,18 @@ describe('ExploreView', () => {
     expect(screen.getByText('1,200').closest('p')).toHaveTextContent(
       '1,200 followers'
     )
+  })
+
+  it('names a card by its public page name, never the alias then (FQ-17)', async () => {
+    action.list.mockResolvedValue(
+      page([creator(4, { alias: 'dana', pageName: 'دانا' })])
+    )
+    renderView({ viewerId: null })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'دانا' })
+    ).toBeInTheDocument()
+    expect(screen.queryByText('@dana')).toBeNull()
   })
 
   it("links each card to the creator's public page", async () => {
@@ -187,7 +203,7 @@ describe('ExploreView', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'dana' })
+      await screen.findByRole('heading', { level: 2, name: '@dana' })
     ).toBeInTheDocument()
   })
 
@@ -211,7 +227,7 @@ describe('ExploreView', () => {
     await user.click(await screen.findByRole('button', { name: 'Show more' }))
 
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'creator3' })
+      await screen.findByRole('heading', { level: 2, name: '@creator3' })
     ).toBeInTheDocument()
     expect(action.list).toHaveBeenLastCalledWith(42, {
       alias: '',
@@ -235,7 +251,7 @@ describe('ExploreView', () => {
       await screen.findByRole('button', { name: 'Try again' })
     ).toBeVisible()
     expect(
-      screen.getByRole('heading', { level: 2, name: 'creator1' })
+      screen.getByRole('heading', { level: 2, name: '@creator1' })
     ).toBeVisible()
   })
 
@@ -309,7 +325,7 @@ describe('ExploreView', () => {
       )
       renderView({ viewerId: null })
 
-      await screen.findByRole('heading', { level: 2, name: 'dana' })
+      await screen.findByRole('heading', { level: 2, name: '@dana' })
       expect(screen.getAllByText('Art')).toHaveLength(2) // the chip and the card label
     })
 
@@ -317,7 +333,7 @@ describe('ExploreView', () => {
       action.list.mockResolvedValue(page([creator(4)]))
       renderView({ viewerId: null, withCategories: [] })
 
-      await screen.findByRole('heading', { level: 2, name: 'creator4' })
+      await screen.findByRole('heading', { level: 2, name: '@creator4' })
       expect(
         screen.queryByRole('group', { name: 'Filter by category' })
       ).toBeNull()
