@@ -11,6 +11,9 @@ export function hookFeedback(
   else if (error.code === 'INVALID_REQUEST') code = 'invalidRequest'
   else if (error.code === 'AUTH_TOO_MANY_ATTEMPTS') code = 'tooManyAttempts'
   else if (error.code === 'AUTH_RESEND_COOLDOWN') code = 'resendCooldown'
+  else if (error.code === 'AUTH_CODE_TOO_MANY_ATTEMPTS') code = 'codeLocked'
+  else if (error.code === 'AUTH_CODE_RATE_LIMITED') code = 'codeRateLimited'
+  else if (error.code === 'AUTH_SMS_UNAVAILABLE') code = 'smsUnavailable'
   else if (error.status === 429) code = 'rateLimited'
   else if (error.isNetworkError) code = 'network'
   else if (error.status !== undefined && error.status >= 500)
@@ -28,6 +31,21 @@ export function hookFeedback(
         break
       case 'AUTH_INVALID_RESET_TOKEN':
         code = 'invalidResetToken'
+        break
+      case 'AUTH_PHONE_INVALID':
+        code = 'phoneInvalid'
+        break
+      case 'USER_PHONE_TAKEN':
+        code = 'phoneTaken'
+        break
+      case 'AUTH_CODE_INVALID':
+        code = 'codeInvalid'
+        break
+      case 'AUTH_CODE_EXPIRED':
+        code = 'codeExpired'
+        break
+      case 'AUTH_PASSWORD_ALREADY_SET':
+        code = 'passwordAlreadySet'
         break
       default:
         if (guarded && [401, 403, 404].includes(error.status ?? 0)) {

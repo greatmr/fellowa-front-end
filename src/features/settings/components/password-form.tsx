@@ -46,7 +46,7 @@ export function PasswordForm({
 }: {
   viewerId: number
   /** Lets a password manager link the new password to this account. */
-  email: string
+  email: string | null
 }) {
   const t = useTranslations('settings')
   const mutation = useChangePasswordMutation(viewerId)
@@ -100,7 +100,7 @@ export function PasswordForm({
             type="email"
             name="username"
             autoComplete="username"
-            value={email}
+            value={email ?? ''}
             readOnly
             hidden
           />

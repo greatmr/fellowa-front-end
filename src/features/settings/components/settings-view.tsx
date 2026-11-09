@@ -23,7 +23,7 @@ export function SettingsView({
   heading,
 }: {
   viewerId: number
-  email: string
+  email: string | null
   isVerified: boolean
   personal: PersonalDetails
   heading: ReactNode
@@ -40,10 +40,19 @@ export function SettingsView({
             {t('account.email')}
           </dt>
           <dd className="flex flex-wrap items-center gap-2 text-body font-semibold">
-            <bdi dir="ltr">{email}</bdi>
-            <Badge variant={isVerified ? 'money' : 'amber'}>
-              {isVerified ? t('account.verified') : t('account.unverified')}
-            </Badge>
+            {email ? (
+              <>
+                <bdi dir="ltr">{email}</bdi>
+                <Badge variant={isVerified ? 'money' : 'amber'}>
+                  {isVerified ? t('account.verified') : t('account.unverified')}
+                </Badge>
+              </>
+            ) : (
+              // A phone-only account: its verified phone is not this row's.
+              <span className="text-muted-foreground">
+                {t('account.noEmail')}
+              </span>
+            )}
           </dd>
         </dl>
       </Section>

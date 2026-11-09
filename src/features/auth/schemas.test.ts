@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createAliasSchema,
+  createCompleteAccountSchema,
   createCredentialsSchema,
   createForgotPasswordSchema,
+  createPhoneLoginSchema,
+  createPhoneSchema,
+  createPhoneVerifySchema,
   createResetPasswordSchema,
   createVerificationSchema,
   normalizeAlias,
@@ -154,5 +158,63 @@ describe('authentication schemas', () => {
         }).success
       ).toBe(true)
     }
+  })
+})
+
+describe('phone sign-in schemas (BE-AUTH-08)', () => {
+  it('normalises the phone it accepts', () => {
+    expect(createPhoneSchema().parse({ phone: '+98 ۹۱۲ ۱۲۳ ۴۵۶۷' })).toEqual({
+      phone: '09121234567',
+    })
+    expect(
+      createPhoneSchema().safeParse({ phone: '0912' }).error?.issues[0]?.message
+    ).toBe('phone')
+  })
+
+  it('takes a 5-digit code in any digits and nothing else', () => {
+    const schema = createPhoneVerifySchema()
+    expect(schema.parse({ phone: '09121234567', code: '۱۲۳۴۵' })).toEqual({
+      phone: '09121234567',
+      code: '12345',
+    })
+    for (const code of ['1234', '123456', '12a45', '']) {
+      expect(
+        schema.safeParse({ phone: '09121234567', code }).error?.issues[0]
+          ?.message
+      ).toBe('phoneCode')
+    }
+  })
+
+  it('needs a password to sign in with one', () => {
+    const schema = createPhoneLoginSchema()
+    expect(
+      schema.safeParse({ phone: '09121234567', password: '' }).error?.issues[0]
+        ?.message
+    ).toBe('passwordRequired')
+    expect(schema.parse({ phone: '9121234567', password: 'x' })).toEqual({
+      phone: '09121234567',
+      password: 'x',
+    })
+  })
+
+  it('completes an account with a trimmed name and an optional 8+ password', () => {
+    const schema = createCompleteAccountSchema()
+    expect(schema.parse({ displayName: '  Sara ', password: '' })).toEqual({
+      displayName: 'Sara',
+      password: undefined,
+    })
+    expect(schema.parse({ displayName: 'Sara', password: 'eight-ch' })).toEqual(
+      { displayName: 'Sara', password: 'eight-ch' }
+    )
+    const issue = (input: object) =>
+      schema.safeParse(input).error?.issues[0]?.message
+    expect(issue({ displayName: ' S ', password: '' })).toBe(
+      'displayNameLength'
+    )
+    expect(issue({ displayName: 'S'.repeat(81) })).toBe('displayNameLength')
+    // The API's 8, not the prototype's 6.
+    expect(issue({ displayName: 'Sara', password: 'sixsix' })).toBe(
+      'passwordLength'
+    )
   })
 })

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
+import { normalizeIranianMobile } from '@/features/auth/lib/phone'
 import type { AuthValidationMessages } from '@/features/auth/types'
+import { toLatinDigits } from '@/lib/digits'
 
 const defaultMessages: AuthValidationMessages = {
   email: 'email',
@@ -47,6 +49,98 @@ export function createVerificationSchema(
   messages: AuthValidationMessages = defaultMessages
 ) {
   return z.object({ code: z.string().regex(/^\d{6}$/, messages.code) })
+}
+
+/** Limits from the phone sign-in DTOs (BE-AUTH-08). */
+export const PHONE_CODE_LENGTH = 5
+export const DISPLAY_NAME_MIN = 2
+export const DISPLAY_NAME_MAX = 80
+/** The API's minimum (`CompleteAccountDto`), not the prototype's 6 (FQ-16). */
+export const PASSWORD_MIN = 8
+
+export type PhoneValidationMessages = {
+  phone: string
+  code: string
+  passwordRequired: string
+  displayNameLength: string
+  passwordLength: string
+}
+
+const phoneMessages: PhoneValidationMessages = {
+  phone: 'phone',
+  code: 'phoneCode',
+  passwordRequired: 'passwordRequired',
+  displayNameLength: 'displayNameLength',
+  passwordLength: 'passwordLength',
+}
+
+/** Any input the API accepts, parsed to the `09XXXXXXXXX` it stores. */
+function phoneField(message: string) {
+  return z.string().transform((value, context) => {
+    const phone = normalizeIranianMobile(value)
+    if (phone) return phone
+    context.addIssue({ code: 'custom', message })
+    return z.NEVER
+  })
+}
+
+export function createPhoneSchema(
+  messages: Pick<PhoneValidationMessages, 'phone'> = phoneMessages
+) {
+  return z.object({ phone: phoneField(messages.phone) })
+}
+
+/** `code` takes Persian and Arabic-Indic digits too, as the DTO does. */
+export function createPhoneVerifySchema(
+  messages: Pick<PhoneValidationMessages, 'phone' | 'code'> = phoneMessages
+) {
+  return z.object({
+    phone: phoneField(messages.phone),
+    code: z
+      .string()
+      .transform((value) => toLatinDigits(value.trim()))
+      .pipe(
+        z
+          .string()
+          .regex(new RegExp(`^\\d{${PHONE_CODE_LENGTH}}$`), messages.code)
+      ),
+  })
+}
+
+export function createPhoneLoginSchema(
+  messages: Pick<
+    PhoneValidationMessages,
+    'phone' | 'passwordRequired'
+  > = phoneMessages
+) {
+  return z.object({
+    phone: phoneField(messages.phone),
+    password: z.string().min(1, messages.passwordRequired),
+  })
+}
+
+/**
+ * `CompleteAccountDto`: a trimmed name of 2–80 and an optional password of at
+ * least 8. An empty password means "no password" and is left out.
+ */
+export function createCompleteAccountSchema(
+  messages: Pick<
+    PhoneValidationMessages,
+    'displayNameLength' | 'passwordLength'
+  > = phoneMessages
+) {
+  return z.object({
+    displayName: z
+      .string()
+      .trim()
+      .min(DISPLAY_NAME_MIN, messages.displayNameLength)
+      .max(DISPLAY_NAME_MAX, messages.displayNameLength),
+    password: z
+      .string()
+      .optional()
+      .transform((value) => (value ? value : undefined))
+      .pipe(z.string().min(PASSWORD_MIN, messages.passwordLength).optional()),
+  })
 }
 
 /** The backend's alias rules (`alias-rules.ts`, BE-USER-04; CP-02 [DOC]). */

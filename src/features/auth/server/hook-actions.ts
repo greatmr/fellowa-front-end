@@ -4,17 +4,22 @@ import { z } from 'zod'
 
 import {
   changePassword,
+  completeAccount,
   confirmPasswordReset,
   exchangeGoogleCode,
   fetchOwnProfile,
   InvalidAuthResponseError,
+  loginWithPhonePassword,
   requestPasswordReset,
+  requestPhoneCode,
   resendEmailCode,
   setCreatorAlias,
   submitCredentials,
   verifyAuthToken,
   verifyEmailCode,
+  verifyPhoneCode,
 } from '@/features/auth/api/auth-api'
+import { retryAfterSeconds } from '@/features/auth/lib/phone'
 import { validAuthRequestOrigin } from '@/features/auth/server/request-security'
 import {
   authenticateToken,
@@ -25,17 +30,26 @@ import {
 } from '@/features/auth/server/session'
 import {
   createAliasSchema,
+  createCompleteAccountSchema,
   createCredentialsSchema,
   createForgotPasswordSchema,
+  createPhoneLoginSchema,
+  createPhoneSchema,
+  createPhoneVerifySchema,
   createResetPasswordSchema,
   createVerificationSchema,
 } from '@/features/auth/schemas'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import type {
   AuthUser,
+  CompleteAccountPayload,
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
+  PhoneCodeRequestPayload,
+  PhoneLoginPayload,
+  PhoneSignIn,
+  PhoneVerifyPayload,
   ResetPasswordPayload,
 } from '@/features/auth/types'
 import { ApiError } from '@/lib/api/errors'
@@ -201,5 +215,63 @@ export async function logoutForHook() {
   return mutate(z.undefined(), undefined, async () => {
     await clearSession()
     return null
+  })
+}
+
+/**
+ * The phone routes' 429s say how long to wait only in the message; keep the
+ * seconds and drop the message (BE-AUTH-08).
+ */
+async function withRetryAfter<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 429) {
+      throw new ApiError({
+        message: 'Rate limited',
+        status: error.status,
+        code: error.code,
+        retryAfterSeconds: retryAfterSeconds(error.messages[0]),
+      })
+    }
+    throw error
+  }
+}
+
+async function phoneSession(
+  signIn: Awaited<ReturnType<typeof verifyPhoneCode>>
+): Promise<PhoneSignIn> {
+  const { token, isNewUser, needsProfile, hasPassword } = signIn
+  return {
+    user: await establishSession(token),
+    isNewUser,
+    needsProfile,
+    hasPassword,
+  }
+}
+
+export async function requestPhoneCodeForHook(input: PhoneCodeRequestPayload) {
+  return mutate(createPhoneSchema(), input, ({ phone }) =>
+    withRetryAfter(() => requestPhoneCode(phone))
+  )
+}
+
+export async function verifyPhoneCodeForHook(input: PhoneVerifyPayload) {
+  return mutate(createPhoneVerifySchema(), input, async (payload) =>
+    phoneSession(await withRetryAfter(() => verifyPhoneCode(payload)))
+  )
+}
+
+export async function phoneLoginForHook(input: PhoneLoginPayload) {
+  return mutate(createPhoneLoginSchema(), input, async (payload) =>
+    phoneSession(await withRetryAfter(() => loginWithPhonePassword(payload)))
+  )
+}
+
+export async function completeAccountForHook(input: CompleteAccountPayload) {
+  return mutate(createCompleteAccountSchema(), input, async (payload) => {
+    const session = await activeSession()
+    const { hasPassword } = await completeAccount(session.token, payload)
+    return { hasPassword }
   })
 }

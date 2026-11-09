@@ -67,7 +67,7 @@ export function ForgotPasswordForm({ returnTo }: { returnTo?: string }) {
   const backToLogin = (
     <p className="text-center text-body">
       <Link
-        href={authHref('/auth/login', returnTo)}
+        href={authHref('/auth/login/email', returnTo)}
         className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
       >
         {t('forgot.backToLogin')}

@@ -10,23 +10,33 @@ import {
 
 import {
   changePasswordForHook,
+  completeAccountForHook,
   confirmPasswordResetForHook,
   exchangeGoogleCodeForHook,
   loginForHook,
   logoutForHook,
   ownProfileForHook,
+  phoneLoginForHook,
   registerForHook,
   requestPasswordResetForHook,
+  requestPhoneCodeForHook,
   resendEmailForHook,
   setAliasForHook,
   verifyAuthTokenForHook,
   verifyEmailForHook,
+  verifyPhoneCodeForHook,
 } from '@/features/auth/server/hook-actions'
 import type {
   AuthUser,
+  CompleteAccountPayload,
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
+  PhoneCodeRequestPayload,
+  PhoneCodeSent,
+  PhoneLoginPayload,
+  PhoneSignIn,
+  PhoneVerifyPayload,
   ResetPasswordPayload,
 } from '@/features/auth/types'
 import type { ApiError } from '@/lib/api/errors'
@@ -170,4 +180,43 @@ export function useVerifyAuthTokenMutation(
 
 export function useLogoutMutation(options?: MutationOptions<null, void>) {
   return useAuthMutation('logout', logoutForHook, 'identity', options)
+}
+
+export function useRequestPhoneCodeMutation(
+  options?: MutationOptions<PhoneCodeSent, PhoneCodeRequestPayload>
+) {
+  return useAuthMutation(
+    'phone-request-code',
+    requestPhoneCodeForHook,
+    null,
+    options
+  )
+}
+
+export function useVerifyPhoneCodeMutation(
+  options?: MutationOptions<PhoneSignIn, PhoneVerifyPayload>
+) {
+  return useAuthMutation(
+    'phone-verify',
+    verifyPhoneCodeForHook,
+    'identity',
+    options
+  )
+}
+
+export function usePhoneLoginMutation(
+  options?: MutationOptions<PhoneSignIn, PhoneLoginPayload>
+) {
+  return useAuthMutation('phone-login', phoneLoginForHook, 'identity', options)
+}
+
+export function useCompleteAccountMutation(
+  options?: MutationOptions<{ hasPassword: boolean }, CompleteAccountPayload>
+) {
+  return useAuthMutation(
+    'complete-account',
+    completeAccountForHook,
+    'profile',
+    options
+  )
 }

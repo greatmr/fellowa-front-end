@@ -17,7 +17,7 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'auth' })
-  return { title: t('login.title') }
+  return { title: t('phone.entry.title') }
 }
 
 export default async function AuthenticationPage({

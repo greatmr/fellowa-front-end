@@ -5,7 +5,14 @@ import { redirect } from '@/i18n/navigation'
 import type { Locale } from '@/i18n/routing'
 
 /** Request-dependent onboarding content, inside the route's Suspense boundary. */
-export async function OnboardingScreen({ locale }: { locale: Locale }) {
+export async function OnboardingScreen({
+  locale,
+  searchParams,
+}: {
+  locale: Locale
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const { step } = await searchParams
   const session = await getSession()
   if (!session) {
     return redirect({
@@ -23,5 +30,12 @@ export async function OnboardingScreen({ locale }: { locale: Locale }) {
     })
   }
 
-  return <OnboardingFlow {...await loadOnboarding(session)} />
+  return (
+    <OnboardingFlow
+      {...await loadOnboarding(session)}
+      // After phone sign-up the display name is given (FE-AUTH-01); start at
+      // the username. Any other value is ignored.
+      startAtUsername={step === 'username'}
+    />
+  )
 }

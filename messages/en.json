@@ -13,7 +13,8 @@
       "pending": "Signing in…",
       "switchPrompt": "New to Fellowa?",
       "switchLink": "Create an account",
-      "forgotLink": "Forgot your password?"
+      "forgotLink": "Forgot your password?",
+      "phoneLink": "Use your mobile number instead"
     },
     "register": {
       "title": "Join Fellowa",
@@ -21,7 +22,8 @@
       "submit": "Create account",
       "pending": "Creating account…",
       "switchPrompt": "Already have an account?",
-      "switchLink": "Sign in"
+      "switchLink": "Sign in",
+      "phoneLink": "Use your mobile number instead"
     },
     "fields": {
       "email": "Email address",
@@ -105,6 +107,82 @@
       "title": "Please sign in again",
       "body": "Your session has expired. Sign in to request a new verification code.",
       "login": "Return to sign in"
+    },
+    "phone": {
+      "entry": {
+        "title": "Sign in or sign up",
+        "description": "Welcome to Fellowa. Enter your mobile number to sign in or create an account.",
+        "label": "Mobile number",
+        "placeholder": "0912 345 6789",
+        "submit": "Continue and get a code",
+        "pending": "Sending code…",
+        "emailPrompt": "Have an email account?",
+        "emailLink": "Sign in with email",
+        "legal": "By signing in or signing up to Fellowa, you accept the <strong>Terms of use</strong> and the <strong>Privacy policy</strong>."
+      },
+      "code": {
+        "title": "Enter the verification code",
+        "sentTo": "We texted a {length}-digit code to <phone></phone>.",
+        "editNumber": "Edit number",
+        "label": "Verification code",
+        "digit": "Digit {index} of {total}",
+        "submit": "Confirm and continue",
+        "pending": "Checking…",
+        "usePassword": "Sign in with your password instead of a code",
+        "resendIn": "Resend the code in {time}",
+        "resend": "Request a new code",
+        "resending": "Sending…",
+        "sent": "A new code is on its way."
+      },
+      "password": {
+        "title": "Sign in with password",
+        "description": "Enter the password for the account on <phone></phone>.",
+        "label": "Password",
+        "placeholder": "Enter your password",
+        "useCode": "Sign in with a one-time SMS code",
+        "submit": "Sign in",
+        "pending": "Signing in…",
+        "sendCode": "Get a one-time code (OTP)",
+        "sendingCode": "Sending code…",
+        "changeNumber": "Change mobile number"
+      },
+      "account": {
+        "progress": "Step {current, number} of {total, number}",
+        "progressLabel": "Account setup progress",
+        "title": "Complete your account",
+        "description": "Complete your account's basic information",
+        "nameLabel": "Your name (or an alias)",
+        "namePlaceholder": "For example: Alireza Mohammadi",
+        "nameHint": "Owners of the pages you support see this name.",
+        "passwordLabel": "Password",
+        "optional": "(optional)",
+        "skipLink": "Skip (set it later in settings)",
+        "passwordPlaceholder": "At least {min} characters (or leave it empty)",
+        "passwordHint": "Without a password you can always sign in with a one-time SMS code, or set one later in settings.",
+        "submit": "Continue to the next step",
+        "pending": "Saving…",
+        "skip": "Continue without a password"
+      },
+      "validation": {
+        "phone": "Enter an 11-digit mobile number that starts with 09.",
+        "code": "Enter all {length} digits of the code.",
+        "passwordRequired": "Enter your password.",
+        "displayNameLength": "Enter your name or an alias ({min} to {max} characters).",
+        "passwordLength": "If you set a password, use at least {min} characters."
+      },
+      "errors": {
+        "phoneInvalid": "Enter an 11-digit mobile number that starts with 09.",
+        "phoneTaken": "This number is on an account that has not confirmed it by SMS, so it cannot be used to sign in.",
+        "codeInvalid": "The code is incorrect. Try again.",
+        "codeExpired": "This code has expired. Request a new one.",
+        "codeRateLimited": "A code was just sent to this number. Try again in {time}.",
+        "codeRateLimitedNoTime": "A code was just sent to this number. Try again in a little while.",
+        "codeLocked": "Too many incorrect attempts. Request a new code in {time}.",
+        "codeLockedNoTime": "Too many incorrect attempts. Request a new code in a little while.",
+        "smsUnavailable": "Text messages can't be sent right now. Try again in a little while.",
+        "invalidCredentials": "The password is incorrect. You can sign in with a one-time code instead.",
+        "passwordAlreadySet": "This account already has a password. Continue without one, or change it in settings."
+      }
     }
   },
   "common": {
@@ -483,7 +561,8 @@
       "title": "Account",
       "email": "Email",
       "verified": "Verified",
-      "unverified": "Not verified"
+      "unverified": "Not verified",
+      "noEmail": "No email address"
     },
     "personal": {
       "title": "Personal details",

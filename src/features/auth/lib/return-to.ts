@@ -44,3 +44,17 @@ export function safeReturnTo(value: unknown): string {
   const withoutLocale = value.replace(/^\/(?:fa|en)(?=\/)/, '')
   return privatePaths.has(withoutLocale) ? withoutLocale : '/studio'
 }
+
+/**
+ * Where a phone sign-in lands: a new account, or one without a display name,
+ * completes its account first (then the creator onboarding); anyone else goes
+ * to the requested page, or the studio.
+ */
+export function phoneSignInDestination(
+  result: { isNewUser: boolean; needsProfile: boolean },
+  returnTo?: string
+) {
+  return result.isNewUser || result.needsProfile
+    ? '/auth/account'
+    : safeReturnTo(returnTo)
+}

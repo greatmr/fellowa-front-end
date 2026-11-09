@@ -4,10 +4,15 @@ import { z } from 'zod'
 
 import type {
   AuthUser,
+  CompleteAccountPayload,
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   ForgotPasswordPayload,
   GoogleAuthPayload,
+  PhoneCodeRequestPayload,
+  PhoneCodeSent,
+  PhoneLoginPayload,
+  PhoneVerifyPayload,
   ResetPasswordPayload,
   SetAliasPayload,
   VerificationCodePayload,
@@ -27,7 +32,8 @@ const invalid = () => new InvalidAuthResponseError()
 
 const userSchema = z.object({
   id: z.number().int().positive().safe(),
-  email: z.string().email(),
+  // `null` for a phone-only account (BE-AUTH-08).
+  email: z.string().email().nullable(),
   alias: z.string().nullable(),
   isVerified: z.boolean(),
 })
@@ -37,9 +43,29 @@ const verifiedTokenSchema = z.object({
   valid: z.literal(true),
   payload: z.object({
     sub: z.number().int().positive().safe(),
-    email: z.string().email(),
+    email: z.string().email().nullable(),
     exp: z.number().int().positive().safe(),
   }),
+})
+
+const seconds = z.number().int().nonnegative().safe()
+const phoneCodeSentSchema = z.object({
+  phone: z.string().regex(/^09\d{9}$/),
+  hasAccount: z.boolean(),
+  hasPassword: z.boolean(),
+  resendAfterSeconds: seconds,
+  expiresInSeconds: seconds,
+})
+/** Only what the client routes on; `user` comes from the profile check. */
+const phoneSignInSchema = z.object({
+  token: z.string().min(1),
+  isNewUser: z.boolean(),
+  needsProfile: z.boolean(),
+  hasPassword: z.boolean(),
+})
+const completedAccountSchema = z.object({
+  displayName: z.string(),
+  hasPassword: z.boolean(),
 })
 
 export async function submitCredentials(
@@ -137,4 +163,44 @@ export async function verifyAuthToken(token: string): Promise<true> {
     { token }
   )
   return parseEnvelope(verifiedTokenSchema, response, invalid).valid
+}
+
+/** `POST /auth/phone/request-code` (BE-AUTH-08). */
+export async function requestPhoneCode(phone: string): Promise<PhoneCodeSent> {
+  const response = await apiPost<unknown, PhoneCodeRequestPayload>(
+    '/auth/phone/request-code',
+    { phone }
+  )
+  return parseEnvelope(phoneCodeSentSchema, response, invalid)
+}
+
+/** `POST /auth/phone/verify`: signs in, creating the account the first time. */
+export async function verifyPhoneCode(input: PhoneVerifyPayload) {
+  const response = await apiPost<unknown, PhoneVerifyPayload>(
+    '/auth/phone/verify',
+    input
+  )
+  return parseEnvelope(phoneSignInSchema, response, invalid)
+}
+
+/** `POST /auth/phone/login`: a returning account that has set a password. */
+export async function loginWithPhonePassword(input: PhoneLoginPayload) {
+  const response = await apiPost<unknown, PhoneLoginPayload>(
+    '/auth/phone/login',
+    input
+  )
+  return parseEnvelope(phoneSignInSchema, response, invalid)
+}
+
+/** `PUT /auth/account`: the display name and, optionally, a first password. */
+export async function completeAccount(
+  token: string,
+  input: CompleteAccountPayload
+) {
+  const response = await apiPut<unknown, CompleteAccountPayload>(
+    '/auth/account',
+    input,
+    withBearer(token)
+  )
+  return parseEnvelope(completedAccountSchema, response, invalid)
 }

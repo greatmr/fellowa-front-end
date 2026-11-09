@@ -6,7 +6,7 @@ import type { PersonalDetails } from '@/features/settings/types/settings'
 
 export type SettingsData = {
   viewerId: number
-  email: string
+  email: string | null
   isVerified: boolean
   personal: PersonalDetails
 }

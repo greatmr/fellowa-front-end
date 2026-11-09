@@ -13,6 +13,8 @@ export class ApiError extends Error {
   readonly code: string | undefined
   readonly messages: string[]
   readonly isNetworkError: boolean
+  /** Seconds until a 429 lifts, when the feature could read them. */
+  readonly retryAfterSeconds: number | undefined
 
   constructor(init: {
     message: string
@@ -20,6 +22,7 @@ export class ApiError extends Error {
     code?: string
     messages?: string[]
     isNetworkError?: boolean
+    retryAfterSeconds?: number
     cause?: unknown
   }) {
     super(init.message, { cause: init.cause })
@@ -28,6 +31,7 @@ export class ApiError extends Error {
     this.code = init.code
     this.messages = init.messages ?? [init.message]
     this.isNetworkError = init.isNetworkError ?? false
+    this.retryAfterSeconds = init.retryAfterSeconds
   }
 
   get isUnauthorized() {

@@ -194,6 +194,29 @@ describe('React Query auth forms', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  it('links the email forms to each other and back to phone sign-in', () => {
+    const { unmount } = renderAuth(
+      <CredentialsForm mode="login" returnTo="/settings" />
+    )
+    expect(
+      screen.getByRole('link', { name: en.auth.login.switchLink })
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('/auth/register/email?returnTo=%2Fsettings')
+    )
+    expect(
+      screen.getByRole('link', { name: en.auth.login.phoneLink })
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('/auth/login?returnTo=%2Fsettings')
+    )
+    unmount()
+    renderAuth(<CredentialsForm mode="register" />)
+    expect(
+      screen.getByRole('link', { name: en.auth.register.switchLink })
+    ).toHaveAttribute('href', expect.stringMatching(/\/auth\/login\/email$/))
+  })
+
   it('offers password recovery on login only, keeping the destination', () => {
     const { unmount } = renderAuth(
       <CredentialsForm mode="login" returnTo="/settings" />
