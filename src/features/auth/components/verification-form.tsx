@@ -34,7 +34,7 @@ export function VerificationForm({
   email,
   returnTo,
 }: {
-  email: string
+  email: string | null
   returnTo?: string
 }) {
   const t = useTranslations('auth')
@@ -151,9 +151,11 @@ export function VerificationForm({
         <p className="text-body text-muted-foreground">
           {t('verify.description')}
         </p>
-        <p className="text-body font-semibold">
-          <bdi dir="ltr">{email}</bdi>
-        </p>
+        {email && (
+          <p className="text-body font-semibold">
+            <bdi dir="ltr">{email}</bdi>
+          </p>
+        )}
       </div>
       <Form {...form}>
         <form

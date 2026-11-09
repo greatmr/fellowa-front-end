@@ -26,12 +26,15 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
       {studio ? (
-        <span
-          className="hidden max-w-48 truncate text-body-sm text-muted-foreground sm:inline"
-          title={t('nav.signedInAs', { email: session.user.email })}
-        >
-          <bdi>{session.user.email}</bdi>
-        </span>
+        // A phone-only account has no email (BE-AUTH-08) and shows nothing.
+        session.user.email && (
+          <span
+            className="hidden max-w-48 truncate text-body-sm text-muted-foreground sm:inline"
+            title={t('nav.signedInAs', { email: session.user.email })}
+          >
+            <bdi>{session.user.email}</bdi>
+          </span>
+        )
       ) : (
         <Button asChild size="sm">
           <Link

@@ -8,6 +8,7 @@ export type ApiActionResult<T> =
       status?: number
       code?: string
       isNetworkError?: boolean
+      retryAfterSeconds?: number
     }
 
 /**
@@ -28,6 +29,9 @@ export async function runApiAction<T>(
         status: error.status,
         code: error.code,
         isNetworkError: error.isNetworkError,
+        ...(error.retryAfterSeconds === undefined
+          ? {}
+          : { retryAfterSeconds: error.retryAfterSeconds }),
       }
     }
     const mapped = mapError?.(error)
@@ -42,5 +46,6 @@ export function unwrapApiActionResult<T>(result: ApiActionResult<T>): T {
     status: result.status,
     code: result.code,
     isNetworkError: result.isNetworkError,
+    retryAfterSeconds: result.retryAfterSeconds,
   })
 }

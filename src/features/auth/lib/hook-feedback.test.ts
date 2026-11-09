@@ -13,6 +13,16 @@ describe('hookFeedback', () => {
     [429, 'AUTH_RESEND_COOLDOWN', 'resendCooldown'],
     [400, 'AUTH_INVALID_RESET_TOKEN', 'invalidResetToken'],
     [400, 'AUTH_INVALID_CODE', 'invalidCode'],
+    // Phone sign-in (BE-AUTH-08)
+    [400, 'AUTH_PHONE_INVALID', 'phoneInvalid'],
+    [409, 'USER_PHONE_TAKEN', 'phoneTaken'],
+    [400, 'AUTH_CODE_INVALID', 'codeInvalid'],
+    [400, 'AUTH_CODE_EXPIRED', 'codeExpired'],
+    [429, 'AUTH_CODE_RATE_LIMITED', 'codeRateLimited'],
+    [429, 'AUTH_CODE_TOO_MANY_ATTEMPTS', 'codeLocked'],
+    [503, 'AUTH_SMS_UNAVAILABLE', 'smsUnavailable'],
+    [409, 'AUTH_PASSWORD_ALREADY_SET', 'passwordAlreadySet'],
+    [401, 'AUTH_INVALID_CREDENTIALS', 'invalidCredentials'],
   ])('maps %i %s to its own state', (status, code, expected) => {
     expect(hookFeedback(failure(status, code), true)).toEqual({
       status: 'error',

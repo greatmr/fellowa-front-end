@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { safeReturnTo } from './return-to'
+import { phoneSignInDestination, safeReturnTo } from './return-to'
 
 describe('safeReturnTo', () => {
   it.each([
@@ -56,4 +56,17 @@ describe('safeReturnTo', () => {
   ])('returns to the public creator page %s (FE-PAGE-01)', (path, expected) =>
     expect(safeReturnTo(path)).toBe(expected)
   )
+})
+
+describe('phoneSignInDestination', () => {
+  it.each([
+    [{ isNewUser: true, needsProfile: true }, '/creators/5', '/auth/account'],
+    [{ isNewUser: false, needsProfile: true }, undefined, '/auth/account'],
+    [{ isNewUser: false, needsProfile: false }, '/creators/5', '/creators/5'],
+    [{ isNewUser: false, needsProfile: false }, '/settings', '/settings'],
+    [{ isNewUser: false, needsProfile: false }, '//evil.example', '/studio'],
+    [{ isNewUser: false, needsProfile: false }, undefined, '/studio'],
+  ])('%o with returnTo %s → %s', (result, returnTo, expected) => {
+    expect(phoneSignInDestination(result, returnTo)).toBe(expected)
+  })
 })
