@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
+import { legacyAuthRedirects } from './src/features/auth/lib/legacy-routes'
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -17,6 +19,9 @@ const nextConfig: NextConfig = {
   // wildcard.
   images: {
     remotePatterns: [],
+  },
+  async redirects() {
+    return legacyAuthRedirects()
   },
 }
 

@@ -15,6 +15,13 @@ const publicSchema = z.object({
   NEXT_PUBLIC_API_BASE_URL: z.string().min(1),
   /** Canonical origin; auth mutations require it for Origin validation. */
   NEXT_PUBLIC_APP_URL: z.string().min(1).optional(),
+  /**
+   * Google OAuth web client id (public). The same client as the backend's
+   * `POST /auth/google` exchange (BE-AUTH-07). Unset hides "sign in with
+   * Google". Register `<NEXT_PUBLIC_APP_URL>/auth/google/callback` as its
+   * redirect URI.
+   */
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
 })
 
 const serverSchema = z.object({
@@ -26,6 +33,7 @@ const serverSchema = z.object({
 const raw = {
   NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
   NODE_ENV: process.env.NODE_ENV,
 }
 
