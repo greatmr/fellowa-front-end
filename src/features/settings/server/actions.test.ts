@@ -21,8 +21,9 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { changePasswordAction, updatePersonalAction } = await import('./actions')
-const { getPersonal } = await import('../api/settings-api')
+const { changePasswordAction, updatePageNameAction, updatePersonalAction } =
+  await import('./actions')
+const { getPageName, getPersonal } = await import('../api/settings-api')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -82,6 +83,14 @@ beforeEach(() => {
       await record(r)
       return HttpResponse.json({
         data: { message: 'Password changed successfully' },
+        errors: null,
+      })
+    }),
+    // BE-USER-07: UserService.updateAbout answers with a message only.
+    http.put(`${apiOrigin}/user/about`, async ({ request: r }) => {
+      await record(r)
+      return HttpResponse.json({
+        data: { message: 'About info updated' },
         errors: null,
       })
     })
@@ -240,5 +249,121 @@ describe('getPersonal (BE-USER-06)', () => {
     server.use(http.get(`${apiOrigin}/user/personal`, () => failure(500, 'X')))
 
     await expect(getPersonal(token())).rejects.toMatchObject({ status: 500 })
+  })
+})
+
+describe('updatePageNameAction (FE-AUTH-03, BE-USER-07)', () => {
+  it('saves the trimmed name and nothing else of the about record', async () => {
+    expect(await updatePageNameAction(42, '  Dana Studio ')).toEqual({
+      ok: true,
+      data: 'Dana Studio',
+    })
+    expect(sent).toEqual([
+      {
+        method: 'PUT',
+        path: '/api/user/about',
+        body: { pageName: 'Dana Studio' },
+        auth: `Bearer ${token()}`,
+      },
+    ])
+  })
+
+  it.each([[null], [''], ['   ']])(
+    'clears the name with %j by sending null',
+    async (input) => {
+      expect(await updatePageNameAction(42, input)).toEqual({
+        ok: true,
+        data: null,
+      })
+      expect(sent).toEqual([
+        expect.objectContaining({
+          path: '/api/user/about',
+          body: { pageName: null },
+        }),
+      ])
+    }
+  )
+
+  it.each([['a'], ['x'.repeat(81)]])(
+    'refuses %j without calling the API',
+    async (input) => {
+      expect(await updatePageNameAction(42, input)).toEqual({
+        ok: false,
+        status: 400,
+        code: 'INVALID_REQUEST',
+      })
+      expect(sent).toEqual([])
+    }
+  )
+
+  it('passes "no page yet" through as its code', async () => {
+    server.use(
+      http.put(`${apiOrigin}/user/about`, () =>
+        failure(400, 'USER_ALIAS_REQUIRED')
+      )
+    )
+
+    expect(await updatePageNameAction(42, 'Dana Studio')).toEqual({
+      ok: false,
+      status: 400,
+      code: 'USER_ALIAS_REQUIRED',
+      isNetworkError: false,
+    })
+  })
+
+  it('refuses another signed-in account without calling the API', async () => {
+    request.cookie = token(7)
+
+    expect(await updatePageNameAction(42, 'Dana Studio')).toEqual({
+      ok: false,
+      status: 401,
+      code: 'SESSION_CHANGED',
+    })
+    expect(sent).toEqual([])
+  })
+})
+
+describe('getPageName (BE-USER-07)', () => {
+  const about = (id: number | null, pageName: string | null) =>
+    HttpResponse.json({
+      data: {
+        id,
+        accountId: 42,
+        pageName,
+        bio: null,
+        videoUrl: null,
+        facebookLink: null,
+        instagramLink: null,
+        twitterLink: null,
+        youtubeLink: null,
+        createdAt: null,
+        updatedAt: null,
+      },
+      errors: null,
+    })
+
+  it('reads the page and its public name with the bearer', async () => {
+    let auth: string | null = null
+    server.use(
+      http.get(`${apiOrigin}/user/about`, ({ request: r }) => {
+        auth = r.headers.get('authorization')
+        return about(3, 'Dana Studio')
+      })
+    )
+
+    expect(await getPageName(token())).toEqual({
+      hasPage: true,
+      pageName: 'Dana Studio',
+    })
+    expect(auth).toBe(`Bearer ${token()}`)
+  })
+
+  it('reads an account with no page as nothing to name', async () => {
+    server.use(http.get(`${apiOrigin}/user/about`, () => about(null, null)))
+
+    expect(await getPageName(token())).toEqual({
+      hasPage: false,
+      pageName: null,
+    })
   })
 })

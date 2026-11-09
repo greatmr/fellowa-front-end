@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { authorizedViewerToken } from '@/features/auth/server'
 import {
   changePassword,
+  updatePageName,
   updatePersonal,
 } from '@/features/settings/api/settings-api'
 import {
@@ -13,6 +14,7 @@ import {
   PASSWORD_MAX,
   PASSWORD_MIN,
   normalizeMobile,
+  pageNamePayloadSchema,
 } from '@/features/settings/schemas/settings'
 import type {
   ChangePasswordPayload,
@@ -62,5 +64,24 @@ export async function changePasswordAction(
   return runApiAction(async () => {
     await changePassword(token.data, parsed.data)
     return null
+  })
+}
+
+/**
+ * The page's public name (BE-USER-07, FQ-17). `null` or blank clears it.
+ * Resolves to the name as stored: trimmed, or `null`.
+ */
+export async function updatePageNameAction(
+  viewerId: number,
+  pageName: string | null
+): Promise<ApiActionResult<string | null>> {
+  const parsed = pageNamePayloadSchema.safeParse(pageName)
+  if (!parsed.success)
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  const token = await authorizedViewerToken(viewerId)
+  if (!token.ok) return token
+  return runApiAction(async () => {
+    await updatePageName(token.data, parsed.data)
+    return parsed.data
   })
 }

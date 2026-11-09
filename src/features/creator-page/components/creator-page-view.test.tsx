@@ -25,6 +25,7 @@ import { CreatorPageView } from './creator-page-view'
 const profile: CreatorProfile = {
   id: 4,
   alias: 'dana',
+  pageName: null,
   avatarUrl: null,
   coverUrl: null,
   bio: 'Painter of small things',
@@ -75,12 +76,53 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     renderPage('anonymous')
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'dana' })
+      screen.getByRole('heading', { level: 1, name: '@dana' })
     ).toBeVisible()
     expect(screen.getByText('Music').closest('p')).toHaveTextContent(
       /^Music\s*·\s*1,200 followers$/
     )
     expect(screen.getByRole('heading', { name: 'Hello world' })).toBeVisible()
+  })
+
+  it('shows the public page name with the alias under it (FQ-17)', () => {
+    renderWithIntl(
+      <CreatorPageView
+        profile={{ ...profile, pageName: 'Dana Studio' }}
+        tiers={tiers}
+        posts={posts}
+        categoryTitle={null}
+        viewer="anonymous"
+      />,
+      { locale: 'en' }
+    )
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Dana Studio' })
+    ).toBeVisible()
+    expect(screen.getByText('@dana')).toBeVisible()
+  })
+
+  it('shows only @alias when the page has no public name', () => {
+    renderPage('anonymous')
+
+    expect(screen.getAllByText('@dana')).toHaveLength(1)
+  })
+
+  it('falls back to the unnamed copy with neither a name nor an alias', () => {
+    renderWithIntl(
+      <CreatorPageView
+        profile={{ ...profile, alias: null }}
+        tiers={tiers}
+        posts={posts}
+        categoryTitle={null}
+        viewer="anonymous"
+      />,
+      { locale: 'en' }
+    )
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Unnamed creator' })
+    ).toBeVisible()
   })
 
   it('sends an anonymous visitor to sign in and back to this page', async () => {
@@ -199,7 +241,7 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
     renderPage('anonymous', { tiers: null })
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'dana' })
+      screen.getByRole('heading', { level: 1, name: '@dana' })
     ).toBeVisible()
     await user.click(screen.getByRole('tab', { name: 'Tiers' }))
     expect(

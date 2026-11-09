@@ -10,12 +10,14 @@ import { renderWithIntl } from '../../../../test/render'
 const mocks = vi.hoisted(() => ({
   updatePersonal: vi.fn(),
   changePassword: vi.fn(),
+  updatePageName: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }))
 vi.mock('@/features/settings/server/actions', () => ({
   updatePersonalAction: mocks.updatePersonal,
   changePasswordAction: mocks.changePassword,
+  updatePageNameAction: mocks.updatePageName,
 }))
 vi.mock('sonner', () => ({
   toast: { success: mocks.toastSuccess, error: mocks.toastError },
@@ -23,6 +25,8 @@ vi.mock('sonner', () => ({
 
 const { PersonalForm } = await import('./personal-form')
 const { PasswordForm } = await import('./password-form')
+const { PageNameForm } = await import('./page-name-form')
+const { SettingsView } = await import('./settings-view')
 
 function renderForm(ui: ReactElement) {
   const client = new QueryClient({
@@ -185,5 +189,136 @@ describe('PasswordForm', () => {
       await screen.findByText("The two passwords don't match.")
     ).toBeVisible()
     expect(mocks.changePassword).not.toHaveBeenCalled()
+  })
+})
+
+describe('PageNameForm (FE-AUTH-03)', () => {
+  const field = () => screen.getByLabelText('Page name')
+  const save = () => screen.getByRole('button', { name: 'Save' })
+
+  it('starts from the saved name and saves a new one, trimmed', async () => {
+    mocks.updatePageName.mockImplementation(async (_viewer, name) => ({
+      ok: true,
+      data: name,
+    }))
+    const user = userEvent.setup()
+    renderForm(<PageNameForm viewerId={42} initial="Dana" />)
+
+    expect(field()).toHaveValue('Dana')
+    expect(save()).toBeDisabled()
+    await user.clear(field())
+    await user.type(field(), '  Dana Studio ')
+    await user.click(save())
+
+    await waitFor(() =>
+      expect(mocks.updatePageName).toHaveBeenCalledWith(42, 'Dana Studio')
+    )
+    expect(mocks.toastSuccess).toHaveBeenCalledWith('Your page name was saved.')
+    await waitFor(() => expect(field()).toHaveValue('Dana Studio'))
+    expect(save()).toBeDisabled()
+  })
+
+  it('clears the name when saved empty', async () => {
+    mocks.updatePageName.mockResolvedValue({ ok: true, data: null })
+    const user = userEvent.setup()
+    renderForm(<PageNameForm viewerId={42} initial="Dana" />)
+
+    await user.clear(field())
+    await user.click(save())
+
+    await waitFor(() =>
+      expect(mocks.updatePageName).toHaveBeenCalledWith(42, null)
+    )
+    expect(mocks.toastSuccess).toHaveBeenCalledWith(
+      'Page name cleared. Your @username is shown instead.'
+    )
+  })
+
+  it('refuses a one-character name before calling the server', async () => {
+    const user = userEvent.setup()
+    renderForm(<PageNameForm viewerId={42} initial={null} />)
+
+    await user.type(field(), 'D')
+    await user.click(save())
+
+    expect(
+      await screen.findByText('Use 2 to 80 characters, or leave it empty.')
+    ).toBeVisible()
+    expect(mocks.updatePageName).not.toHaveBeenCalled()
+  })
+
+  it('says a page address comes first when the backend has no page', async () => {
+    mocks.updatePageName.mockResolvedValue({
+      ok: false,
+      status: 400,
+      code: 'USER_ALIAS_REQUIRED',
+    })
+    const user = userEvent.setup()
+    renderForm(<PageNameForm viewerId={42} initial={null} />)
+
+    await user.type(field(), 'Dana')
+    await user.click(save())
+
+    expect(
+      await screen.findByText(
+        'Choose your page address before naming the page.'
+      )
+    ).toBeVisible()
+    expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
+  it('reports any other failure as a failed save', async () => {
+    mocks.updatePageName.mockResolvedValue({ ok: false, status: 500 })
+    const user = userEvent.setup()
+    renderForm(<PageNameForm viewerId={42} initial={null} />)
+
+    await user.type(field(), 'Dana')
+    await user.click(save())
+
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "That didn't save. Try again."
+      )
+    )
+  })
+})
+
+describe('SettingsView page name section', () => {
+  const view = (page: { hasPage: boolean; pageName: string | null } | null) =>
+    renderForm(
+      <SettingsView
+        viewerId={42}
+        email="me@example.com"
+        isVerified
+        personal={{ firstName: '', lastName: '', phoneNumber: '' }}
+        page={page}
+        heading={<h1>Settings</h1>}
+      />
+    )
+
+  it('edits the name of an existing page', () => {
+    view({ hasPage: true, pageName: 'Dana Studio' })
+
+    expect(screen.getByLabelText('Page name')).toHaveValue('Dana Studio')
+  })
+
+  it('sends an account with no page to choose its address first', () => {
+    view({ hasPage: false, pageName: null })
+
+    expect(screen.queryByLabelText('Page name')).toBeNull()
+    expect(
+      screen
+        .getByRole('link', { name: 'Choose a page address' })
+        .getAttribute('href')
+    ).toMatch(/\/onboarding\?step=username$/)
+  })
+
+  it('degrades only this section when the name could not be read', () => {
+    view(null)
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "Your page name couldn't be loaded. Try again later."
+    )
+    expect(screen.getByLabelText('First name')).toBeInTheDocument()
   })
 })

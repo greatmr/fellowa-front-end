@@ -30,6 +30,8 @@ const imageUrl = z.string().nullable().transform(httpUrlOrNull)
 const rawCreatorSchema = z.object({
   id,
   alias: z.string().nullable(),
+  /** BE-USER-07 (FQ-17): the public name; `null` or absent means none yet. */
+  pageName: z.string().nullish(),
   avatar: imageUrl,
   header: imageUrl,
   about: z.object({ bio: z.string().nullable() }).nullable(),
@@ -56,6 +58,7 @@ function toCreator(raw: z.infer<typeof rawCreatorSchema>): ExploreCreator {
   return {
     id: raw.id,
     alias: raw.alias,
+    pageName: raw.pageName ?? null,
     avatarUrl: raw.avatar,
     coverUrl: raw.header,
     bio: raw.about?.bio ?? null,

@@ -2,11 +2,13 @@
  * Explore card model, mapped from the backend's public projection
  * (`GET /landing/creators{,/top}`, BE-LAND-06; `PublicProfile` in
  * back-end/src/modules/user/user-projections.ts). Only what the card shows.
- * No display name or member count exists in the contract yet.
+ * No member count exists in the contract yet.
  */
 export type ExploreCreator = {
   id: number
   alias: string | null
+  /** BE-USER-07 (FQ-17): the public name; `null` shows `@alias` instead. */
+  pageName: string | null
   avatarUrl: string | null
   coverUrl: string | null
   bio: string | null

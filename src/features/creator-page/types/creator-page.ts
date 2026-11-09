@@ -1,11 +1,16 @@
 /**
  * Public creator page (FE-PAGE-01), from `GET /landing/creators/:id{,/tiers,
  * /content}` (BE-LAND-03; back-end/docs/modules/landing/api.md). Only what the
- * page shows. No display name, member count or seats left exist yet.
+ * page shows. No member count or seats left exist yet.
  */
 export type CreatorProfile = {
   id: number
   alias: string | null
+  /**
+   * BE-USER-07 (FQ-17): the page's public name; `null` until the owner gives
+   * one, and then the page shows `@alias`. Never the private `displayName`.
+   */
+  pageName: string | null
   avatarUrl: string | null
   coverUrl: string | null
   bio: string | null

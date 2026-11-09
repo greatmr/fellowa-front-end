@@ -36,6 +36,7 @@ function token(userId = 42) {
 const creator = {
   id: 4,
   alias: 'dana',
+  pageName: 'Dana Studio',
   avatar: 'https://cdn.fellowa.test/a.png',
   header: null,
   about: {
@@ -117,6 +118,7 @@ describe('explore server boundary', () => {
           {
             id: 4,
             alias: 'dana',
+            pageName: 'Dana Studio',
             avatarUrl: 'https://cdn.fellowa.test/a.png',
             coverUrl: null,
             bio: 'Painter',
@@ -245,7 +247,29 @@ describe('explore server boundary', () => {
   )
 
   it.each([
+    ['null', null],
+    ['missing', undefined],
+  ])(
+    'reads a page name that is %s as none (BE-USER-07)',
+    async (_name, pageName) => {
+      topReturns([{ ...creator, pageName }])
+
+      expect(
+        await listExploreCreatorsForHook(null, {
+          alias: '',
+          categoryId: null,
+          page: 1,
+        })
+      ).toMatchObject({
+        ok: true,
+        data: { items: [{ id: 4, alias: 'dana', pageName: null }] },
+      })
+    }
+  )
+
+  it.each([
     ['a non-numeric follower count', { ...creator, numFollowers: 'many' }],
+    ['a page name that is not a string', { ...creator, pageName: 7 }],
     ['a missing id', { ...creator, id: undefined }],
   ])('refuses a response with %s', async (_name, item) => {
     topReturns([item])
