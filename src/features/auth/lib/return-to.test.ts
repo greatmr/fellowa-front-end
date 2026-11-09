@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   afterAccountDestination,
   choosesPageAddress,
+  googleSignInDestination,
   phoneSignInDestination,
   requestedReturnTo,
   returnsToPage,
@@ -119,5 +120,27 @@ describe('after the account step (FQ-17)', () => {
     expect(returnsToPage('/studio')).toBe(false)
     expect(returnsToPage('//evil.example')).toBe(false)
     expect(returnsToPage('/creators/9')).toBe(true)
+  })
+})
+
+describe('after a Google sign-in (FE-AUTH-05)', () => {
+  const created = { isNewUser: true }
+  const returning = { isNewUser: false }
+  it.each([
+    // A new account chooses its page address, keeping the destination.
+    [created, undefined, '/auth/url'],
+    [
+      created,
+      '/studio',
+      { pathname: '/auth/url', query: { returnTo: '/studio' } },
+    ],
+    // Started from a page: straight back to it (FQ-17).
+    [created, '/creators/5', '/creators/5'],
+    // A returning account goes on, with or without a page.
+    [returning, undefined, '/studio'],
+    [returning, '/creators/5', '/creators/5'],
+    [returning, '//evil.example', '/studio'],
+  ])('%o with returnTo %s → %j', (result, returnTo, expected) => {
+    expect(googleSignInDestination(result, returnTo)).toEqual(expected)
   })
 })

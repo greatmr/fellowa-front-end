@@ -136,6 +136,7 @@ beforeEach(() => {
           alias: null,
           displayName: null,
           isVerified: true,
+          hasPassword: false,
           isPublish: false,
           categoryId: null,
           personal: null,
@@ -227,7 +228,14 @@ describe('verify', () => {
     expect(result).toEqual({
       ok: true,
       data: {
-        user: { id: 77, email: null, alias: null, isVerified: true },
+        user: {
+          id: 77,
+          email: null,
+          alias: null,
+          isVerified: true,
+          displayName: null,
+          hasPassword: false,
+        },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',
         isNewUser: true,
@@ -303,7 +311,14 @@ describe('login with password', () => {
     ).toEqual({
       ok: true,
       data: {
-        user: { id: 77, email: null, alias: null, isVerified: true },
+        user: {
+          id: 77,
+          email: null,
+          alias: null,
+          isVerified: true,
+          displayName: null,
+          hasPassword: false,
+        },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',
         isNewUser: false,

@@ -90,6 +90,8 @@ beforeEach(() => {
           email: 'creator@example.com',
           alias: null,
           isVerified: verified,
+          displayName: 'Sara',
+          hasPassword: true,
         },
         errors: null,
       })
@@ -129,6 +131,8 @@ describe('auth hook server boundary', () => {
         email: 'creator@example.com',
         alias: null,
         isVerified: false,
+        displayName: 'Sara',
+        hasPassword: true,
       },
     })
     expect(JSON.stringify(result)).not.toContain(token())
@@ -148,6 +152,8 @@ describe('auth hook server boundary', () => {
         email: 'creator@example.com',
         alias: null,
         isVerified: false,
+        displayName: 'Sara',
+        hasPassword: true,
       },
     })
     expect(await ownProfileForHook(9)).toEqual({
@@ -236,6 +242,8 @@ describe('auth hook server boundary', () => {
             email: 'other@example.com',
             alias: null,
             isVerified: true,
+            displayName: 'Sara',
+            hasPassword: true,
           },
           errors: null,
         })
@@ -350,6 +358,9 @@ describe('auth hook server boundary', () => {
         return HttpResponse.json({
           data: {
             message: 'Successfully logged in',
+            isNewUser: false,
+            needsProfile: false,
+            hasPassword: true,
             token: token(),
             user: { id: 42, email: 'creator@example.com', alias: null },
           },
@@ -402,6 +413,8 @@ describe('auth hook server boundary', () => {
         email: 'creator@example.com',
         alias: null,
         isVerified: false,
+        displayName: 'Sara',
+        hasPassword: true,
       },
     })
     expect(JSON.stringify(google)).not.toContain(token())

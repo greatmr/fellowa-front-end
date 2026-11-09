@@ -7,7 +7,10 @@ import type {
 import { parseEnvelope } from '@/lib/api/envelope'
 import { toLatinDigits } from '@/lib/digits'
 
-/** Backend limits (`UpdatePersonalDto`, `ResetPasswordDto`). */
+/**
+ * Backend limits (`UpdatePersonalDto`, `ResetPasswordDto`; `CompleteAccountDto`
+ * has the same password minimum, kept at 8 by FQ-17).
+ */
 export const FIRST_NAME_MAX = 60
 export const LAST_NAME_MAX = 100
 export const PASSWORD_MIN = 8
@@ -61,6 +64,28 @@ export function createPasswordSchema(messages: PasswordFormMessages) {
         .string()
         .min(1, messages.currentRequired)
         .max(PASSWORD_MAX, messages.tooLong),
+      newPassword: z
+        .string()
+        .min(PASSWORD_MIN, messages.newLength)
+        .max(PASSWORD_MAX, messages.tooLong),
+      confirmPassword: z.string(),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      path: ['confirmPassword'],
+      message: messages.mismatch,
+    })
+}
+
+export type FirstPasswordFormMessages = {
+  newLength: string
+  tooLong: string
+  mismatch: string
+}
+
+/** A first password (FE-AUTH-05): new and repeat, no current password. */
+export function createFirstPasswordSchema(messages: FirstPasswordFormMessages) {
+  return z
+    .object({
       newPassword: z
         .string()
         .min(PASSWORD_MIN, messages.newLength)

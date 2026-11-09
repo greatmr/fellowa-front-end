@@ -7,6 +7,7 @@ import {
 } from '@/features/settings/schemas/settings'
 import type {
   ChangePasswordPayload,
+  FirstPasswordPayload,
   PageNameState,
   PersonalDetails,
 } from '@/features/settings/types/settings'
@@ -53,6 +54,23 @@ export async function changePassword(
 ): Promise<void> {
   await apiPut<unknown, ChangePasswordPayload>(
     '/auth/reset-password',
+    payload,
+    withBearer(token)
+  )
+}
+
+/**
+ * `PUT /auth/account` with a password: a first password for an account made
+ * by phone or Google (BE-AUTH-10). 409 `AUTH_PASSWORD_ALREADY_SET` when the
+ * account already has one. The name is sent unchanged; while the page has no
+ * public name it takes this one (BE-USER-07).
+ */
+export async function setFirstPassword(
+  token: string,
+  payload: FirstPasswordPayload
+): Promise<void> {
+  await apiPut<unknown, FirstPasswordPayload>(
+    '/auth/account',
     payload,
     withBearer(token)
   )

@@ -9,6 +9,7 @@ import type {
   CredentialsPayload,
   ForgotPasswordPayload,
   GoogleAuthPayload,
+  GoogleSignIn,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -37,6 +38,10 @@ const userSchema = z.object({
   email: z.string().email().nullable(),
   alias: z.string().nullable(),
   isVerified: z.boolean(),
+  // Owner shape only (`toSelfProfile`): `null` for the placeholder name (Q-63).
+  displayName: z.string().nullable(),
+  // BE-AUTH-10: always present for the owner.
+  hasPassword: z.boolean(),
 })
 const tokenSchema = z.object({ token: z.string().min(1) })
 const messageSchema = z.object({ message: z.string() })
@@ -74,6 +79,17 @@ const aliasAvailabilitySchema = z.object({
   reason: z.enum(['too_short', 'invalid', 'reserved', 'taken']).nullable(),
   suggestions: z.array(z.string()).max(3),
 }) satisfies z.ZodType<AliasAvailability>
+/**
+ * `POST /auth/google` (BE-AUTH-07, BE-AUTH-10): the token, and what the
+ * client routes on. `isNewUser` is `true` only for the call that created the
+ * account.
+ */
+const googleSignInSchema = z.object({
+  token: z.string().min(1),
+  isNewUser: z.boolean(),
+  needsProfile: z.boolean(),
+  hasPassword: z.boolean(),
+}) satisfies z.ZodType<GoogleSignIn>
 const completedAccountSchema = z.object({
   displayName: z.string(),
   hasPassword: z.boolean(),
@@ -172,12 +188,12 @@ export async function changePassword(
 
 export async function exchangeGoogleCode(
   input: GoogleAuthPayload
-): Promise<string> {
+): Promise<GoogleSignIn> {
   const response = await apiPost<unknown, GoogleAuthPayload>(
     '/auth/google',
     input
   )
-  return parseEnvelope(tokenSchema, response, invalid).token
+  return parseEnvelope(googleSignInSchema, response, invalid)
 }
 
 export async function verifyAuthToken(token: string): Promise<true> {

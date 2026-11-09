@@ -6,5 +6,9 @@ export {
   readSession,
   type AuthSession,
 } from '@/features/auth/server/session'
+export { reusableDisplayName } from '@/features/auth/schemas'
 export { validAuthRequestOrigin } from '@/features/auth/server/request-security'
-export { authorizedViewerToken } from '@/features/auth/server/viewer-token'
+export {
+  authorizedViewerSession,
+  authorizedViewerToken,
+} from '@/features/auth/server/viewer-token'

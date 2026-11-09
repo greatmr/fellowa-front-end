@@ -39,20 +39,26 @@ const token = Buffer.from(
 const jwt = `eyJhbGciOiJIUzI1NiJ9.${token}.backendSignature`
 
 let exchanges: unknown[] = []
+let isNewUser = true
 let profileAlias: string | null = null
 
 beforeEach(() => {
   jar.clear()
   exchanges = []
+  isNewUser = true
   profileAlias = null
   server.use(
-    // `POST /auth/google` (BE-AUTH-07): `{ message, token, user }`.
+    // `POST /auth/google` (BE-AUTH-07, BE-AUTH-10):
+    // `{ message, isNewUser, needsProfile, hasPassword, token, user }`.
     http.post(`${apiOrigin}/auth/google`, async ({ request }) => {
       exchanges.push(await request.json())
       return HttpResponse.json(
         {
           data: {
             message: 'Successfully logged in',
+            isNewUser,
+            needsProfile: false,
+            hasPassword: false,
             token: jwt,
             user: { id: 42, email: 'sara@example.com', alias: profileAlias },
           },
@@ -61,13 +67,22 @@ beforeEach(() => {
         { status: 201 }
       )
     }),
+    // The owner shape of `GET /user/:id/profile`, with BE-AUTH-10's `hasPassword`.
     http.get(`${apiOrigin}/user/42/profile`, () =>
       HttpResponse.json({
         data: {
           id: 42,
           email: 'sara@example.com',
           alias: profileAlias,
+          pageName: null,
+          displayName: 'Sara',
           isVerified: true,
+          isPublish: false,
+          hasPassword: false,
+          categoryId: null,
+          personal: null,
+          about: null,
+          images: { profile: null, header: null },
         },
         errors: null,
       })
@@ -157,7 +172,20 @@ describe('completeGoogleSignIn', () => {
     expect(result).toEqual({ href: '/auth/url', locale: 'en' })
   })
 
-  it('sends an account that started from a page back to it (FQ-17)', async () => {
+  it('keeps the destination of a new account through the address step', async () => {
+    const { state } = await begin('/studio')
+    const result = await completeGoogleSignIn({
+      code: 'google-code',
+      state,
+      error: null,
+    })
+    expect(result.href).toEqual({
+      pathname: '/auth/url',
+      query: { returnTo: '/studio' },
+    })
+  })
+
+  it('sends a new account that started from a page back to it (FQ-17)', async () => {
     const { state } = await begin('/creators/5')
     const result = await completeGoogleSignIn({
       code: 'google-code',
@@ -167,15 +195,59 @@ describe('completeGoogleSignIn', () => {
     expect(result.href).toBe('/creators/5')
   })
 
-  it('sends an account that has a page to its destination', async () => {
-    profileAlias = 'sara'
+  it.each([
+    ['without a page', null],
+    ['with a page', 'sara'],
+  ])(
+    'sends a returning account %s to the studio, not the address step',
+    async (_label, alias) => {
+      isNewUser = false
+      profileAlias = alias
+      const { state } = await begin()
+      const result = await completeGoogleSignIn({
+        code: 'google-code',
+        state,
+        error: null,
+      })
+      expect(jar.get(sessionCookieName)).toBe(jwt)
+      expect(result).toEqual({ href: '/studio', locale: 'en' })
+    }
+  )
+
+  it('sends a returning account back to the page it started from', async () => {
+    isNewUser = false
+    const { state } = await begin('/creators/5')
+    const result = await completeGoogleSignIn({
+      code: 'google-code',
+      state,
+      error: null,
+    })
+    expect(result.href).toBe('/creators/5')
+  })
+
+  it('refuses a response without the BE-AUTH-10 fields and saves no session', async () => {
+    server.use(
+      http.post(`${apiOrigin}/auth/google`, () =>
+        HttpResponse.json(
+          {
+            data: { message: 'Successfully logged in', token: jwt },
+            errors: null,
+          },
+          { status: 201 }
+        )
+      )
+    )
     const { state } = await begin()
     const result = await completeGoogleSignIn({
       code: 'google-code',
       state,
       error: null,
     })
-    expect(result.href).toBe('/studio')
+    expect(result.href).toEqual({
+      pathname: '/auth',
+      query: { googleError: 'failed' },
+    })
+    expect(jar.has(sessionCookieName)).toBe(false)
   })
 
   it.each([

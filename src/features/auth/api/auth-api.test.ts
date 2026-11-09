@@ -67,6 +67,8 @@ describe('server authentication API', () => {
               email: `user${id}@example.com`,
               alias: null,
               isVerified: id === 4,
+              displayName: 'Sara',
+              hasPassword: true,
               personal: { phoneNumber: 'private' },
               password: 'must-not-escape',
             },
@@ -80,8 +82,22 @@ describe('server authentication API', () => {
       fetchOwnProfile('token-9', 9),
     ])
     expect(users).toEqual([
-      { id: 4, email: 'user4@example.com', alias: null, isVerified: true },
-      { id: 9, email: 'user9@example.com', alias: null, isVerified: false },
+      {
+        id: 4,
+        email: 'user4@example.com',
+        alias: null,
+        isVerified: true,
+        displayName: 'Sara',
+        hasPassword: true,
+      },
+      {
+        id: 9,
+        email: 'user9@example.com',
+        alias: null,
+        isVerified: false,
+        displayName: 'Sara',
+        hasPassword: true,
+      },
     ])
   })
 
@@ -92,6 +108,8 @@ describe('server authentication API', () => {
         email: 'creator@example.com',
         alias: null,
         isVerified: true,
+        displayName: 'Sara',
+        hasPassword: true,
       },
       errors: null,
     },
@@ -214,7 +232,7 @@ describe('server authentication API', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('exchanges a Google authorization code and returns only the access token', async () => {
+  it('exchanges a Google authorization code for the token and the routing facts (BE-AUTH-10)', async () => {
     server.use(
       http.post(`${origin}/api/auth/google`, async ({ request }) => {
         expect(request.headers.get('authorization')).toBeNull()
@@ -226,6 +244,9 @@ describe('server authentication API', () => {
           {
             data: {
               message: 'Successfully logged in',
+              isNewUser: true,
+              needsProfile: false,
+              hasPassword: false,
               token: 'backend-token',
               user: { id: 4, email: 'creator@example.com', alias: null },
             },
@@ -241,7 +262,12 @@ describe('server authentication API', () => {
         code: 'google-code',
         redirectUri: 'https://fellowa.test/auth/google/callback',
       })
-    ).resolves.toBe('backend-token')
+    ).resolves.toEqual({
+      token: 'backend-token',
+      isNewUser: true,
+      needsProfile: false,
+      hasPassword: false,
+    })
   })
 
   it('uses the public token validation route and rejects invalid responses', async () => {

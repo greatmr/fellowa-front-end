@@ -2,9 +2,14 @@
 
 import { z } from 'zod'
 
-import { authorizedViewerToken } from '@/features/auth/server'
+import {
+  authorizedViewerSession,
+  authorizedViewerToken,
+  reusableDisplayName,
+} from '@/features/auth/server'
 import {
   changePassword,
+  setFirstPassword,
   updatePageName,
   updatePersonal,
 } from '@/features/settings/api/settings-api'
@@ -35,6 +40,9 @@ const passwordSchema = z.object({
   currentPassword: z.string().min(1).max(PASSWORD_MAX),
   newPassword: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
 })
+const firstPasswordSchema = z.object({
+  password: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
+})
 
 /** Settings mutations (FE-SET-01) act only on the signed-in account. */
 export async function updatePersonalAction(
@@ -63,6 +71,35 @@ export async function changePasswordAction(
   if (!token.ok) return token
   return runApiAction(async () => {
     await changePassword(token.data, parsed.data)
+    return null
+  })
+}
+
+/**
+ * A first password (FE-AUTH-05). The name `PUT /auth/account` requires is the
+ * account's current one, from the session's fresh profile read, so this never
+ * renames the account. A name the endpoint would refuse is refused here; the
+ * backend answers 409 `AUTH_PASSWORD_ALREADY_SET` when a password exists.
+ */
+export async function setFirstPasswordAction(
+  viewerId: number,
+  input: { password: string }
+): Promise<ApiActionResult<null>> {
+  const parsed = firstPasswordSchema.safeParse(input)
+  if (!parsed.success)
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  const session = await authorizedViewerSession(viewerId)
+  if (!session.ok) return session
+  const { token, user } = session.data
+  const displayName = reusableDisplayName(user.displayName)
+  if (displayName === null) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return runApiAction(async () => {
+    await setFirstPassword(token, {
+      displayName,
+      password: parsed.data.password,
+    })
     return null
   })
 }

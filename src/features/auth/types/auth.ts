@@ -33,6 +33,13 @@ export type AuthUser = {
   email: string | null
   alias: string | null
   isVerified: boolean
+  /**
+   * The account's own name (owner-only, Q-63); `null` while it holds the
+   * backend's placeholder (no name given yet).
+   */
+  displayName: string | null
+  /** The account has a password (BE-AUTH-10); the hash is never sent. */
+  hasPassword: boolean
 }
 
 export type AuthValidationMessages = Record<AuthFieldError, string>
@@ -51,6 +58,17 @@ export type PhoneSignIn = {
   user: AuthUser
   /** The verified number (`user.phone` of the response), shown once, never stored. */
   phone: string | null
+  isNewUser: boolean
+  needsProfile: boolean
+  hasPassword: boolean
+}
+
+/**
+ * `POST /auth/google` (BE-AUTH-10), with the token the server keeps in the
+ * session cookie. Never sent to the browser.
+ */
+export type GoogleSignIn = {
+  token: string
   isNewUser: boolean
   needsProfile: boolean
   hasPassword: boolean
