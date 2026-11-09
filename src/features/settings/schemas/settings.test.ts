@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { toLatinDigits } from '@/lib/digits'
 
 import {
+  InvalidSettingsResponseError,
+  createPageNameSchema,
   createPasswordSchema,
   createPersonalSchema,
   normalizeMobile,
+  normalizePageName,
+  pageNamePayloadSchema,
+  parsePageNameState,
   parsePersonal,
 } from './settings'
 
@@ -99,5 +104,75 @@ describe('settings schemas (FE-SET-01)', () => {
         errors: null,
       })
     ).toEqual({ firstName: 'Sara', lastName: '', phoneNumber: '' })
+  })
+})
+
+describe('page name (FE-AUTH-03, BE-USER-07)', () => {
+  const form = createPageNameSchema({ length: 'length' })
+  const envelope = (data: unknown) => ({ data, errors: null })
+  // `GET /user/about` (`AboutInfo`), as the backend sends it.
+  const about = {
+    id: 3,
+    accountId: 42,
+    pageName: 'Dana Studio',
+    bio: null,
+    videoUrl: null,
+    facebookLink: null,
+    instagramLink: null,
+    twitterLink: null,
+    youtubeLink: null,
+    createdAt: '2026-11-09T10:00:00.000Z',
+    updatedAt: '2026-11-09T10:00:00.000Z',
+  }
+
+  it.each([
+    [' Dana ', 'Dana'],
+    ['', null],
+    ['   ', null],
+    [null, null],
+  ])('stores %j as %j, as the backend does', (input, stored) => {
+    expect(normalizePageName(input)).toBe(stored)
+    expect(pageNamePayloadSchema.parse(input)).toBe(stored)
+  })
+
+  it('takes 2 to 80 characters once trimmed, or empty to clear', () => {
+    for (const ok of ['', '  ', 'دا', ' ab ', 'x'.repeat(80)]) {
+      expect(form.safeParse({ pageName: ok }).success).toBe(true)
+    }
+    for (const bad of ['a', ' a ', 'x'.repeat(81)]) {
+      const result = form.safeParse({ pageName: bad })
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.message).toBe('length')
+    }
+    expect(pageNamePayloadSchema.safeParse('a').success).toBe(false)
+  })
+
+  it('counts characters, not UTF-16 units, as the backend does', () => {
+    // 80 emoji are 160 UTF-16 units and still 80 characters.
+    expect(form.safeParse({ pageName: '🎨'.repeat(80) }).success).toBe(true)
+    expect(form.safeParse({ pageName: '🎨'.repeat(81) }).success).toBe(false)
+  })
+
+  it.each([
+    ['a string', 'Dana Studio', 'Dana Studio'],
+    ['null', null, null],
+    ['missing', undefined, null],
+  ])('reads a page name that is %s', (_name, pageName, expected) => {
+    expect(parsePageNameState(envelope({ ...about, pageName }))).toEqual({
+      hasPage: true,
+      pageName: expected,
+    })
+  })
+
+  it('reads an account with no page (`id: null`) as nothing to name', () => {
+    expect(
+      parsePageNameState(envelope({ ...about, id: null, pageName: null }))
+    ).toEqual({ hasPage: false, pageName: null })
+  })
+
+  it('refuses a malformed response', () => {
+    expect(() =>
+      parsePageNameState(envelope({ ...about, pageName: 7 }))
+    ).toThrow(InvalidSettingsResponseError)
   })
 })

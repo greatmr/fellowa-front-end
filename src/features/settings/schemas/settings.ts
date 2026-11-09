@@ -1,6 +1,9 @@
 import { z } from 'zod'
 
-import type { PersonalDetails } from '@/features/settings/types/settings'
+import type {
+  PageNameState,
+  PersonalDetails,
+} from '@/features/settings/types/settings'
 import { parseEnvelope } from '@/lib/api/envelope'
 import { toLatinDigits } from '@/lib/digits'
 
@@ -10,6 +13,10 @@ export const LAST_NAME_MAX = 100
 export const PASSWORD_MIN = 8
 /** The action refuses longer input; the form says so first. */
 export const PASSWORD_MAX = 200
+
+/** `UpdateAboutDto.pageName` (BE-USER-07): 2–80 characters once trimmed. */
+export const PAGE_NAME_MIN = 2
+export const PAGE_NAME_MAX = 80
 
 export class InvalidSettingsResponseError extends Error {
   constructor() {
@@ -91,4 +98,58 @@ export const EMPTY_PERSONAL: PersonalDetails = {
   firstName: '',
   lastName: '',
   phoneNumber: '',
+}
+
+// ---- Public page name (BE-USER-07, FQ-17) ---------------------------------
+
+/** As the backend stores it: trimmed, and a blank name clears it (`null`). */
+export function normalizePageName(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
+/**
+ * `null` (clear) or 2–80 characters. Counted per character, as the backend's
+ * `MinLength`/`MaxLength` and the `varchar(80)` column count, not per UTF-16
+ * unit.
+ */
+export function isValidPageName(value: string | null): boolean {
+  if (value === null) return true
+  const length = Array.from(value).length
+  return length >= PAGE_NAME_MIN && length <= PAGE_NAME_MAX
+}
+
+export function createPageNameSchema(messages: { length: string }) {
+  return z.object({
+    pageName: z
+      .string()
+      .refine((v) => isValidPageName(normalizePageName(v)), messages.length),
+  })
+}
+
+/** What the server action accepts: a name, or `null`/blank to clear it. */
+export const pageNamePayloadSchema = z
+  .string()
+  .max(1000)
+  .nullable()
+  .transform(normalizePageName)
+  .refine(isValidPageName)
+
+// Raw response (`GET /user/about`: `AboutInfo`; `id` is the page id, `null`
+// with no page). Only the two fields this form reads.
+const rawAboutSchema = z.object({
+  id: z.number().int().positive().nullable(),
+  pageName: z.string().nullish(),
+})
+
+export function parsePageNameState(value: unknown): PageNameState {
+  const raw = parseEnvelope(
+    rawAboutSchema,
+    value,
+    () => new InvalidSettingsResponseError()
+  )
+  return {
+    hasPage: raw.id !== null,
+    pageName: raw.id === null ? null : normalizePageName(raw.pageName ?? null),
+  }
 }

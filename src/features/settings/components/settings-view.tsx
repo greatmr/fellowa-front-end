@@ -1,31 +1,42 @@
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
+import { ErrorState } from '@/components/common/error-state'
 import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { PageNameForm } from '@/features/settings/components/page-name-form'
 import { PasswordForm } from '@/features/settings/components/password-form'
 import { PersonalForm } from '@/features/settings/components/personal-form'
-import type { PersonalDetails } from '@/features/settings/types/settings'
+import type {
+  PageNameState,
+  PersonalDetails,
+} from '@/features/settings/types/settings'
+import { Link } from '@/i18n/navigation'
 
 /**
  * Account settings (FE-SET-01; presentation `SettingsView` @ fdb5f6c). The
- * prototype's single "display name" has no backend field (BE-USER-02 leaves a
- * public display name open); the private first/last name stand in. Its
- * sign-in provider banner (Google / phone code) and phone sign-in do not
- * exist here — the account signs in with email and password (C-4).
+ * prototype's single "display name" is the name at the top of the page: it is
+ * the page's public name here (FE-AUTH-03, FQ-17), edited only once the
+ * account has a page. The private first/last name are a separate, owner-only
+ * record (Q-63). Its sign-in provider banner (Google / phone code) and phone
+ * sign-in are not ported.
  */
 export function SettingsView({
   viewerId,
   email,
   isVerified,
   personal,
+  page,
   heading,
 }: {
   viewerId: number
   email: string | null
   isVerified: boolean
   personal: PersonalDetails
+  /** `null` when it could not be read. */
+  page: PageNameState | null
   heading: ReactNode
 }) {
   const t = useTranslations('settings')
@@ -55,6 +66,26 @@ export function SettingsView({
             )}
           </dd>
         </dl>
+      </Section>
+
+      <Section
+        title={t('pageName.title')}
+        description={t('pageName.description')}
+      >
+        {page === null ? (
+          <ErrorState title={t('pageName.unavailable')} className="py-8" />
+        ) : page.hasPage ? (
+          <PageNameForm viewerId={viewerId} initial={page.pageName} />
+        ) : (
+          <div className="grid justify-items-start gap-3">
+            <p className="text-body-sm text-muted-foreground">
+              {t('pageName.noPage')}
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/onboarding">{t('pageName.noPageAction')}</Link>
+            </Button>
+          </div>
+        )}
       </Section>
 
       <Section

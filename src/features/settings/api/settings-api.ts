@@ -2,10 +2,12 @@ import 'server-only'
 
 import {
   EMPTY_PERSONAL,
+  parsePageNameState,
   parsePersonal,
 } from '@/features/settings/schemas/settings'
 import type {
   ChangePasswordPayload,
+  PageNameState,
   PersonalDetails,
 } from '@/features/settings/types/settings'
 import { apiGet, apiPut, withBearer } from '@/lib/api/client'
@@ -52,6 +54,29 @@ export async function changePassword(
   await apiPut<unknown, ChangePasswordPayload>(
     '/auth/reset-password',
     payload,
+    withBearer(token)
+  )
+}
+
+/** The caller's page and its public name (`GET /user/about`, BE-USER-07). */
+export async function getPageName(token: string): Promise<PageNameState> {
+  return parsePageNameState(
+    await apiGet<unknown>('/user/about', withBearer(token))
+  )
+}
+
+/**
+ * Only `pageName`: bio and links stay as they are. `null` clears it, and the
+ * page shows `@alias` again. With no page the backend answers 400
+ * `USER_ALIAS_REQUIRED`.
+ */
+export async function updatePageName(
+  token: string,
+  pageName: string | null
+): Promise<void> {
+  await apiPut<unknown, { pageName: string | null }>(
+    '/user/about',
+    { pageName },
     withBearer(token)
   )
 }

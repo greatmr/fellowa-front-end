@@ -620,6 +620,18 @@
       "unverified": "Not verified",
       "noEmail": "No email address"
     },
+    "pageName": {
+      "title": "Public page name",
+      "description": "Shown at the top of your page and on explore, for your supporters.",
+      "label": "Page name",
+      "placeholder": "Your name on Fellowa",
+      "hint": "{min} to {max} characters. Leave it empty to show your @username instead.",
+      "saved": "Your page name was saved.",
+      "cleared": "Page name cleared. Your @username is shown instead.",
+      "noPage": "You don't have a page yet. Choose its address first, then name it here.",
+      "noPageAction": "Choose a page address",
+      "unavailable": "Your page name couldn't be loaded. Try again later."
+    },
     "personal": {
       "title": "Personal details",
       "description": "Only you can see these.",
@@ -650,7 +662,9 @@
       "newLength": "Use at least {min} characters.",
       "mismatch": "The two passwords don't match.",
       "wrongPassword": "That isn't your current password.",
-      "passwordTooLong": "At most {max} characters."
+      "passwordTooLong": "At most {max} characters.",
+      "pageNameLength": "Use {min} to {max} characters, or leave it empty.",
+      "pageNameNeedsAddress": "Choose your page address before naming the page."
     },
     "save": "Save",
     "saving": "Saving…",

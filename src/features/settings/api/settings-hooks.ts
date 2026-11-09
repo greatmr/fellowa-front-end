@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 
 import {
   changePasswordAction,
+  updatePageNameAction,
   updatePersonalAction,
 } from '@/features/settings/server/actions'
 import type {
@@ -31,5 +32,13 @@ export function useChangePasswordMutation(viewerId: number) {
     mutationKey: settingsKeys.mutation('password', viewerId),
     mutationFn: async (payload) =>
       unwrapApiActionResult(await changePasswordAction(viewerId, payload)),
+  })
+}
+
+export function useUpdatePageNameMutation(viewerId: number) {
+  return useMutation<string | null, ApiError, string | null>({
+    mutationKey: settingsKeys.mutation('pageName', viewerId),
+    mutationFn: async (pageName) =>
+      unwrapApiActionResult(await updatePageNameAction(viewerId, pageName)),
   })
 }
