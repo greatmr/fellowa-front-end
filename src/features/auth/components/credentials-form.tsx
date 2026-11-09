@@ -86,7 +86,7 @@ export function CredentialsForm({
   }
 
   const oppositeMode = mode === 'login' ? 'register' : 'login'
-  const href = authHref(`/auth/${oppositeMode}`, returnTo)
+  const href = authHref(`/auth/${oppositeMode}/email`, returnTo)
   const state = hookFeedback(mutation.error)
 
   return (
@@ -188,6 +188,14 @@ export function CredentialsForm({
           className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
           {t(`${mode}.switchLink`)}
+        </Link>
+      </p>
+      <p className="text-center text-body">
+        <Link
+          href={authHref('/auth/login', returnTo)}
+          className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {t(`${mode}.phoneLink`)}
         </Link>
       </p>
     </div>

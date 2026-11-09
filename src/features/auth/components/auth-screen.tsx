@@ -2,8 +2,10 @@ import { getTranslations } from 'next-intl/server'
 import { useTranslations } from 'next-intl'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import { CompleteAccountForm } from '@/features/auth/components/complete-account-form'
 import { CredentialsForm } from '@/features/auth/components/credentials-form'
 import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
+import { PhoneAuthFlow } from '@/features/auth/components/phone-auth-flow'
 import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
 import { VerificationForm } from '@/features/auth/components/verification-form'
 import { safeReturnTo } from '@/features/auth/lib/return-to'
@@ -13,7 +15,13 @@ import type { Locale } from '@/i18n/routing'
 
 type Props = {
   mode:
-    'login' | 'register' | 'verify-email' | 'forgot-password' | 'reset-password'
+    | 'login'
+    | 'register'
+    | 'email-login'
+    | 'email-register'
+    | 'verify-email'
+    | 'forgot-password'
+    | 'reset-password'
   locale: Locale
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
@@ -78,7 +86,30 @@ export async function AuthScreen({ mode, locale, searchParams }: Props) {
           {t('sessionExpired.body')}
         </p>
       )}
-      <CredentialsForm mode={mode} returnTo={returnTo} />
+      {mode === 'login' || mode === 'register' ? (
+        // Phone-first (FQ-16): one flow signs in and signs up.
+        <PhoneAuthFlow returnTo={returnTo} />
+      ) : (
+        <CredentialsForm
+          mode={mode === 'email-login' ? 'login' : 'register'}
+          returnTo={returnTo}
+        />
+      )}
     </>
   )
+}
+
+/**
+ * `/auth/account` (FE-AUTH-01): the display name and optional password of a
+ * signed-in account, reached right after a first phone sign-in.
+ */
+export async function AccountScreen({ locale }: { locale: Locale }) {
+  const session = await getSession()
+  if (!session) {
+    return redirect({ href: '/auth/login', locale })
+  }
+  if (!session.user.isVerified) {
+    return redirect({ href: '/auth/verify-email', locale })
+  }
+  return <CompleteAccountForm />
 }

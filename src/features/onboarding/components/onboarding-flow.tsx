@@ -29,12 +29,16 @@ export function OnboardingFlow({
   lastName,
   alias,
   links,
-}: OnboardingData) {
+  startAtUsername = false,
+}: OnboardingData & { startAtUsername?: boolean }) {
   const t = useTranslations('onboarding')
   const router = useRouter()
   // The checklist sends someone here for the username; a saved name is not
-  // asked for first. These hold what was saved so far, for the Back button.
-  const [step, setStep] = useState<Step>(firstName ? 'username' : 'name')
+  // asked for first, nor right after phone sign-up (`?step=username`). These
+  // hold what was saved so far, for the Back button.
+  const [step, setStep] = useState<Step>(
+    firstName || startAtUsername ? 'username' : 'name'
+  )
   const [names, setNames] = useState({ firstName, lastName })
   const [storedAlias, setStoredAlias] = useState(alias)
   const [justSavedAlias, setJustSavedAlias] = useState<string | null>(null)

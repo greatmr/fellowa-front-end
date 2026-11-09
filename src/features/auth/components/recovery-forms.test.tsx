@@ -134,7 +134,7 @@ describe('ResetPasswordForm', () => {
       screen.getByRole('link', { name: en.auth.reset.login })
     ).toHaveAttribute(
       'href',
-      expect.stringContaining('/auth/login?returnTo=%2Fsettings')
+      expect.stringContaining('/auth/login/email?returnTo=%2Fsettings')
     )
   })
 

@@ -85,7 +85,7 @@ export function ResetPasswordForm({ returnTo }: { returnTo?: string }) {
           {t('reset.done')}
         </p>
         <Button asChild size="lg" variant="inverse" className="w-full">
-          <Link href={authHref('/auth/login', returnTo)}>
+          <Link href={authHref('/auth/login/email', returnTo)}>
             {t('reset.login')}
           </Link>
         </Button>
