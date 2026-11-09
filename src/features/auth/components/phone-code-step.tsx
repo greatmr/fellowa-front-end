@@ -28,7 +28,8 @@ const empty = () => Array<string>(PHONE_CODE_LENGTH).fill('')
 
 /** Whole seconds until `until`, counting down once a second. */
 function useSecondsLeft({ until, setAt }: Deadline) {
-  const [clock, setClock] = useState({ until, now: setAt })
+  // A remount (back from the password step) counts from now, not `setAt`.
+  const [clock, setClock] = useState(() => ({ until, now: Date.now() }))
   // A new deadline counts from when it was set, not from the last tick.
   if (clock.until !== until) setClock({ until, now: setAt })
   const left = Math.max(0, Math.ceil((until - clock.now) / 1000))
@@ -78,15 +79,22 @@ export function PhoneCodeStep({
   const [locked, setLocked] = useState(false)
   const [lastAction, setLastAction] = useState<'verify' | 'resend' | null>(null)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
+  const submitting = useRef(false)
   const secondsLeft = useSecondsLeft(wait)
   const pending = verify.isPending || resend.isPending
   const code = digits.join('')
   const complete = /^\d+$/.test(code) && code.length === PHONE_CODE_LENGTH
 
   const focus = (index: number) => inputs.current[index]?.focus()
+  /** After a re-render that may re-enable the boxes. */
+  const focusSoon = (index: number) => setTimeout(() => focus(index), 0)
 
   function submit(value: string) {
-    if (pending || locked || value.length !== PHONE_CODE_LENGTH) return
+    if (submitting.current || pending || locked) return
+    if (value.length !== PHONE_CODE_LENGTH) return
+    // `isPending` lags a tick behind `mutate`; an autofill or Enter in that
+    // tick would spend a second attempt on a single-use code.
+    submitting.current = true
     setLastAction('verify')
     resend.reset()
     verify.mutate(
@@ -94,12 +102,14 @@ export function PhoneCodeStep({
       {
         onSuccess: (result) => onSignedIn(result),
         onError: (error) => {
+          submitting.current = false
           if (error.code === 'AUTH_CODE_INVALID') {
             setShake(true)
             setDigits(empty())
             focus(0)
           } else if (error.code === 'AUTH_CODE_EXPIRED') {
             setDigits(empty())
+            focusSoon(0)
           } else if (error.code === 'AUTH_CODE_TOO_MANY_ATTEMPTS') {
             setLocked(true)
             if (error.retryAfterSeconds) {
@@ -140,7 +150,11 @@ export function PhoneCodeStep({
       setDigits(next)
       return
     }
-    fill(index, typed.slice(-1))
+    // Typing into a filled box: keep the new digit wherever the caret was.
+    const previous = digits[index]
+    const fresh =
+      previous && typed.length > 1 ? typed.replace(previous, '') : typed
+    fill(index, fresh.slice(-1))
   }
 
   function keyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
@@ -169,7 +183,7 @@ export function PhoneCodeStep({
           setLocked(false)
           setDigits(empty())
           onResent(deadlineIn(sent.resendAfterSeconds))
-          focus(0)
+          focusSoon(0)
         },
         onError: (error) => {
           if (error.retryAfterSeconds) {

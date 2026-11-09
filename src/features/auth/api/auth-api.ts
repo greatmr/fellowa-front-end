@@ -48,7 +48,7 @@ const verifiedTokenSchema = z.object({
   }),
 })
 
-const seconds = z.number().int().positive().safe()
+const seconds = z.number().int().nonnegative().safe()
 const phoneCodeSentSchema = z.object({
   phone: z.string().regex(/^09\d{9}$/),
   hasAccount: z.boolean(),

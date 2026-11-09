@@ -45,6 +45,14 @@ export function PhoneAuthFlow({ returnTo }: { returnTo?: string }) {
     return (
       <PhoneEntryStep
         initialPhone={target?.phone}
+        onResume={(phone) => {
+          // The same number while its code is fresh: no new request (it would
+          // be refused as rate-limited); go back to where it was.
+          if (!target || target.phone !== phone) return false
+          if (Date.now() >= target.wait.until) return false
+          setStep(target.hasPassword ? 'password' : 'code')
+          return true
+        }}
         returnTo={returnTo}
         onCodeSent={codeSent}
       />

@@ -37,10 +37,13 @@ import { PhoneFeedback } from './phone-ui'
 export function PhoneEntryStep({
   initialPhone = '',
   returnTo,
+  onResume,
   onCodeSent,
 }: {
   initialPhone?: string
   returnTo?: string
+  /** `true` when the flow can continue with `phone` without a new code. */
+  onResume?: (phone: string) => boolean
   onCodeSent: (sent: PhoneCodeSent) => void
 }) {
   const t = useTranslations('auth.phone')
@@ -59,7 +62,11 @@ export function PhoneEntryStep({
     if (submitting.current || pending) return
     submitting.current = true
     void form.handleSubmit(
-      ({ phone }) =>
+      ({ phone }) => {
+        if (onResume?.(phone)) {
+          submitting.current = false
+          return
+        }
         request.mutate(
           { phone },
           {
@@ -71,7 +78,8 @@ export function PhoneEntryStep({
               submitting.current = false
             },
           }
-        ),
+        )
+      },
       () => {
         submitting.current = false
       }

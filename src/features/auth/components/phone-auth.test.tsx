@@ -295,6 +295,21 @@ describe('code (VerifyCodeScreen)', () => {
     ).toBeInTheDocument()
   })
 
+  it('returns to the fresh code for the same number without a new request', async () => {
+    const user = setup()
+    await toCodeScreen(user)
+    await user.click(screen.getByRole('button', { name: t.code.editNumber }))
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.code.title })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(1)
+    // Once the wait is over, the same number asks for a new code.
+    await user.click(screen.getByRole('button', { name: t.code.editNumber }))
+    await act(() => vi.advanceTimersByTimeAsync(120_000))
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.code.title })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(2)
+  })
+
   it('goes back to edit the number', async () => {
     const user = setup()
     await toCodeScreen(user)

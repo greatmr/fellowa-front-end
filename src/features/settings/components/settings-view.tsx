@@ -41,15 +41,18 @@ export function SettingsView({
           </dt>
           <dd className="flex flex-wrap items-center gap-2 text-body font-semibold">
             {email ? (
-              <bdi dir="ltr">{email}</bdi>
+              <>
+                <bdi dir="ltr">{email}</bdi>
+                <Badge variant={isVerified ? 'money' : 'amber'}>
+                  {isVerified ? t('account.verified') : t('account.unverified')}
+                </Badge>
+              </>
             ) : (
+              // A phone-only account: its verified phone is not this row's.
               <span className="text-muted-foreground">
                 {t('account.noEmail')}
               </span>
             )}
-            <Badge variant={isVerified ? 'money' : 'amber'}>
-              {isVerified ? t('account.verified') : t('account.unverified')}
-            </Badge>
           </dd>
         </dl>
       </Section>
