@@ -46,7 +46,7 @@ describe('LandingPage', () => {
 
   it.each([
     ['fa', fa.landing, ''],
-    ['en', en.landing, '/en'],
+    ['en', en.landing, ''],
   ] as const)(
     'points each %s call to action at its route',
     (locale, copy, prefix) => {

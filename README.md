@@ -82,7 +82,8 @@ envelope as well as default NestJS error bodies.
 ## Authentication
 
 `/auth/login`, `/auth/register`, and `/auth/verify-email` support Persian RTL
-and English (`/en/...`). The owner selected the current backend's email/password
+and English (chosen with the language switcher; URLs carry no locale since
+FE-I18N-01). The owner selected the current backend's email/password
 flow and a Next.js HttpOnly session on 2026-10-23. The presentation's phone,
 Google, and mock account flows were not adopted.
 
@@ -118,6 +119,23 @@ Before production, resolve backend client tracking for the chosen deployment:
 the current IP-based auth limit sees the Next.js server as the caller and can
 throttle unrelated users together. No untrusted forwarded IP headers are used
 to bypass that limit.
+
+## Language and caching (FE-I18N-01)
+
+URLs carry no locale. The language is Persian unless the `NEXT_LOCALE` cookie
+(set by the language switcher) says English; the browser's `Accept-Language`
+is ignored. Old `/fa/...` and `/en/...` links redirect (307) to the bare path
+and set the cookie. English pages therefore have no URLs of their own (no
+hreflang alternates), which the owner accepted on 2026-11-17.
+
+**Deployment constraint.** Both languages are served at the same URL. HTML
+responses are `Cache-Control: private, no-store`, but Next's RSC
+segment-prefetch responses (`RSC: 1`, `?_rsc=…`) are sent with
+`s-maxage=31536000` and a `Vary` that does not include `Cookie` (observed
+with `next start`, 2026-11-17). Any shared cache in front of this app (CDN,
+nginx) must either bypass requests carrying the `RSC` header or include the
+`NEXT_LOCALE` cookie in its cache key; otherwise one language's prefetch data
+reaches visitors of the other.
 
 ## Stack
 

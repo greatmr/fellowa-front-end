@@ -45,7 +45,7 @@ src/
   lib/env.ts           zod-validated env contract
   lib/utils.ts         cn()
   stores/              Zustand stores (none yet)
-  proxy.ts             next-intl locale routing — Next 16's replacement for middleware.ts
+  proxy.ts             next-intl locale routing — Next 16's replacement for middleware.ts; no locale in URLs, cookie-chosen, Accept-Language ignored (FE-I18N-01)
 messages/{fa,en}.json  translations
 test/                  setup.ts · render.tsx (intl wrapper) · msw/{server,handlers}.ts · smoke.test.tsx
 ```

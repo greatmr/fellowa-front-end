@@ -441,6 +441,9 @@
     "dark": "تیره",
     "system": "سیستم"
   },
+  "language": {
+    "label": "زبان"
+  },
   "tiers": {
     "create": "ایجاد پلن",
     "edit": "ویرایش",

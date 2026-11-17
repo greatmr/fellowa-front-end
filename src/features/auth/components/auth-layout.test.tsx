@@ -40,7 +40,7 @@ const backLink = (messages: typeof en | typeof fa) =>
 
 describe('AuthLayout frame (presentation AuthLayout)', () => {
   it.each([
-    { locale: 'en', home: '/en' },
+    { locale: 'en', home: '/' },
     { locale: 'fa', home: '/' },
   ] as const)(
     'has the logo, a content landmark and no theme switch in $locale',
@@ -63,10 +63,10 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
   })
 
   it.each([
-    ['/auth/otp', '/en/auth?returnTo=%2Fcreators%2F5'],
-    ['/auth/password', '/en/auth?returnTo=%2Fcreators%2F5'],
-    ['/auth/login/email', '/en/auth?returnTo=%2Fcreators%2F5'],
-    ['/auth/forgot-password', '/en/auth/login/email?returnTo=%2Fcreators%2F5'],
+    ['/auth/otp', '/auth?returnTo=%2Fcreators%2F5'],
+    ['/auth/password', '/auth?returnTo=%2Fcreators%2F5'],
+    ['/auth/login/email', '/auth?returnTo=%2Fcreators%2F5'],
+    ['/auth/forgot-password', '/auth/login/email?returnTo=%2Fcreators%2F5'],
   ])('on %s goes back to %s, keeping returnTo', (pathname, href) => {
     route.pathname = pathname
     route.search = 'returnTo=/creators/5'
@@ -76,12 +76,12 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
 
   it.each([
     // In sign-up (no page to return to): back to the account step.
-    ['', '/en/auth/account'],
+    ['', '/auth/account'],
     // Opened from a page (settings' "no page" link, the studio checklist;
     // FE-ONB-02): back there.
-    ['returnTo=/studio', '/en/studio'],
-    ['returnTo=/settings', '/en/settings'],
-    ['returnTo=/creators/5', '/en/creators/5'],
+    ['returnTo=/studio', '/studio'],
+    ['returnTo=/settings', '/settings'],
+    ['returnTo=/creators/5', '/creators/5'],
   ])('on /auth/url with %j goes back to %s', (search, href) => {
     route.pathname = '/auth/url'
     route.search = search
@@ -95,7 +95,7 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
     const messages = renderLayout()
     expect(backLink(messages)).toHaveAttribute(
       'href',
-      '/en/auth?returnTo=%2Fstudio'
+      '/auth?returnTo=%2Fstudio'
     )
   })
 

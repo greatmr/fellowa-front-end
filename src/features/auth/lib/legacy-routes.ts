@@ -9,6 +9,10 @@
  * - FE-ONB-02 (FQ-20): the old onboarding (name → username → socials) is
  *   retired; choosing the page's username is the address step, `/auth/url`.
  *   Its old `step` query is passed along and ignored.
+ *
+ * The locale-prefixed forms stay: `/en/auth/login` → `/en/auth`, which the
+ * proxy then redirects to `/auth` while storing English in the locale cookie
+ * (FE-I18N-01: URLs carry no locale).
  */
 const LEGACY_ROUTES = [
   ['/auth/login', '/auth'],
