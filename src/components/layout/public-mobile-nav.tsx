@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 
+import { LanguageSwitch } from '@/components/common/language-switch'
 import { ThemeSwitch } from '@/components/common/theme-switch'
 import { NavigationDrawer } from '@/components/layout/navigation-drawer'
 import { Link, usePathname } from '@/i18n/navigation'
@@ -56,7 +57,10 @@ export function PublicMobileNav() {
             {t('studio')}
           </Link>
         </nav>
-        <ThemeSwitch className="mt-auto" />
+        <div className="mt-auto flex flex-col gap-4">
+          <ThemeSwitch />
+          <LanguageSwitch />
+        </div>
       </div>
     </NavigationDrawer>
   )

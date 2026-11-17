@@ -441,6 +441,9 @@
     "dark": "Dark",
     "system": "System"
   },
+  "language": {
+    "label": "Language"
+  },
   "tiers": {
     "create": "Create tier",
     "edit": "Edit",

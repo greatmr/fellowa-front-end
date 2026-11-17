@@ -1,5 +1,6 @@
 import { useTranslations } from 'next-intl'
 
+import { LanguageSwitch } from '@/components/common/language-switch'
 import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Logo } from '@/components/layout/logo'
 import { Link } from '@/i18n/navigation'
@@ -63,7 +64,10 @@ export function PublicFooter() {
               </li>
             </ul>
           </nav>
-          <ThemeSwitch className="w-full max-w-64 md:flex-2" />
+          <div className="flex w-full max-w-64 flex-col gap-4 md:flex-2">
+            <ThemeSwitch />
+            <LanguageSwitch />
+          </div>
         </div>
         <p className="pt-6 text-label text-foreground/55">{t('copyright')}</p>
       </div>

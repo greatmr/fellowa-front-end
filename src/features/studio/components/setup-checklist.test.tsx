@@ -74,15 +74,15 @@ describe('SetupChecklist (FE-STUDIO-01, CP-01 / CP-04)', () => {
 
     expect(screen.getByRole('link', { name: 'Set up tiers' })).toHaveAttribute(
       'href',
-      '/en/studio/tiers'
+      '/studio/tiers'
     )
     expect(screen.getByRole('link', { name: 'Create a post' })).toHaveAttribute(
       'href',
-      '/en/studio/posts/new'
+      '/studio/posts/new'
     )
     expect(
       screen.getByRole('link', { name: 'Choose a username' })
-    ).toHaveAttribute('href', '/en/auth/url?returnTo=%2Fstudio')
+    ).toHaveAttribute('href', '/auth/url?returnTo=%2Fstudio')
     expect(screen.getAllByRole('link')).toHaveLength(3)
   })
 

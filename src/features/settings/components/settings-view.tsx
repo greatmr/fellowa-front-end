@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { ErrorState } from '@/components/common/error-state'
+import { LanguageSwitch } from '@/components/common/language-switch'
 import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -142,7 +143,10 @@ export function SettingsView({
       )}
 
       <Section title={t('appearance.title')}>
-        <ThemeSwitch />
+        <div className="space-y-4">
+          <ThemeSwitch />
+          <LanguageSwitch />
+        </div>
       </Section>
     </div>
   )

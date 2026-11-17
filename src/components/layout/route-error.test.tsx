@@ -9,10 +9,10 @@ import { RouteError } from './route-error'
 
 describe('RouteError', () => {
   it.each([
-    { locale: 'en', messages: en, home: '/en' },
+    { locale: 'en', messages: en, home: '/' },
     { locale: 'fa', messages: fa, home: '/' },
   ])(
-    'retries safely and provides a locale-preserving home link in $locale',
+    'retries safely and provides an unprefixed home link in $locale (FE-I18N-01)',
     async ({ locale, messages, home }) => {
       const user = userEvent.setup()
       const retry = vi.fn()

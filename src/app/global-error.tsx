@@ -21,7 +21,9 @@ export default function GlobalError({
 }) {
   const locale = useSyncExternalStore(
     noopSubscribe,
-    () => (window.location.pathname.split('/')[1] === 'en' ? 'en' : 'fa'),
+    // FE-I18N-01: URLs carry no locale; the switcher's cookie does.
+    () =>
+      /(?:^|;\s*)NEXT_LOCALE=en(?:;|$)/.test(document.cookie) ? 'en' : 'fa',
     () => 'fa'
   )
   const messages = locale === 'en' ? en : fa
@@ -52,9 +54,10 @@ export default function GlobalError({
                 <>
                   <Button onClick={retry}>{messages.common.retry}</Button>
                   <Button asChild variant="outline">
-                    <a href={locale === 'en' ? '/en' : '/'}>
-                      {messages.errors.backHome}
-                    </a>
+                    {/* A full document load on purpose: the root layout failed,
+                        so the client router cannot be trusted. */}
+                    {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                    <a href="/">{messages.errors.backHome}</a>
                   </Button>
                 </>
               }

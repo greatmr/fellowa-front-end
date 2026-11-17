@@ -152,7 +152,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: t.back })).toHaveAttribute(
       'href',
-      '/en/settings'
+      '/settings'
     )
     await settle()
     await waitFor(() => expect(submit()).toBeEnabled())
@@ -170,7 +170,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     renderStep('Sara')
     expect(await screen.findByRole('link', { name: t.back })).toHaveAttribute(
       'href',
-      '/en/auth/account'
+      '/auth/account'
     )
   })
 
@@ -316,7 +316,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     await field()
     expect(screen.getByRole('link', { name: t.back })).toHaveAttribute(
       'href',
-      '/en/auth/account'
+      '/auth/account'
     )
   })
 })
