@@ -13,6 +13,8 @@ import type {
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
+  PhoneLookup,
+  PhoneLookupPayload,
   PhoneVerifyPayload,
   ResetPasswordPayload,
   SetAliasPayload,
@@ -55,10 +57,12 @@ const verifiedTokenSchema = z.object({
 })
 
 const seconds = z.number().int().nonnegative().safe()
-const phoneCodeSentSchema = z.object({
+const phoneLookupSchema = z.object({
   phone: z.string().regex(/^09\d{9}$/),
   hasAccount: z.boolean(),
   hasPassword: z.boolean(),
+}) satisfies z.ZodType<PhoneLookup>
+const phoneCodeSentSchema = phoneLookupSchema.extend({
   resendAfterSeconds: seconds,
   expiresInSeconds: seconds,
 })
@@ -202,6 +206,18 @@ export async function verifyAuthToken(token: string): Promise<true> {
     { token }
   )
   return parseEnvelope(verifiedTokenSchema, response, invalid).valid
+}
+
+/**
+ * `POST /auth/phone/lookup` (BE-AUTH-11, FQ-19): whether the number has an
+ * account and a password. Sends no SMS and starts no resend wait.
+ */
+export async function lookupPhone(phone: string): Promise<PhoneLookup> {
+  const response = await apiPost<unknown, PhoneLookupPayload>(
+    '/auth/phone/lookup',
+    { phone }
+  )
+  return parseEnvelope(phoneLookupSchema, response, invalid)
 }
 
 /** `POST /auth/phone/request-code` (BE-AUTH-08). */

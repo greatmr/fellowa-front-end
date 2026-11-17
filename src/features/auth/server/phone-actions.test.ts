@@ -28,6 +28,7 @@ const {
   aliasAvailabilityForHook,
   completeAccountForHook,
   phoneLoginForHook,
+  phoneLookupForHook,
   requestPhoneCodeForHook,
   verifyPhoneCodeForHook,
 } = await import('./hook-actions')
@@ -215,6 +216,116 @@ describe('request-code', () => {
       code,
       isNetworkError: false,
       ...extra,
+    })
+  })
+})
+
+/** BE-AUTH-11, `PhoneAuthService.lookup`: `{ phone, hasAccount, hasPassword }`. */
+const looked = (hasAccount: boolean, hasPassword: boolean) =>
+  HttpResponse.json(
+    { data: { phone: '09121234567', hasAccount, hasPassword }, errors: null },
+    { status: 201 }
+  )
+
+describe('lookup (FE-AUTH-07)', () => {
+  it.each([
+    [false, false],
+    [true, false],
+    [true, true],
+  ])(
+    'sends the normalised number and returns hasAccount %s, hasPassword %s',
+    async (hasAccount, hasPassword) => {
+      server.use(
+        http.post(
+          `${apiOrigin}/auth/phone/lookup`,
+          async ({ request: req }) => {
+            upstream.push({
+              path: 'lookup',
+              body: await req.json(),
+              auth: req.headers.get('authorization'),
+            })
+            return looked(hasAccount, hasPassword)
+          }
+        )
+      )
+      expect(await phoneLookupForHook({ phone: '+98 ۹۱۲ ۱۲۳ ۴۵۶۷' })).toEqual({
+        ok: true,
+        data: { phone: '09121234567', hasAccount, hasPassword },
+      })
+      // No code is asked for and no session is touched.
+      expect(upstream).toEqual([
+        { path: 'lookup', body: { phone: '09121234567' }, auth: null },
+      ])
+      expect(request.setCookie).not.toHaveBeenCalled()
+    }
+  )
+
+  it('refuses a bad number or a foreign origin before the API', async () => {
+    const reached = vi.fn()
+    server.use(
+      http.post(`${apiOrigin}/auth/phone/lookup`, () => {
+        reached()
+        return looked(false, false)
+      })
+    )
+    expect(await phoneLookupForHook({ phone: '0912' })).toEqual({
+      ok: false,
+      status: 400,
+      code: 'INVALID_REQUEST',
+    })
+    request.origin = 'https://attacker.example'
+    expect(await phoneLookupForHook({ phone: '09121234567' })).toMatchObject({
+      ok: false,
+      status: 403,
+    })
+    expect(reached).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [400, 'phone must be a string', 'BAD_REQUEST'],
+    [400, 'Enter an Iranian mobile number (09…)', 'AUTH_PHONE_INVALID'],
+    [
+      409,
+      'This phone number is already used by another account',
+      'USER_PHONE_TAKEN',
+    ],
+    [429, 'ThrottlerException: Too Many Requests', 'TOO_MANY_REQUESTS'],
+  ])('passes on %i %s', async (status, message, code) => {
+    server.use(
+      http.post(`${apiOrigin}/auth/phone/lookup`, () =>
+        failure(status, message, code)
+      )
+    )
+    expect(await phoneLookupForHook({ phone: '09121234567' })).toEqual({
+      ok: false,
+      status,
+      code,
+      isNetworkError: false,
+    })
+  })
+
+  it('reports a network failure', async () => {
+    server.use(
+      http.post(`${apiOrigin}/auth/phone/lookup`, () => HttpResponse.error())
+    )
+    expect(await phoneLookupForHook({ phone: '09121234567' })).toMatchObject({
+      ok: false,
+      isNetworkError: true,
+    })
+  })
+
+  it('refuses a success without hasPassword', async () => {
+    server.use(
+      http.post(`${apiOrigin}/auth/phone/lookup`, () =>
+        HttpResponse.json(
+          { data: { phone: '09121234567', hasAccount: true }, errors: null },
+          { status: 201 }
+        )
+      )
+    )
+    expect(await phoneLookupForHook({ phone: '09121234567' })).toEqual({
+      ok: false,
+      code: 'INVALID_AUTH_RESPONSE',
     })
   })
 })

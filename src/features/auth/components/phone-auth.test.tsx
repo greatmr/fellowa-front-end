@@ -17,6 +17,7 @@ const mocked = vi.hoisted(() => ({
   /** The harness's "router": moves it to another step route. */
   go: null as null | ((href: unknown) => void),
   actions: {
+    phoneLookupForHook: vi.fn(),
     requestPhoneCodeForHook: vi.fn(),
     verifyPhoneCodeForHook: vi.fn(),
     phoneLoginForHook: vi.fn(),
@@ -83,6 +84,11 @@ function renderFlow(props: ComponentProps<typeof Routes> = {}) {
 const t = en.auth.phone
 const phone = '09121234567'
 
+/** `phone/lookup` (BE-AUTH-11): no code, no wait. */
+const found = (hasPassword = false, hasAccount = hasPassword) => ({
+  ok: true,
+  data: { phone, hasAccount, hasPassword },
+})
 const sent = (hasPassword = false) => ({
   ok: true,
   data: {
@@ -113,6 +119,7 @@ const fail = (status: number, code: string, retryAfterSeconds?: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocked.actions.phoneLookupForHook.mockResolvedValue(found())
   mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent())
   mocked.actions.verifyPhoneCodeForHook.mockResolvedValue(signIn(false))
   mocked.actions.phoneLoginForHook.mockResolvedValue(signIn(false))
@@ -260,16 +267,73 @@ describe('phone entry (LoginOrSignupScreen)', () => {
     expect(field).toHaveAttribute('aria-invalid', 'true')
   })
 
-  it('offers the password screen when the account has one', async () => {
+  it('looks the number up, then sends a code to a number without a password (FE-AUTH-07)', async () => {
     const user = setup()
-    mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
+    await toCodeScreen(user)
+    expect(mocked.actions.phoneLookupForHook).toHaveBeenCalledWith({ phone })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledWith({
+      phone,
+    })
+    expect(
+      mocked.actions.phoneLookupForHook.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      mocked.actions.requestPhoneCodeForHook.mock.invocationCallOrder[0]
+    )
+    expect(
+      screen.getByText(t.code.resendIn.replace('{time}', '2:00'))
+    ).toBeInTheDocument()
+  })
+
+  it('sends a code to an account that has no password', async () => {
+    const user = setup()
+    mocked.actions.phoneLookupForHook.mockResolvedValue(found(false, true))
+    await toCodeScreen(user)
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the password screen when the account has one, with no SMS sent (FE-AUTH-07)', async () => {
+    const user = setup()
+    mocked.actions.phoneLookupForHook.mockResolvedValue(found(true))
     renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
     await user.click(screen.getByRole('button', { name: t.entry.submit }))
     expect(
       await screen.findByRole('heading', { name: t.password.title })
     ).toBeInTheDocument()
+    expect(mocked.actions.requestPhoneCodeForHook).not.toHaveBeenCalled()
   })
+
+  it.each([
+    [fail(400, 'AUTH_PHONE_INVALID'), t.errors.phoneInvalid],
+    [fail(409, 'USER_PHONE_TAKEN'), t.errors.phoneTaken],
+    [fail(429, 'TOO_MANY_REQUESTS'), en.auth.errors.rateLimited],
+    [fail(400, 'INVALID_REQUEST'), en.auth.errors.invalidRequest],
+    [
+      { ok: false, code: 'NETWORK', isNetworkError: true },
+      en.auth.errors.network,
+    ],
+  ])(
+    'shows a lookup failure %o on the entry step and sends no code',
+    async (result, message) => {
+      const user = setup()
+      mocked.actions.phoneLookupForHook.mockResolvedValue(result)
+      renderFlow()
+      const field = screen.getByLabelText(t.entry.label)
+      await user.type(field, phone)
+      await user.click(screen.getByRole('button', { name: t.entry.submit }))
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent(message)
+      expect(alert.tagName).toBe('P')
+      expect(field).toHaveAttribute('aria-invalid', 'true')
+      expect(
+        screen.getByRole('heading', { name: t.entry.title })
+      ).toBeInTheDocument()
+      expect(mocked.actions.requestPhoneCodeForHook).not.toHaveBeenCalled()
+      // Editing the number clears it.
+      await user.type(field, '{Backspace}')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    }
+  )
 
   it.each([
     [fail(409, 'USER_PHONE_TAKEN'), t.errors.phoneTaken],
@@ -337,11 +401,24 @@ describe('per-step routes (AuthContainer)', () => {
 
   it('opens /auth/password for an account with a password', async () => {
     const user = setup()
-    mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
+    mocked.actions.phoneLookupForHook.mockResolvedValue(found(true))
     renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
     await user.click(screen.getByRole('button', { name: t.entry.submit }))
     expect(mocked.push).toHaveBeenCalledWith('/auth/password')
+  })
+
+  it('keeps the destination on the way to /auth/password', async () => {
+    const user = setup()
+    mocked.actions.phoneLookupForHook.mockResolvedValue(found(true))
+    renderFlow({ returnTo: '/creators/5' })
+    await user.type(screen.getByLabelText(t.entry.label), phone)
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.password.title })
+    expect(mocked.push).toHaveBeenCalledWith({
+      pathname: '/auth/password',
+      query: { returnTo: '/creators/5' },
+    })
   })
 })
 
@@ -576,6 +653,7 @@ describe('code (VerifyCodeScreen)', () => {
 
 describe('password (PhonePasswordLoginScreen)', () => {
   async function toPasswordScreen(user: ReturnType<typeof setup>) {
+    mocked.actions.phoneLookupForHook.mockResolvedValue(found(true))
     mocked.actions.requestPhoneCodeForHook.mockResolvedValue(sent(true))
     renderFlow()
     await user.type(screen.getByLabelText(t.entry.label), phone)
@@ -608,10 +686,21 @@ describe('password (PhonePasswordLoginScreen)', () => {
     )
   })
 
-  it('uses the code already sent while it is fresh, and asks again after', async () => {
+  it('asks for a code only when the person does, then reuses it while it is fresh (FE-AUTH-07)', async () => {
     const user = setup()
     await toPasswordScreen(user)
+    expect(mocked.actions.requestPhoneCodeForHook).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: t.password.sendCode }))
+    await screen.findByRole('heading', { name: t.code.title })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledWith({
+      phone,
+    })
+    expect(
+      screen.getByText(t.code.resendIn.replace('{time}', '2:00'))
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: t.code.usePassword }))
+    await user.click(screen.getByRole('button', { name: t.password.useCode }))
     await screen.findByRole('heading', { name: t.code.title })
     expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(1)
 
@@ -620,6 +709,72 @@ describe('password (PhonePasswordLoginScreen)', () => {
     await user.click(screen.getByRole('button', { name: t.password.useCode }))
     await screen.findByRole('heading', { name: t.code.title })
     expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    [fail(503, 'AUTH_SMS_UNAVAILABLE'), t.errors.smsUnavailable],
+    [
+      fail(429, 'AUTH_CODE_RATE_LIMITED', 42),
+      t.errors.codeRateLimited.replace('{time}', '0:42'),
+    ],
+    [
+      fail(429, 'AUTH_CODE_TOO_MANY_ATTEMPTS', 900),
+      t.errors.codeLocked.replace('{time}', '15:00'),
+    ],
+  ])(
+    'shows a failed code request %o on the password step',
+    async (result, message) => {
+      const user = setup()
+      await toPasswordScreen(user)
+      mocked.actions.requestPhoneCodeForHook.mockResolvedValue(result)
+      await user.click(
+        screen.getByRole('button', { name: t.password.sendCode })
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      expect(
+        screen.getByRole('heading', { name: t.password.title })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('sends one code when the link and the button are pressed in the same tick', async () => {
+    const user = setup()
+    await toPasswordScreen(user)
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: t.password.useCode }))
+      fireEvent.click(screen.getByRole('button', { name: t.password.sendCode }))
+    })
+    await screen.findByRole('heading', { name: t.code.title })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not show the code step for a number that was sent no code', async () => {
+    const user = setup()
+    await toPasswordScreen(user)
+    mocked.replace.mockClear()
+    act(() => mocked.go?.('/auth/otp'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/password')
+    )
+    expect(
+      await screen.findByRole('heading', { name: t.password.title })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: t.code.title })
+    ).not.toBeInTheDocument()
+    expect(mocked.actions.requestPhoneCodeForHook).not.toHaveBeenCalled()
+  })
+
+  it('looks the number up again when it comes back, still without a code', async () => {
+    const user = setup()
+    await toPasswordScreen(user)
+    await user.click(
+      screen.getByRole('button', { name: t.password.changeNumber })
+    )
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.password.title })
+    expect(mocked.actions.phoneLookupForHook).toHaveBeenCalledTimes(2)
+    expect(mocked.actions.requestPhoneCodeForHook).not.toHaveBeenCalled()
   })
 })
 

@@ -23,9 +23,9 @@ import { PhoneFeedback, PhoneNumber } from './phone-ui'
 
 /**
  * Step 2b (presentation `PhonePasswordLoginScreen` @ fdb5f6c): a returning
- * account that has set a password. Asking for a code instead reuses the one
- * `request-code` already sent while its resend wait is running, and asks for
- * a new one after it.
+ * account that has set a password, reached from the number lookup with no
+ * code sent (FE-AUTH-07). Asking for a code instead calls `request-code`, or
+ * reuses a code already sent while its resend wait is running.
  */
 export function PhonePasswordStep({
   phone,
@@ -80,14 +80,26 @@ export function PhonePasswordStep({
   }
 
   function switchToCode() {
-    if (pending) return
+    // Same tick as another activation (the link and the button): `pending`
+    // has not rendered yet, and a second request would be refused as
+    // rate-limited while the first's SMS is on its way.
+    if (submitting.current || pending) return
     if (Date.now() < wait.until) {
       onUseCode()
       return
     }
+    submitting.current = true
     setLastAction('code')
     login.reset()
-    request.mutate({ phone }, { onSuccess: (sent) => onUseCode(sent) })
+    request.mutate(
+      { phone },
+      {
+        onSuccess: (sent) => onUseCode(sent),
+        onError: () => {
+          submitting.current = false
+        },
+      }
+    )
   }
 
   return (

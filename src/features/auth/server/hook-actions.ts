@@ -11,6 +11,7 @@ import {
   fetchOwnProfile,
   InvalidAuthResponseError,
   loginWithPhonePassword,
+  lookupPhone,
   requestPasswordReset,
   requestPhoneCode,
   resendEmailCode,
@@ -49,6 +50,7 @@ import type {
   GoogleAuthPayload,
   PhoneCodeRequestPayload,
   PhoneLoginPayload,
+  PhoneLookupPayload,
   PhoneSignIn,
   PhoneVerifyPayload,
   ResetPasswordPayload,
@@ -259,6 +261,16 @@ async function phoneSession(
     needsProfile,
     hasPassword,
   }
+}
+
+/**
+ * `phone/lookup` (BE-AUTH-11): sends no SMS. Wrapped like the other phone
+ * actions; its only 429 is the shared throttle.
+ */
+export async function phoneLookupForHook(input: PhoneLookupPayload) {
+  return mutate(createPhoneSchema(), input, ({ phone }) =>
+    withRetryAfter(() => lookupPhone(phone))
+  )
 }
 
 export async function requestPhoneCodeForHook(input: PhoneCodeRequestPayload) {
