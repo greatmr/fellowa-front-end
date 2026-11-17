@@ -10,7 +10,7 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
   const publicT = await getTranslations('publicLayout')
   const session = await getSession()
 
-  if (!session) {
+  if (!session && studio) {
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
@@ -18,6 +18,29 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
         </Button>
         <Button asChild size="sm">
           <Link href="/auth">{t('nav.register')}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  // The public header's pill buttons (presentation `LandingView` `.fw-btn-md`
+  // @ 798f660). Both open the same phone-first entry, so the outline "sign
+  // in" is dropped on phones to keep the bar on one line.
+  if (!session) {
+    return (
+      <div className="flex shrink-0 items-center gap-3">
+        <Button
+          asChild
+          variant="outline"
+          className="hidden rounded-full border-input bg-card/55 px-5.5 shadow-none backdrop-blur-md sm:inline-flex"
+        >
+          <Link href="/auth">{t('nav.login')}</Link>
+        </Button>
+        <Button asChild className="rounded-full px-4 shadow-brand sm:px-5.5">
+          <Link href="/auth">
+            <span className="sm:hidden">{t('nav.register')}</span>
+            <span className="hidden sm:inline">{publicT('startCreator')}</span>
+          </Link>
         </Button>
       </div>
     )
@@ -36,7 +59,7 @@ export async function AuthNavigation({ studio = false }: { studio?: boolean }) {
           </span>
         )
       ) : (
-        <Button asChild size="sm">
+        <Button asChild className="rounded-full px-5.5 shadow-brand">
           <Link
             href={session.user.isVerified ? '/studio' : '/auth/verify-email'}
           >

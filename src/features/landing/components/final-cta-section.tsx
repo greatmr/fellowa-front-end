@@ -14,19 +14,19 @@ export function FinalCtaSection() {
   return (
     <section
       aria-labelledby="landing-final-title"
-      className="relative flex min-h-140 items-center justify-center overflow-hidden px-4 py-20 sm:px-6"
+      className="relative mt-22.5 flex min-h-140 items-center justify-center overflow-hidden px-4 py-20 sm:px-6"
     >
       <Image src={src} alt="" fill sizes="100vw" className="object-cover" />
       <div className="absolute inset-0 bg-ink-900/20" aria-hidden />
       <Reveal className="relative w-full max-w-md">
-        <div className="rounded-card bg-card px-6 py-10 text-center shadow-panel sm:px-14 sm:py-13">
+        <div className="rounded-card bg-card px-6.5 pt-10 pb-9 text-center shadow-panel sm:px-14 sm:pt-13 sm:pb-12">
           <span
-            className="mx-auto mb-5 block size-11.5 rounded-xl bg-cover-mix"
+            className="mx-auto mb-5.5 block size-11.5 rounded-xl bg-cover-mix shadow-brand"
             aria-hidden
           />
           <h2
             id="landing-final-title"
-            className="mb-7 text-title font-bold text-foreground sm:text-display"
+            className="mb-7.5 text-closing font-black text-foreground"
           >
             {t('title')}
           </h2>

@@ -266,7 +266,8 @@
     "sample": {
       "label": "Illustrative example",
       "perMonth": "Toman / month",
-      "join": "Join"
+      "join": "Join",
+      "toman": "Toman"
     },
     "hero": {
       "eyebrow": "A dedicated membership platform for Iranian content creators",
@@ -285,14 +286,34 @@
         "benefit1": "Source files and layered artwork",
         "benefit2": "Step-by-step lessons in design techniques",
         "benefit3": "Access to a private gallery of work in progress"
-      }
+      },
+      "supporters": "+240 supporters this month"
     },
     "features": {
       "support": {
         "eyebrow": "Support",
         "title": "A simple way to receive support",
         "text": "Build a dedicated page where your fans can find you and support you. This page is the first step in turning casual followers into real fans.",
-        "action": "Support"
+        "action": "Support",
+        "stats": {
+          "members": {
+            "label": "members",
+            "value": "286"
+          },
+          "posts": {
+            "label": "posts",
+            "value": "48"
+          },
+          "tiers": {
+            "label": "tiers",
+            "value": "3"
+          }
+        },
+        "cheer": "Great work, keep going!",
+        "newSupporters": {
+          "label": "New supporters this week",
+          "value": "+18"
+        }
       },
       "tiers": {
         "eyebrow": "Membership",
@@ -309,6 +330,11 @@
         "special": {
           "name": "Special tier",
           "price": "250,000"
+        },
+        "members": "286 members",
+        "income": {
+          "label": "Income this month",
+          "value": "2.4M"
         }
       },
       "content": {
@@ -322,7 +348,8 @@
         "audioTitle": "Episode 12 — Behind the scenes",
         "timeStart": "0:00",
         "timeEnd": "55:08",
-        "skip": "15"
+        "skip": "15",
+        "likes": "24"
       },
       "chat": {
         "eyebrow": "Connection",
@@ -331,7 +358,9 @@
         "fanMessage": "Your new song was amazing 👏",
         "creatorMessage": "Thanks! I'll post the full version for special members tomorrow",
         "newMemberTitle": "A new member joined",
-        "newMemberDetail": "Special tier · just now"
+        "newMemberDetail": "Special tier · just now",
+        "unreadTitle": "8 unread messages",
+        "unreadDetail": "From premium members"
       }
     },
     "compare": {
@@ -685,13 +714,18 @@
   "publicLayout": {
     "home": "Fellowa home",
     "mainNav": "Main navigation",
-    "footerNav": "Footer navigation",
     "openMenu": "Open navigation",
     "why": "Why Fellowa",
     "features": "Features",
     "studio": "Open studio",
-    "tagline": "A home for your creative work and the people who believe in it.",
-    "copyright": "Fellowa · Made for creators and their communities.",
-    "creators": "Creators"
+    "tagline": "Fellowa: a dedicated space for creators and their true fans.",
+    "copyright": "© Fellowa. All rights reserved.",
+    "creators": "Creators",
+    "searchLabel": "Search creators",
+    "searchPlaceholder": "Discover creators",
+    "searchClear": "Clear",
+    "startCreator": "Start as a creator",
+    "product": "Product",
+    "discoverCreators": "Discover creators"
   }
 }

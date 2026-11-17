@@ -17,8 +17,8 @@ export function PublicMobileNav() {
       title={t('mainNav')}
       openLabel={t('openMenu')}
       closeLabel={tCommon('close')}
-      desktopQuery="(min-width: 48rem)"
-      triggerClassName="md:hidden"
+      desktopQuery="(min-width: 64rem)"
+      triggerClassName="lg:hidden"
     >
       <div className="flex h-full flex-col gap-8 px-5 py-6 pt-16">
         <nav

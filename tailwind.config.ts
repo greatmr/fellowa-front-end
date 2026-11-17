@@ -136,6 +136,22 @@ export const fontSize = {
   title: ['1.375rem', { lineHeight: '1.875rem' }], // 22px
   headline: ['1.625rem', { lineHeight: '2.125rem' }], // 26px
   display: ['2rem', { lineHeight: '2.5rem' }], // 32px
+  /*
+   * Fluid marketing headings (presentation `LandingView` @ 798f660, FE-LAND-02):
+   * the hero title, a section title and the closing call to action.
+   */
+  hero: [
+    'clamp(2.25rem, 4.4vw, 3.375rem)',
+    { lineHeight: '1.3', letterSpacing: '-0.0625rem' },
+  ], // 36–54px
+  section: [
+    'clamp(1.875rem, 3.4vw, 2.75rem)',
+    { lineHeight: '1.35', letterSpacing: '-0.04375rem' },
+  ], // 30–44px
+  closing: [
+    'clamp(1.5rem, 2.6vw, 2rem)',
+    { lineHeight: '1.5', letterSpacing: '-0.03125rem' },
+  ], // 24–32px
 } satisfies NonNullable<Config['theme']>['fontSize']
 
 export const borderRadius = {
@@ -146,6 +162,8 @@ export const borderRadius = {
   card: '1.25rem',
   /** Popovers and the toast (presentation `rounded-[12px]`, efc3a57). */
   popover: '0.75rem',
+  /** The landing's glass feature blocks (presentation `.fw-block`). */
+  section: '2.5rem',
 } as const
 
 /** Shared shell dimensions, measured from the presentation's studio frame. */
@@ -169,6 +187,11 @@ export const boxShadow = {
   /** Hover lift of an interactive card (`card-tactile`), light and dark. */
   lift: '0 8px 24px -12px rgb(16 16 16 / 0.12)',
   'lift-dark': '0 8px 24px -12px rgb(0 0 0 / 0.45)',
+  /** The landing's sticky glass header (presentation `.fw-nav-outer`). */
+  nav: '0 8px 32px -20px rgb(32 80 192 / 0.25)',
+  /** A glass feature block: soft drop plus a lit top edge (`.fw-block`). */
+  block:
+    '0 20px 50px -34px rgb(16 16 16 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.8)',
 } as const
 
 /** Overlay backdrop blur (presentation `Sheet`, efc3a57). */
@@ -195,6 +218,19 @@ export const animation = {
   'page-enter': `page-enter .24s ${ease.smooth} forwards`,
   'pulse-subtle': 'pulse-subtle 2.2s ease-in-out infinite',
   'badge-pop': `badge-pop .3s ${ease.spring}`,
+  /*
+   * Landing ambience (presentation `LandingView` @ 798f660): the hero's
+   * drifting colour fields and the mock-ups' floating chips. `float-*` share
+   * one keyframe (`chip-float`) with staggered timing so the chips never move in step.
+   */
+  'drift-1': 'drift-1 26s ease-in-out infinite alternate',
+  'drift-2': 'drift-2 30s ease-in-out infinite alternate',
+  'drift-3': 'drift-3 34s ease-in-out infinite alternate',
+  'float-1': 'chip-float 5.5s ease-in-out infinite alternate',
+  'float-2': 'chip-float 6.5s ease-in-out .8s infinite alternate',
+  'float-3': 'chip-float 7s ease-in-out .4s infinite alternate',
+  'float-4': 'chip-float 6s ease-in-out 1.2s infinite alternate',
+  'float-5': 'chip-float 7.5s ease-in-out .2s infinite alternate',
 } as const
 
 export const backgroundImage = {
@@ -215,6 +251,24 @@ export const backgroundImage = {
     'linear-gradient(90deg, rgb(16 16 16 / 0.05) 25%, rgb(16 16 16 / 0.10) 37%, rgb(16 16 16 / 0.05) 63%)',
   'shimmer-dark':
     'linear-gradient(90deg, rgb(255 255 255 / 0.05) 25%, rgb(255 255 255 / 0.12) 37%, rgb(255 255 255 / 0.05) 63%)',
+  /*
+   * The landing hero's fluted glass (presentation `.fw-flutes`,
+   * `.fw-flute-edges`, `.fw-grain`): soft vertical ribs, their lit edges and
+   * a faint noise. The slate tints (#9EAECC, #92A3C7) are outside the palette
+   * and kept as design drift (presentation-sync, FE-LAND-02).
+   */
+  flutes:
+    'repeating-linear-gradient(90deg, rgb(255 255 255 / 0.40) 0px, rgb(255 255 255 / 0.05) 16px, rgb(255 255 255 / 0) 40px, rgb(158 174 204 / 0.09) 60px, rgb(255 255 255 / 0.34) 70px, rgb(255 255 255 / 0.40) 72px)',
+  'flute-edges':
+    'repeating-linear-gradient(90deg, transparent 0px, transparent 70px, rgb(255 255 255 / 0.8) 70px, rgb(255 255 255 / 0.8) 71px, rgb(146 163 199 / 0.16) 71px, rgb(146 163 199 / 0.16) 72.5px)',
+  grain:
+    "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+  /*
+   * The locked-post tile in the landing's content collage (presentation
+   * `.fw-cl-locked`), mapped onto brand-300/400/800 and violet-300.
+   */
+  'locked-mock':
+    'radial-gradient(circle at 35% 20%, rgb(134 165 230 / 0.88), transparent 55%), radial-gradient(circle at 65% 80%, rgb(178 146 231 / 0.88), transparent 55%), linear-gradient(170deg, #5580D8, #15357F)',
 } as const
 
 const config = {
@@ -288,6 +342,23 @@ const config = {
         'check-draw': {
           from: { strokeDashoffset: '24' },
           to: { strokeDashoffset: '0' },
+        },
+        'drift-1': {
+          from: { transform: 'translateX(0) scale(1)' },
+          to: { transform: 'translateX(40px) scale(1.06)' },
+        },
+        'drift-2': {
+          from: { transform: 'translate(0, 0) scale(1.05)' },
+          to: { transform: 'translate(-50px, 40px) scale(1)' },
+        },
+        'drift-3': {
+          from: { transform: 'translate(0, 0)' },
+          to: { transform: 'translate(40px, 50px)' },
+        },
+        /* `--py` is the scroll parallax offset set by `FloatParallax`. */
+        'chip-float': {
+          from: { transform: 'translateY(var(--py, 0px))' },
+          to: { transform: 'translateY(calc(var(--py, 0px) - 12px))' },
         },
         shake: {
           '0%, 100%': { transform: 'translateX(0)' },
