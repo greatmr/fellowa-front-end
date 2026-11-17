@@ -1,6 +1,7 @@
 import { CompareSection } from './compare-section'
 import { FeaturesSection } from './features-section'
 import { FinalCtaSection } from './final-cta-section'
+import { FloatParallax } from './float-parallax'
 import { HeroSection } from './hero-section'
 import { TrustSection } from './trust-section'
 
@@ -13,6 +14,7 @@ export function LandingPage() {
       <CompareSection />
       <TrustSection />
       <FinalCtaSection />
+      <FloatParallax />
     </>
   )
 }

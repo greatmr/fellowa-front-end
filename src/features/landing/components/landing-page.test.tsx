@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import en from '../../../../messages/en.json'
@@ -88,6 +88,54 @@ describe('LandingPage', () => {
 
     expect(screen.getAllByRole('figure')).toHaveLength(5)
     expect(screen.getAllByText(fa.landing.sample.label)).toHaveLength(5)
+  })
+
+  it('lays the content collage out left to right in both languages', () => {
+    const { container } = renderWithIntl(<LandingPage />)
+
+    const collage = container.querySelector('[dir="ltr"]')
+    expect(collage).not.toBeNull()
+    // Text inside the collage follows the page direction.
+    expect(collage?.querySelectorAll('[dir="rtl"]').length).toBeGreaterThan(0)
+  })
+
+  it('puts the Fellowa column first in the comparison, as designed', () => {
+    renderWithIntl(<LandingPage />)
+
+    const table = screen.getByRole('table', { name: fa.landing.compare.title })
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((header) => header.textContent)
+    ).toEqual([
+      fa.landing.compare.fellowaHeader,
+      fa.landing.compare.currentHeader,
+      fa.landing.compare.featureHeader,
+    ])
+    const [rowHeader] = within(table).getAllByRole('rowheader')
+    expect(rowHeader?.textContent).toBe(fa.landing.compare.page.feature)
+    // The row header ends the row, so each cell points at it explicitly.
+    const [fellowaCell, currentCell] = Array.from(
+      rowHeader?.parentElement?.querySelectorAll('td') ?? []
+    )
+    expect(fellowaCell).toHaveAttribute(
+      'headers',
+      `compare-col-fellowa ${rowHeader?.id}`
+    )
+    expect(currentCell).toHaveAttribute(
+      'headers',
+      `compare-col-current ${rowHeader?.id}`
+    )
+  })
+
+  it('keeps the floating mock-up chips out of the accessibility tree', () => {
+    const { container } = renderWithIntl(<LandingPage />)
+
+    const chips = container.querySelectorAll('[data-parallax]')
+    expect(chips.length).toBe(6)
+    for (const chip of chips) {
+      expect(chip).toHaveAttribute('aria-hidden', 'true')
+    }
   })
 
   it('gives decorative images an empty alt and loads them locally', () => {

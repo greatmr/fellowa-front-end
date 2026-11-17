@@ -17,7 +17,9 @@ export function LogoGlyph({ className }: { className?: string }) {
  * `default`: the studio sidebar's mark (presentation Sidebar header @
  * fdb5f6c). `auth`: the auth frame's larger solid tile, black wordmark and
  * hover lift (presentation `AuthLayout` @ 01fb04d); its hover follows the
- * nearest `group`, the link around it.
+ * nearest `group`, the link around it. `public`: the landing header and
+ * footer's glowing tile and heavy wordmark (presentation `LandingView`
+ * `.fw-logo` @ 798f660).
  */
 const logoVariants = {
   tile: cva('flex items-center justify-center shadow-xs', {
@@ -25,12 +27,15 @@ const logoVariants = {
       variant: {
         default: 'size-8 rounded-md bg-cover-mix text-white',
         auth: 'size-9 rounded-lg bg-primary text-primary-foreground transition-transform motion-safe:group-hover:scale-105',
+        public: 'size-8 rounded-base bg-cover-mix text-white shadow-brand',
       },
     },
     defaultVariants: { variant: 'default' },
   }),
   glyph: cva('', {
-    variants: { variant: { default: 'size-4.5', auth: 'size-5' } },
+    variants: {
+      variant: { default: 'size-4.5', auth: 'size-5', public: 'size-4.5' },
+    },
     defaultVariants: { variant: 'default' },
   }),
   wordmark: cva(
@@ -40,6 +45,7 @@ const logoVariants = {
         variant: {
           default: 'text-subtitle font-bold',
           auth: 'text-title-sm font-black',
+          public: 'text-title-sm font-black',
         },
       },
       defaultVariants: { variant: 'default' },

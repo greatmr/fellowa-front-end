@@ -49,13 +49,13 @@ export function TrustSection() {
   return (
     <section
       aria-labelledby="landing-trust-title"
-      className="bg-muted/40 py-20"
+      className="bg-linear-to-b from-brand-50/70 to-background pt-20 pb-22.5 dark:from-brand-900/15"
     >
       <div className="mx-auto max-w-public px-4 sm:px-6">
         <Reveal>
           <h2
             id="landing-trust-title"
-            className="mb-12 text-center text-display font-bold tracking-tight text-foreground sm:text-4xl"
+            className="mb-13 text-center text-section font-black text-foreground"
           >
             {t('title')}
           </h2>
@@ -63,7 +63,7 @@ export function TrustSection() {
         <div className="grid gap-5 md:grid-cols-2">
           {CARDS.map(({ key, icon: Icon, tint, delay }) => (
             <Reveal key={key} className={delay}>
-              <article className="h-full card-tactile rounded-card border bg-card p-6 shadow-soft">
+              <article className="h-full card-tactile rounded-card border bg-card px-6 py-6.5 shadow-soft">
                 <span
                   className={cn(
                     'mb-4 flex size-11 items-center justify-center rounded-xl',
