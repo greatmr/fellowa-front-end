@@ -7,7 +7,11 @@ import { toast } from 'sonner'
 import type { GoogleErrorKind } from '@/features/auth/lib/google-error'
 import { deadlineIn, type Deadline } from '@/features/auth/lib/phone'
 import { authHref, phoneSignInDestination } from '@/features/auth/lib/return-to'
-import type { PhoneCodeSent, PhoneSignIn } from '@/features/auth/types'
+import type {
+  PhoneCodeSent,
+  PhoneLookup,
+  PhoneSignIn,
+} from '@/features/auth/types'
 import { useRouter } from '@/i18n/navigation'
 
 import { useAuthFlow } from './auth-flow-context'
@@ -43,10 +47,14 @@ export function PhoneAuthFlow({
   const router = useRouter()
   const { target, setTarget, setSignedInPhone } = useAuthFlow()
   const missingTarget = step !== 'entry' && !target
+  // The code step for a number that was only looked up (back/forward, a
+  // typed URL) would claim an SMS that never went out.
+  const noCode = step === 'otp' && target !== null && !target.codeSent
 
   useEffect(() => {
     if (missingTarget) router.replace(authHref(PATHS.entry, returnTo))
-  }, [missingTarget, returnTo, router])
+    else if (noCode) router.replace(authHref(PATHS.password, returnTo))
+  }, [missingTarget, noCode, returnTo, router])
 
   function go(next: PhoneStep) {
     router.push(authHref(PATHS[next], returnTo))
@@ -56,9 +64,25 @@ export function PhoneAuthFlow({
     setTarget(() => ({
       phone: sent.phone,
       hasPassword: sent.hasPassword,
+      codeSent: true,
       wait: deadlineIn(sent.resendAfterSeconds),
     }))
     go(sent.hasPassword ? 'password' : 'otp')
+  }
+
+  /**
+   * FE-AUTH-07: the lookup found a password, so no code was sent and no wait
+   * runs (an already-ended deadline); "use a code" on the password step asks
+   * for one.
+   */
+  function passwordFound(found: PhoneLookup) {
+    setTarget(() => ({
+      phone: found.phone,
+      hasPassword: true,
+      codeSent: false,
+      wait: deadlineIn(0),
+    }))
+    go('password')
   }
 
   function signedIn(result: PhoneSignIn) {
@@ -69,7 +93,7 @@ export function PhoneAuthFlow({
   }
 
   function waitUntil(wait: Deadline) {
-    setTarget((current) => current && { ...current, wait })
+    setTarget((current) => current && { ...current, codeSent: true, wait })
   }
 
   if (step === 'entry') {
@@ -86,12 +110,13 @@ export function PhoneAuthFlow({
         }}
         returnTo={returnTo}
         google={google}
+        onPasswordFound={passwordFound}
         onCodeSent={codeSent}
       />
     )
   }
 
-  if (!target) return null
+  if (!target || noCode) return null
 
   if (step === 'password') {
     return (

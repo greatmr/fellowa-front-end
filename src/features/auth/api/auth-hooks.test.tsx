@@ -16,6 +16,7 @@ const actions = vi.hoisted(() => ({
   exchangeGoogleCodeForHook: vi.fn(),
   verifyAuthTokenForHook: vi.fn(),
   logoutForHook: vi.fn(),
+  phoneLookupForHook: vi.fn(),
 }))
 vi.mock('@/features/auth/server/hook-actions', () => actions)
 
@@ -23,6 +24,7 @@ import {
   authKeys,
   useLoginMutation,
   useOwnProfileQuery,
+  usePhoneLookupMutation,
   useSetAliasMutation,
 } from './auth-hooks'
 
@@ -41,6 +43,29 @@ function setup() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('React Query auth hooks', () => {
+  it('looks a number up without touching cached viewer data (FE-AUTH-07)', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(authKeys.profile(9), { id: 9 })
+    actions.phoneLookupForHook.mockResolvedValue({
+      ok: true,
+      data: { phone: '09121234567', hasAccount: true, hasPassword: true },
+    })
+    const { result } = renderHook(() => usePhoneLookupMutation(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({ phone: '09121234567' })
+    })
+    expect(actions.phoneLookupForHook).toHaveBeenCalledWith({
+      phone: '09121234567',
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.hasPassword).toBe(true)
+    expect(client.getQueryData(authKeys.profile(9))).toEqual({ id: 9 })
+    expect(client.getMutationCache().getAll()[0]?.options.mutationKey).toEqual([
+      'auth',
+      'phone-lookup',
+    ])
+  })
+
   it('uses a static mutation key and removes previous viewer data when signing in', async () => {
     const { client, wrapper } = setup()
     client.setQueryData(authKeys.profile(9), { id: 9 })

@@ -14,7 +14,10 @@ import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Form, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { useRequestPhoneCodeMutation } from '@/features/auth/api/auth-hooks'
+import {
+  usePhoneLookupMutation,
+  useRequestPhoneCodeMutation,
+} from '@/features/auth/api/auth-hooks'
 import {
   formatPhoneInput,
   normalizeIranianMobile,
@@ -25,7 +28,7 @@ import {
 import type { GoogleErrorKind } from '@/features/auth/lib/google-error'
 import { authHref } from '@/features/auth/lib/return-to'
 import { createPhoneSchema } from '@/features/auth/schemas'
-import type { PhoneCodeSent } from '@/features/auth/types'
+import type { PhoneCodeSent, PhoneLookup } from '@/features/auth/types'
 import { Link } from '@/i18n/navigation'
 
 import { AuthErrorLine, AuthFieldMessage } from './auth-error-line'
@@ -38,14 +41,18 @@ import { PhoneFeedback, useLocaleDigits } from './phone-ui'
  * Step 1 of phone sign-in (presentation `LoginOrSignupScreen` @ fdb5f6c): one
  * screen for signing in and signing up, Google first when it is configured,
  * then the number, grouped as it is typed (`0912 345 6789`, in the locale's
- * digits) and sent normalised. Not ported: the "last number on this browser" variant (it
- * lived in `localStorage`).
+ * digits) and sent normalised. The number is looked up first (FE-AUTH-07,
+ * FQ-19; `LoginOrSignupScreen` @ 01fb04d): an account with a password goes to
+ * the password step with no SMS sent; any other number is sent a code. Not
+ * ported: the "last number on this browser" variant (it lived in
+ * `localStorage`).
  */
 export function PhoneEntryStep({
   initialPhone = '',
   returnTo,
   google,
   onResume,
+  onPasswordFound,
   onCodeSent,
 }: {
   initialPhone?: string
@@ -53,12 +60,17 @@ export function PhoneEntryStep({
   google?: { enabled: boolean; locale: string; error: GoogleErrorKind | null }
   /** `true` when the flow can continue with `phone` without a new code. */
   onResume?: (phone: string) => boolean
+  /** The account has a password: no code was sent. */
+  onPasswordFound: (found: PhoneLookup) => void
   onCodeSent: (sent: PhoneCodeSent) => void
 }) {
   const t = useTranslations('auth.phone')
   const submitting = useRef(false)
+  const lookup = usePhoneLookupMutation()
   const request = useRequestPhoneCodeMutation()
-  const pending = request.isPending
+  const pending = lookup.isPending || request.isPending
+  // One chain, one line: a lookup failure stops it before request-code.
+  const error = lookup.error ?? request.error
   const localeDigits = useLocaleDigits()
   const display = (raw: string) => localeDigits(formatPhoneInput(raw))
   const form = useForm({
@@ -79,6 +91,7 @@ export function PhoneEntryStep({
     onChange: (value: string) => void
   ) {
     onChange(display(raw))
+    if (lookup.error) lookup.reset()
     if (request.error) request.reset()
     requestAnimationFrame(() => {
       if (input.ownerDocument.activeElement !== input) return
@@ -128,16 +141,32 @@ export function PhoneEntryStep({
           submitting.current = false
           return
         }
-        request.mutate(
+        const done = () => {
+          submitting.current = false
+        }
+        request.reset()
+        lookup.mutate(
           { phone },
           {
-            onSuccess: (sent) => {
-              request.reset()
-              onCodeSent(sent)
+            onSuccess: (found) => {
+              lookup.reset()
+              if (found.hasPassword) {
+                done()
+                onPasswordFound(found)
+                return
+              }
+              request.mutate(
+                { phone },
+                {
+                  onSuccess: (sent) => {
+                    request.reset()
+                    onCodeSent(sent)
+                  },
+                  onSettled: done,
+                }
+              )
             },
-            onSettled: () => {
-              submitting.current = false
-            },
+            onError: done,
           }
         )
       },
@@ -210,13 +239,13 @@ export function PhoneEntryStep({
                       placeholder={t('entry.placeholder')}
                       readOnly={pending}
                       aria-invalid={
-                        fieldState.invalid || (!pending && request.isError)
+                        fieldState.invalid || (!pending && error !== null)
                       }
                       className="h-12 text-body-lg"
                     />
                   </AuthFormControl>
                   <AuthFieldMessage />
-                  {!pending && <PhoneFeedback error={request.error} />}
+                  {!pending && <PhoneFeedback error={error} />}
                 </FormItem>
               )}
             />

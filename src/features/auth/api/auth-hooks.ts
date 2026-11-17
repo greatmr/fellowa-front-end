@@ -18,6 +18,7 @@ import {
   logoutForHook,
   ownProfileForHook,
   phoneLoginForHook,
+  phoneLookupForHook,
   registerForHook,
   requestPasswordResetForHook,
   requestPhoneCodeForHook,
@@ -37,6 +38,8 @@ import type {
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
+  PhoneLookup,
+  PhoneLookupPayload,
   PhoneSignIn,
   PhoneVerifyPayload,
   ResetPasswordPayload,
@@ -201,6 +204,13 @@ export function useVerifyAuthTokenMutation(
 
 export function useLogoutMutation(options?: MutationOptions<null, void>) {
   return useAuthMutation('logout', logoutForHook, 'identity', options)
+}
+
+/** BE-AUTH-11: what the number opens, before any SMS is sent. */
+export function usePhoneLookupMutation(
+  options?: MutationOptions<PhoneLookup, PhoneLookupPayload>
+) {
+  return useAuthMutation('phone-lookup', phoneLookupForHook, null, options)
 }
 
 export function useRequestPhoneCodeMutation(

@@ -44,11 +44,18 @@ export type AuthUser = {
 
 export type AuthValidationMessages = Record<AuthFieldError, string>
 
-/** `POST /auth/phone/request-code`: a code is on its way. */
-export type PhoneCodeSent = {
+/**
+ * `POST /auth/phone/lookup` (BE-AUTH-11): what the number opens, with no SMS
+ * sent. Same meaning as `request-code`'s fields.
+ */
+export type PhoneLookup = {
   phone: string
   hasAccount: boolean
   hasPassword: boolean
+}
+
+/** `POST /auth/phone/request-code`: a code is on its way. */
+export type PhoneCodeSent = PhoneLookup & {
   resendAfterSeconds: number
   expiresInSeconds: number
 }

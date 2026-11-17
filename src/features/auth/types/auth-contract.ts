@@ -16,6 +16,8 @@ export type VerifyTokenPayload = { token: string }
 
 /** Phone sign-in (BE-AUTH-08, `phone-*.dto.ts`, `complete-account.dto.ts`). */
 export type PhoneCodeRequestPayload = { phone: string }
+/** BE-AUTH-11, `phone-lookup.dto.ts`: the same input as `request-code`. */
+export type PhoneLookupPayload = { phone: string }
 export type PhoneVerifyPayload = { phone: string; code: string }
 export type PhoneLoginPayload = { phone: string; password: string }
 export type CompleteAccountPayload = { displayName: string; password?: string }

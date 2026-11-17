@@ -10,10 +10,15 @@ import {
 
 import type { Deadline } from '@/features/auth/lib/phone'
 
-/** The number a code was sent to, and how long until another may be asked. */
+/**
+ * The number being signed in, whether a code was sent to it, and how long
+ * until another may be asked. A number looked up with a password has no code
+ * yet (FE-AUTH-07) and an already-ended wait.
+ */
 export type PhoneTarget = {
   phone: string
   hasPassword: boolean
+  codeSent: boolean
   wait: Deadline
 }
 
