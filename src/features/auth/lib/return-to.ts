@@ -6,7 +6,6 @@ const privatePaths = new Set([
   '/studio/tiers',
   '/studio/page',
   '/studio/payouts',
-  '/onboarding',
   '/memberships',
   '/settings',
   '/feed',
@@ -68,15 +67,26 @@ export function returnsToPage(returnTo?: string): boolean {
 /**
  * After the account step: back to the page it started from, or on to the page
  * address step (`/auth/url`). An account that already has a page skips that
- * step.
+ * step. Sign-up reaches the address step only when there is no page to return
+ * to, so its destination is the default and travels no further: a `returnTo`
+ * on `/auth/url` means it was opened from elsewhere (`addressStepStandsAlone`).
  */
 export function afterAccountDestination(
   user: { alias: string | null },
   returnTo?: string
 ): AuthHref {
   return choosesPageAddress(user, returnTo)
-    ? authHref('/auth/url', returnTo)
+    ? '/auth/url'
     : safeReturnTo(returnTo)
+}
+
+/**
+ * FE-ONB-02: the address step opened from a page rather than from sign-up
+ * (settings' "no page" link → `/settings`, the studio checklist → `/studio`).
+ * It then shows no step count, and "back" and "done" both return there.
+ */
+export function addressStepStandsAlone(returnTo?: string): boolean {
+  return returnTo !== undefined
 }
 
 /** Whether the address step follows (and the account step is 1 of 2). */
@@ -88,17 +98,20 @@ export function choosesPageAddress(
 }
 
 /**
- * Where a Google sign-in lands (FE-AUTH-05, BE-AUTH-10). A new account goes on
- * to the page address step, as in the prototype (Google gave the name), or
- * back to the page it started from (FQ-17). A returning account goes to its
- * destination, page or not: the studio checklist asks for the address.
+ * Where a Google sign-in lands (FE-AUTH-05, FE-AUTH-06, BE-AUTH-10). An
+ * account Google gave no usable name (`needsProfile`) completes its account
+ * first, as a phone sign-in does. A new account goes on to the page address
+ * step, as in the prototype (Google gave the name), or back to the page it
+ * started from (FQ-17). A returning account goes to its destination, page or
+ * not: the studio checklist asks for the address.
  */
 export function googleSignInDestination(
-  result: { isNewUser: boolean },
+  result: { isNewUser: boolean; needsProfile: boolean },
   returnTo?: string
 ): AuthHref {
+  if (result.needsProfile) return authHref('/auth/account', returnTo)
   return result.isNewUser && !returnsToPage(returnTo)
-    ? authHref('/auth/url', returnTo)
+    ? '/auth/url'
     : safeReturnTo(returnTo)
 }
 

@@ -1,6 +1,6 @@
 import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
@@ -58,16 +58,29 @@ function setup() {
   return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 }
 
-function renderStep(pageName = '') {
+/**
+ * `pageName`: what the account step left in memory. `profileName`: the owner
+ * profile's `displayName` the route reads (`null` for the placeholder).
+ */
+function renderStep(
+  pageName = '',
+  profileName: string | null = null,
+  returnTo?: string
+) {
   function Seeded() {
-    const flow = useAuthFlow()
-    const { setPageName } = flow
+    const { setPageName } = useAuthFlow()
+    const [ready, setReady] = useState(false)
     useEffect(() => {
       setPageName(pageName)
+      setReady(true)
     }, [setPageName])
-    return flow.pageName === pageName ? (
+    return ready ? (
       <>
-        <PageAddressForm destination="/studio" />
+        <PageAddressForm
+          destination={returnTo ?? '/studio'}
+          returnTo={returnTo}
+          profileName={profileName}
+        />
         <AuthVisual samples={null} />
       </>
     ) : null
@@ -93,6 +106,72 @@ describe('page address (OnboardingUrlScreen)', () => {
       '2'
     )
     expect(screen.getAllByText(t.prefix)).toHaveLength(2)
+  })
+
+  it('shows the address as @username, never a fellowa.ir link (FQ-18)', async () => {
+    setup()
+    renderStep('Studio Sara')
+    await field()
+    expect(t.prefix).toBe('@')
+    expect(screen.getByLabelText(t.label)).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent('fellowa.ir')
+  })
+
+  it('takes the name from the owner profile after a Google sign-up or a reload', async () => {
+    setup()
+    // Nothing in memory: the account step was never shown in this tab.
+    renderStep('', 'Ali Rezaei')
+    expect(await field()).toHaveValue('alirezaei')
+    expect(
+      screen.getByRole('heading', { name: 'Ali Rezaei', hidden: true })
+    ).toBeInTheDocument()
+  })
+
+  it('prefers the profile name over the in-memory one', async () => {
+    setup()
+    renderStep('Old Name', 'New Name')
+    expect(await field()).toHaveValue('newname')
+  })
+
+  it('leaves the field and the preview name empty for the placeholder name', async () => {
+    setup()
+    // The backend returns `null` while the account holds its placeholder.
+    renderStep('', null)
+    expect(await field()).toHaveValue('')
+    // Only the step's own title; the preview card has no name heading.
+    expect(
+      screen.getAllByRole('heading', { hidden: true }).map((h) => h.textContent)
+    ).toEqual([t.title])
+  })
+
+  it('stands alone when reached from settings: no step count, back to settings (FE-ONB-02)', async () => {
+    const user = setup()
+    renderStep('', 'Sara', '/settings')
+    await user.clear(await field())
+    await user.type(await field(), 'sara_art')
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: t.back })).toHaveAttribute(
+      'href',
+      '/en/settings'
+    )
+    await settle()
+    await waitFor(() => expect(submit()).toBeEnabled())
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/settings')
+    )
+    expect(mocked.actions.setAliasForHook).toHaveBeenCalledWith({
+      alias: 'sara_art',
+    })
+  })
+
+  it('in sign-up, goes back to the account step', async () => {
+    setup()
+    renderStep('Sara')
+    expect(await screen.findByRole('link', { name: t.back })).toHaveAttribute(
+      'href',
+      '/en/auth/account'
+    )
   })
 
   it('does not prefill from a Persian name', async () => {

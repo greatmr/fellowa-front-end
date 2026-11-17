@@ -397,7 +397,7 @@ describe('SettingsView page name section', () => {
       screen
         .getByRole('link', { name: 'Choose a page address' })
         .getAttribute('href')
-    ).toMatch(/\/onboarding\?step=username$/)
+    ).toMatch(/\/auth\/url\?returnTo=%2Fsettings$/)
   })
 
   it('degrades only this section when the name could not be read', () => {

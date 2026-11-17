@@ -82,7 +82,7 @@ describe('SetupChecklist (FE-STUDIO-01, CP-01 / CP-04)', () => {
     )
     expect(
       screen.getByRole('link', { name: 'Choose a username' })
-    ).toHaveAttribute('href', '/en/onboarding')
+    ).toHaveAttribute('href', '/en/auth/url?returnTo=%2Fstudio')
     expect(screen.getAllByRole('link')).toHaveLength(3)
   })
 

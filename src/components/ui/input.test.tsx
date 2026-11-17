@@ -96,4 +96,21 @@ describe('Input', () => {
     expect(input.files?.item(0)).toBe(portrait)
     expect(input).toHaveAttribute('accept', 'image/png')
   })
+
+  it('renders the outlined field by default and the filled well on request', () => {
+    render(
+      <>
+        <Input aria-label="Outlined" />
+        <Input aria-label="Filled" variant="filled" className="h-12" />
+      </>
+    )
+    const outlined = screen.getByLabelText('Outlined')
+    expect(outlined).toHaveAttribute('data-variant', 'default')
+    expect(outlined).toHaveClass('border-input', 'bg-transparent', 'shadow-xs')
+    const filled = screen.getByLabelText('Filled')
+    expect(filled).toHaveAttribute('data-variant', 'filled')
+    expect(filled).toHaveClass('border-transparent', 'bg-muted', 'h-12')
+    expect(filled).not.toHaveClass('bg-transparent')
+    expect(filled).not.toHaveClass('h-10')
+  })
 })

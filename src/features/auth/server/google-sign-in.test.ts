@@ -172,17 +172,15 @@ describe('completeGoogleSignIn', () => {
     expect(result).toEqual({ href: '/auth/url', locale: 'en' })
   })
 
-  it('keeps the destination of a new account through the address step', async () => {
+  it('sends a new account to the address step inside sign-up', async () => {
     const { state } = await begin('/studio')
     const result = await completeGoogleSignIn({
       code: 'google-code',
       state,
       error: null,
     })
-    expect(result.href).toEqual({
-      pathname: '/auth/url',
-      query: { returnTo: '/studio' },
-    })
+    // `/studio` is the default; a returnTo would open the step standalone.
+    expect(result.href).toBe('/auth/url')
   })
 
   it('sends a new account that started from a page back to it (FQ-17)', async () => {

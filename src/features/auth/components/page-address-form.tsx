@@ -7,14 +7,7 @@ import {
   XIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -33,11 +26,15 @@ import {
   cleanAddressInput,
   type AddressStatus,
 } from '@/features/auth/lib/page-address'
-import { authHref } from '@/features/auth/lib/return-to'
+import {
+  addressStepStandsAlone,
+  safeReturnTo,
+} from '@/features/auth/lib/return-to'
 import { ALIAS_MIN_LENGTH } from '@/features/auth/schemas'
 import { Link, useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
+import { AuthErrorLine } from './auth-error-line'
 import { useAuthFlow } from './auth-flow-context'
 import { AuthScreenHeading, AuthStepIndicator } from './auth-heading'
 import { PhoneFeedback } from './phone-ui'
@@ -62,26 +59,38 @@ const BAD: readonly AddressStatus[] = [
 ]
 
 /**
- * Step 2 of 2 (presentation `OnboardingUrlScreen` @ fdb5f6c): the page's
+ * Step 2 of 2 of sign-up, or on its own from settings or the studio checklist
+ * (presentation `OnboardingUrlScreen` @ fdb5f6c; FE-ONB-02): the page's
  * address, checked as it is typed (`GET /auth/alias/availability`, BE-AUTH-09)
  * and saved with `PUT /auth/alias`, which creates the page. The live preview
- * in the visual column follows the field.
+ * in the visual column follows the field. The name comes from the owner
+ * profile, so a Google sign-up or a reload still shows it (FE-AUTH-06); the
+ * in-memory name from the account step covers a profile read without one.
+ * The address is shown as `@username` (FQ-18): public pages are
+ * `/creators/:id`, so no `fellowa.ir/<alias>` link exists to promise.
  */
 export function PageAddressForm({
   destination,
   returnTo,
+  profileName,
 }: {
   /** Where the account goes once the page has its address. */
   destination: string
   returnTo?: string
+  /** The owner profile's `displayName`; `null` while it is the placeholder. */
+  profileName: string | null
 }) {
   const t = useTranslations('auth.url')
   const toastT = useTranslations('auth.phone.toast')
   const router = useRouter()
   const statusId = useId()
-  const { pageName, setPageAddress } = useAuthFlow()
+  const { pageName, setPageName, setPageAddress } = useAuthFlow()
+  const name = profileName ?? pageName
+  // Opened from settings or the studio checklist rather than sign-up
+  // (FE-ONB-02): no step count, and "back" returns there.
+  const inSignUp = !addressStepStandsAlone(returnTo)
   // A Latin page name gives a first address, as in the prototype.
-  const [value, setValue] = useState(() => addressFromName(pageName))
+  const [value, setValue] = useState(() => addressFromName(name))
   const [dropped, setDropped] = useState(false)
   const [takenOnSave, setTakenOnSave] = useState<string | null>(null)
   const submitting = useRef(false)
@@ -106,7 +115,10 @@ export function PageAddressForm({
       ? check.data.suggestions
       : []
 
-  // The preview in the visual column shows what is typed.
+  // The preview in the visual column shows the name and what is typed.
+  useEffect(() => {
+    setPageName(name)
+  }, [name, setPageName])
   useEffect(() => {
     setPageAddress(value)
   }, [value, setPageAddress])
@@ -150,7 +162,9 @@ export function PageAddressForm({
 
   return (
     <div className="w-full">
-      <AuthStepIndicator current={2} total={SIGN_UP_STEPS} />
+      {inSignUp ? (
+        <AuthStepIndicator current={2} total={SIGN_UP_STEPS} />
+      ) : null}
       <AuthScreenHeading
         tone="inverse"
         title={t('title')}
@@ -228,19 +242,27 @@ export function PageAddressForm({
               <span className="sr-only">{t('available')}</span>
             )}
             {(status === 'tooShort' || status === 'invalid') && (
-              <FieldError>
+              <AuthErrorLine className="mt-2 text-body-sm">
                 {status === 'tooShort'
                   ? t('tooShort', { min: ALIAS_MIN_LENGTH })
                   : t('chars')}
-              </FieldError>
+              </AuthErrorLine>
             )}
-            {status === 'reserved' && <FieldError>{t('reserved')}</FieldError>}
+            {status === 'reserved' && (
+              <AuthErrorLine className="mt-2 text-body-sm">
+                {t('reserved')}
+              </AuthErrorLine>
+            )}
             {rejected && status !== 'tooShort' && (
-              <FieldError>{t('rejected')}</FieldError>
+              <AuthErrorLine className="mt-2 text-body-sm">
+                {t('rejected')}
+              </AuthErrorLine>
             )}
             {status === 'taken' && (
               <div className="mt-2.5">
-                <FieldError className="mt-0 mb-2">{t('taken')}</FieldError>
+                <AuthErrorLine className="mb-2 text-body-sm">
+                  {t('taken')}
+                </AuthErrorLine>
                 {suggestions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {suggestions.map((suggestion) => (
@@ -285,7 +307,7 @@ export function PageAddressForm({
 
         <div className="text-center">
           <Link
-            href={authHref('/auth/account', returnTo)}
+            href={inSignUp ? '/auth/account' : safeReturnTo(returnTo)}
             className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             {t('back')}
@@ -293,25 +315,5 @@ export function PageAddressForm({
         </div>
       </form>
     </div>
-  )
-}
-
-function FieldError({
-  children,
-  className,
-}: {
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <p
-      className={cn(
-        'mt-2 flex items-center gap-1.5 text-body-sm text-destructive',
-        className
-      )}
-    >
-      <AlertCircleIcon className="size-4 shrink-0" aria-hidden />
-      {children}
-    </p>
   )
 }

@@ -1,3 +1,4 @@
+import { cva, type VariantProps } from 'class-variance-authority'
 import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/utils'
@@ -12,21 +13,53 @@ export function LogoGlyph({ className }: { className?: string }) {
   )
 }
 
-/** Fellowa logo mark + wordmark (presentation Sidebar header, @fdb5f6c). */
-export function Logo({ className }: { className?: string }) {
+/**
+ * `default`: the studio sidebar's mark (presentation Sidebar header @
+ * fdb5f6c). `auth`: the auth frame's larger solid tile, black wordmark and
+ * hover lift (presentation `AuthLayout` @ 01fb04d); its hover follows the
+ * nearest `group`, the link around it.
+ */
+const logoVariants = {
+  tile: cva('flex items-center justify-center shadow-xs', {
+    variants: {
+      variant: {
+        default: 'size-8 rounded-md bg-cover-mix text-white',
+        auth: 'size-9 rounded-lg bg-primary text-primary-foreground transition-transform motion-safe:group-hover:scale-105',
+      },
+    },
+    defaultVariants: { variant: 'default' },
+  }),
+  glyph: cva('', {
+    variants: { variant: { default: 'size-4.5', auth: 'size-5' } },
+    defaultVariants: { variant: 'default' },
+  }),
+  wordmark: cva(
+    'tracking-tight text-foreground group-data-[collapsed=true]/sidebar:sr-only',
+    {
+      variants: {
+        variant: {
+          default: 'text-subtitle font-bold',
+          auth: 'text-title-sm font-black',
+        },
+      },
+      defaultVariants: { variant: 'default' },
+    }
+  ),
+}
+
+/** Fellowa logo mark + wordmark. */
+export function Logo({
+  className,
+  variant,
+}: { className?: string } & VariantProps<typeof logoVariants.tile>) {
   const t = useTranslations('common')
 
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <span
-        className="flex size-8 items-center justify-center rounded-md bg-cover-mix text-white shadow-xs"
-        aria-hidden
-      >
-        <LogoGlyph className="size-4.5" />
+      <span className={logoVariants.tile({ variant })} aria-hidden>
+        <LogoGlyph className={logoVariants.glyph({ variant })} />
       </span>
-      <span className="text-subtitle font-bold tracking-tight text-foreground group-data-[collapsed=true]/sidebar:sr-only">
-        {t('appName')}
-      </span>
+      <span className={logoVariants.wordmark({ variant })}>{t('appName')}</span>
     </span>
   )
 }

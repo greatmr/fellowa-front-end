@@ -65,12 +65,26 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
   it.each([
     ['/auth/otp', '/en/auth?returnTo=%2Fcreators%2F5'],
     ['/auth/password', '/en/auth?returnTo=%2Fcreators%2F5'],
-    ['/auth/url', '/en/auth/account?returnTo=%2Fcreators%2F5'],
     ['/auth/login/email', '/en/auth?returnTo=%2Fcreators%2F5'],
     ['/auth/forgot-password', '/en/auth/login/email?returnTo=%2Fcreators%2F5'],
   ])('on %s goes back to %s, keeping returnTo', (pathname, href) => {
     route.pathname = pathname
     route.search = 'returnTo=/creators/5'
+    const messages = renderLayout()
+    expect(backLink(messages)).toHaveAttribute('href', href)
+  })
+
+  it.each([
+    // In sign-up (no page to return to): back to the account step.
+    ['', '/en/auth/account'],
+    // Opened from a page (settings' "no page" link, the studio checklist;
+    // FE-ONB-02): back there.
+    ['returnTo=/studio', '/en/studio'],
+    ['returnTo=/settings', '/en/settings'],
+    ['returnTo=/creators/5', '/en/creators/5'],
+  ])('on /auth/url with %j goes back to %s', (search, href) => {
+    route.pathname = '/auth/url'
+    route.search = search
     const messages = renderLayout()
     expect(backLink(messages)).toHaveAttribute('href', href)
   })
@@ -85,7 +99,7 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
     )
   })
 
-  it.each(['/auth/account', '/auth/verify-email', '/onboarding'])(
+  it.each(['/auth/account', '/auth/verify-email'])(
     'has no back button on %s',
     (pathname) => {
       route.pathname = pathname

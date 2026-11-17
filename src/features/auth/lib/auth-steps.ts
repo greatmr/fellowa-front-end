@@ -1,4 +1,8 @@
-import { authHref } from '@/features/auth/lib/return-to'
+import {
+  addressStepStandsAlone,
+  authHref,
+  safeReturnTo,
+} from '@/features/auth/lib/return-to'
 
 /**
  * The auth frame's per-step chrome (presentation `AuthContainer` @ fdb5f6c):
@@ -17,8 +21,15 @@ const BACK: Readonly<Record<string, string>> = {
   '/auth/reset-password': '/auth/forgot-password',
 }
 
-/** The back target for `pathname` (locale-free), keeping the destination. */
+/**
+ * The back target for `pathname` (locale-free), keeping the destination. The
+ * address step opened from a page rather than sign-up (settings, the studio
+ * checklist; FE-ONB-02) goes back to that page, not to the account step.
+ */
 export function authBackHref(pathname: string, returnTo?: string) {
+  if (pathname === PAGE_ADDRESS_PATH && addressStepStandsAlone(returnTo)) {
+    return safeReturnTo(returnTo)
+  }
   const target = BACK[pathname]
   return target ? authHref(target, returnTo) : null
 }

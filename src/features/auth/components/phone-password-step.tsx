@@ -8,13 +8,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { Form, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import {
   usePhoneLoginMutation,
   useRequestPhoneCodeMutation,
@@ -22,6 +16,7 @@ import {
 import type { Deadline } from '@/features/auth/lib/phone'
 import type { PhoneCodeSent, PhoneSignIn } from '@/features/auth/types'
 
+import { AuthFieldMessage } from './auth-error-line'
 import { AuthScreenHeading } from './auth-heading'
 import { PasswordInput } from './password-input'
 import { PhoneFeedback, PhoneNumber } from './phone-ui'
@@ -147,16 +142,20 @@ export function PhonePasswordStep({
                   autoFocus
                   placeholder={t('password.placeholder')}
                   readOnly={pending}
-                  aria-invalid={fieldState.invalid}
+                  aria-invalid={
+                    fieldState.invalid ||
+                    (!pending && lastAction === 'login' && login.isError)
+                  }
                 />
-                <FormMessage />
+                <AuthFieldMessage />
+                {!pending && lastAction !== 'code' && (
+                  <PhoneFeedback error={login.error} />
+                )}
               </FormItem>
             )}
           />
-          {!pending && (
-            <PhoneFeedback
-              error={lastAction === 'code' ? request.error : login.error}
-            />
+          {!pending && lastAction === 'code' && (
+            <PhoneFeedback error={request.error} />
           )}
           <Button
             type="submit"

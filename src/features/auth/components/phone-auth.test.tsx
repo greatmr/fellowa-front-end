@@ -4,12 +4,14 @@ import { useEffect, useState, type ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
+import fa from '../../../../messages/fa.json'
 import { AuthFlowProvider, useAuthFlow } from './auth-flow-context'
 import { CompleteAccountForm } from './complete-account-form'
 import { PhoneAuthFlow, type PhoneStep } from './phone-auth-flow'
 import { renderAuth } from './test-utils'
 
 const mocked = vi.hoisted(() => ({
+  toast: { success: vi.fn(), error: vi.fn() },
   replace: vi.fn(),
   push: vi.fn(),
   /** The harness's "router": moves it to another step route. */
@@ -22,6 +24,7 @@ const mocked = vi.hoisted(() => ({
   },
 }))
 vi.mock('@/features/auth/server/hook-actions', () => mocked.actions)
+vi.mock('sonner', () => ({ toast: mocked.toast }))
 vi.mock('@/features/auth/server/google-actions', () => ({
   startGoogleSignInAction: vi.fn(),
 }))
@@ -156,6 +159,105 @@ describe('phone entry (LoginOrSignupScreen)', () => {
       phone,
     })
     expect(screen.getByText('0912 123 4567')).toBeInTheDocument()
+  })
+
+  it('groups the number as it is typed, on a numeric keypad (FE-AUTH-06)', async () => {
+    const user = setup()
+    renderFlow()
+    const field = screen.getByLabelText(t.entry.label)
+    expect(field).toHaveAttribute('inputmode', 'numeric')
+    await user.type(field, '0912')
+    expect(field).toHaveValue('0912')
+    await user.type(field, '123')
+    expect(field).toHaveValue('0912 123')
+    await user.type(field, '4567')
+    expect(field).toHaveValue('0912 123 4567')
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.code.title })
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledWith({
+      phone,
+    })
+  })
+
+  it('keeps the caret beside the digit it follows when editing mid-number', async () => {
+    const user = setup()
+    renderFlow()
+    const field = screen.getByLabelText<HTMLInputElement>(t.entry.label)
+    await user.type(field, '09121234567')
+    // Caret after "0912 1": delete that 1.
+    field.setSelectionRange(6, 6)
+    await user.keyboard('{Backspace}')
+    expect(field).toHaveValue('0912 234 567')
+    await act(() => vi.advanceTimersByTimeAsync(20))
+    expect(field.selectionStart).toBe(4)
+  })
+
+  it('deletes the digit before a group space on Backspace', async () => {
+    const user = setup()
+    renderFlow()
+    const field = screen.getByLabelText<HTMLInputElement>(t.entry.label)
+    await user.type(field, '09121234567')
+    // Caret after "0912 ": the space alone would only come back.
+    field.setSelectionRange(5, 5)
+    await user.keyboard('{Backspace}')
+    expect(field).toHaveValue('0911 234 567')
+    await act(() => vi.advanceTimersByTimeAsync(20))
+    expect(field.selectionStart).toBe(3)
+  })
+
+  it('shows Persian digits in fa and still sends the normalised number', async () => {
+    const user = setup()
+    renderAuth(
+      <AuthFlowProvider>
+        <Routes />
+      </AuthFlowProvider>,
+      { locale: 'fa' }
+    )
+    const field = screen.getByLabelText(fa.auth.phone.entry.label)
+    await user.type(field, '09121234567')
+    expect(field).toHaveValue('۰۹۱۲ ۱۲۳ ۴۵۶۷')
+    await user.click(
+      screen.getByRole('button', { name: fa.auth.phone.entry.submit })
+    )
+    await waitFor(() =>
+      expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledWith({
+        phone,
+      })
+    )
+  })
+
+  it.each(['00989121234567', '+98 912 123 4567', '989121234567'])(
+    'regroups a pasted %s and sends it normalised',
+    async (pasted) => {
+      const user = setup()
+      renderFlow()
+      const field = screen.getByLabelText(t.entry.label)
+      await user.click(field)
+      await user.paste(pasted)
+      expect(field).toHaveValue('0912 123 4567')
+      await user.click(screen.getByRole('button', { name: t.entry.submit }))
+      await waitFor(() =>
+        expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledWith({
+          phone,
+        })
+      )
+    }
+  )
+
+  it('shows a server error as one line with an icon under the field', async () => {
+    const user = setup()
+    mocked.actions.requestPhoneCodeForHook.mockResolvedValue(
+      fail(400, 'AUTH_PHONE_INVALID')
+    )
+    renderFlow()
+    const field = screen.getByLabelText(t.entry.label)
+    await user.type(field, phone)
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.tagName).toBe('P')
+    expect(alert.querySelector('svg')).not.toBeNull()
+    expect(alert).not.toHaveClass('border')
+    expect(field).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('offers the password screen when the account has one', async () => {
@@ -355,7 +457,10 @@ describe('code (VerifyCodeScreen)', () => {
       t.errors.codeInvalid
     )
     expect(digitBoxes()[0]!.parentElement).toHaveAttribute('data-shake')
-    for (const box of digitBoxes()) expect(box).toHaveValue('')
+    for (const box of digitBoxes()) {
+      expect(box).toHaveValue('')
+      expect(box).toHaveAttribute('aria-invalid', 'true')
+    }
     expect(mocked.replace).not.toHaveBeenCalled()
   })
 
@@ -369,6 +474,14 @@ describe('code (VerifyCodeScreen)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       t.errors.codeExpired
     )
+    // Every error marks all five boxes (FE-AUTH-06), not only a wrong code.
+    for (const box of digitBoxes()) {
+      expect(box).toHaveAttribute('aria-invalid', 'true')
+    }
+    expect(digitBoxes()[0]!.parentElement).not.toHaveAttribute('data-shake')
+    // Typing again clears the error state.
+    await user.type(digitBoxes()[0]!, '1')
+    expect(digitBoxes()[0]!).not.toHaveAttribute('aria-invalid')
   })
 
   it('locks entry on too many attempts until a new code is sent', async () => {
@@ -381,7 +494,10 @@ describe('code (VerifyCodeScreen)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       t.errors.codeLocked.replace('{time}', '5:00')
     )
-    for (const box of digitBoxes()) expect(box).toBeDisabled()
+    for (const box of digitBoxes()) {
+      expect(box).toBeDisabled()
+      expect(box).toHaveAttribute('aria-invalid', 'true')
+    }
     // The resend wait follows the lockout, not the 120 s cooldown.
     expect(
       screen.getByText(t.code.resendIn.replace('{time}', '5:00'))
@@ -408,7 +524,11 @@ describe('code (VerifyCodeScreen)', () => {
     ).toBeInTheDocument()
     await act(() => vi.advanceTimersByTimeAsync(59_000))
     await user.click(screen.getByRole('button', { name: t.code.resend }))
-    expect(await screen.findByRole('status')).toHaveTextContent(t.code.sent)
+    // A toast, not a panel (FE-AUTH-06).
+    await waitFor(() =>
+      expect(mocked.toast.success).toHaveBeenCalledWith(t.code.sent)
+    )
+    expect(screen.queryByText(t.code.sent)).not.toBeInTheDocument()
     expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(2)
     expect(
       screen.getByText(t.code.resendIn.replace('{time}', '2:00'))
@@ -450,7 +570,7 @@ describe('code (VerifyCodeScreen)', () => {
     const user = setup()
     await toCodeScreen(user)
     await user.click(screen.getByRole('button', { name: t.code.editNumber }))
-    expect(screen.getByLabelText(t.entry.label)).toHaveValue(phone)
+    expect(screen.getByLabelText(t.entry.label)).toHaveValue('0912 123 4567')
   })
 })
 
@@ -536,6 +656,15 @@ describe('complete account (CompleteAccountScreen)', () => {
     expect(await screen.findByText('0912 123 4567')).toBeInTheDocument()
     expect(screen.getByText(/Your mobile number:/)).toBeInTheDocument()
     expect(screen.getByText(t.account.nameHint)).toBeInTheDocument()
+    // Both fields are filled wells (FE-AUTH-06).
+    expect(screen.getByLabelText(t.account.nameLabel)).toHaveAttribute(
+      'data-variant',
+      'filled'
+    )
+    expect(screen.getByLabelText(/^Password/)).toHaveAttribute(
+      'data-variant',
+      'filled'
+    )
   })
 
   it('without the number (a reload), shows the prototype fallback line', async () => {
@@ -593,6 +722,9 @@ describe('complete account (CompleteAccountScreen)', () => {
           .replace('{max}', '80')
       )
     ).toBeInTheDocument()
+    // The error takes the hint's place (FE-AUTH-06): never both.
+    expect(screen.queryByText(t.account.nameHint)).not.toBeInTheDocument()
+    expect(screen.getByText(t.account.passwordHint)).toBeInTheDocument()
     expect(mocked.actions.completeAccountForHook).not.toHaveBeenCalled()
   })
 

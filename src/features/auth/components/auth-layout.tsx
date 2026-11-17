@@ -31,7 +31,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
               title={t('home')}
               className="group rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Logo />
+              <Logo variant="auth" />
             </Link>
             <Suspense fallback={<AuthBackSpacer />}>
               <AuthBackButton />
