@@ -100,7 +100,7 @@ Re-apply these after any `shadcn add --overwrite`.
 |---|---|---|
 | `ui/button.tsx` | `font-semibold`; sizes `sm` h-9 `text-label`, `default` h-10, `lg` h-12 `text-subtitle`, `icon` size-10, **+`icon-sm`** size-9; `link` uses `text-link`; **+`inverse`**, **+`success`** variants; base `btn-tactile` instead of `transition-all`; `default` adds `hover:shadow-sm` | presentation `Button` sizes and variants; press feedback @ `efc3a57` (FE-FND-10) |
 | `ui/badge.tsx` | `px-2.5 text-label font-semibold`; **+tones** `brand violet money amber red neutral` | presentation `Badge` |
-| `ui/input.tsx` | `h-10` | presentation `Input` |
+| `ui/input.tsx` | `h-10`; **+`variant`** (cva): `default` (unchanged outline), `filled` (`bg-muted`, transparent border, `bg-card` on focus; dark keeps a `border-input` hairline except while focused or invalid); `data-variant` | presentation `Input`; filled well from `CompleteAccountScreen` @ `01fb04d` (FE-AUTH-06) |
 | `ui/card.tsx` | `rounded-md` (8px), `shadow-xs`; **+`interactive`** prop (`card-tactile cursor-pointer`) | presentation `Card` (`interactive` @ `efc3a57`, FE-FND-10) |
 | `ui/skeleton.tsx` | `skeleton-shimmer` instead of `animate-pulse` | presentation `.skeleton` |
 | `ui/sheet.tsx` | logical `side` (`start`/`end`/`top`/`bottom`, default `end`); required `closeLabel` prop instead of English "Close"; card surface, `shadow-panel`; overlay `backdrop-blur-overlay` + 200ms fade; panel `ease-out`, 250ms in / 200ms out | RTL and i18n hard rules; timing @ `efc3a57` (FE-FND-10) |

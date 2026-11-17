@@ -123,9 +123,11 @@ describe('after the account step (FQ-17)', () => {
   })
 })
 
-describe('after a Google sign-in (FE-AUTH-05)', () => {
-  const created = { isNewUser: true }
-  const returning = { isNewUser: false }
+describe('after a Google sign-in (FE-AUTH-05, FE-AUTH-06)', () => {
+  const created = { isNewUser: true, needsProfile: false }
+  const returning = { isNewUser: false, needsProfile: false }
+  const unnamedNew = { isNewUser: true, needsProfile: true }
+  const unnamedReturning = { isNewUser: false, needsProfile: true }
   it.each([
     // A new account chooses its page address, keeping the destination.
     [created, undefined, '/auth/url'],
@@ -140,6 +142,19 @@ describe('after a Google sign-in (FE-AUTH-05)', () => {
     [returning, undefined, '/studio'],
     [returning, '/creators/5', '/creators/5'],
     [returning, '//evil.example', '/studio'],
+    // No usable name from Google: the account step first, as for phone.
+    [unnamedNew, undefined, '/auth/account'],
+    [
+      unnamedNew,
+      '/studio',
+      { pathname: '/auth/account', query: { returnTo: '/studio' } },
+    ],
+    [
+      unnamedNew,
+      '/creators/5',
+      { pathname: '/auth/account', query: { returnTo: '/creators/5' } },
+    ],
+    [unnamedReturning, undefined, '/auth/account'],
   ])('%o with returnTo %s → %j', (result, returnTo, expected) => {
     expect(googleSignInDestination(result, returnTo)).toEqual(expected)
   })

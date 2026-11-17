@@ -88,15 +88,18 @@ export function choosesPageAddress(
 }
 
 /**
- * Where a Google sign-in lands (FE-AUTH-05, BE-AUTH-10). A new account goes on
- * to the page address step, as in the prototype (Google gave the name), or
- * back to the page it started from (FQ-17). A returning account goes to its
- * destination, page or not: the studio checklist asks for the address.
+ * Where a Google sign-in lands (FE-AUTH-05, FE-AUTH-06, BE-AUTH-10). An
+ * account Google gave no usable name (`needsProfile`) completes its account
+ * first, as a phone sign-in does. A new account goes on to the page address
+ * step, as in the prototype (Google gave the name), or back to the page it
+ * started from (FQ-17). A returning account goes to its destination, page or
+ * not: the studio checklist asks for the address.
  */
 export function googleSignInDestination(
-  result: { isNewUser: boolean },
+  result: { isNewUser: boolean; needsProfile: boolean },
   returnTo?: string
 ): AuthHref {
+  if (result.needsProfile) return authHref('/auth/account', returnTo)
   return result.isNewUser && !returnsToPage(returnTo)
     ? authHref('/auth/url', returnTo)
     : safeReturnTo(returnTo)

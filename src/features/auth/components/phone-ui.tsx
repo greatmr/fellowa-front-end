@@ -6,6 +6,7 @@ import { hookFeedback } from '@/features/auth/lib/hook-feedback'
 import { phoneGroups } from '@/features/auth/lib/phone'
 import type { ApiError } from '@/lib/api/errors'
 
+import { AuthErrorLine } from './auth-error-line'
 import { AuthFeedback } from './auth-feedback'
 
 type Format = ReturnType<typeof useFormatter>
@@ -16,6 +17,12 @@ function digits(format: Format, value: string) {
     minimumIntegerDigits: value.length,
     useGrouping: false,
   })
+}
+
+/** Every digit of `value` in the active locale's digits, the rest kept. */
+export function useLocaleDigits() {
+  const format = useFormatter()
+  return (value: string) => value.replace(/\d/g, (d) => digits(format, d))
 }
 
 /** `m:ss`, in the active locale's digits. */
@@ -44,38 +51,40 @@ export function PhoneNumber({ phone }: { phone: string }) {
 
 /**
  * The phone screens' error line: their own copy for the phone codes (with the
- * wait time when the API gave one), the shared auth copy otherwise.
+ * wait time when the API gave one), the shared auth copy otherwise. One line
+ * under the field (FE-AUTH-06); centred under the code boxes. An ended
+ * session keeps the panel: it carries the sign-in link.
  */
 export function PhoneFeedback({
   error,
   guarded = false,
+  centered = false,
 }: {
   error: ApiError | null
   guarded?: boolean
+  centered?: boolean
 }) {
   const t = useTranslations('auth.phone.errors')
+  const authT = useTranslations('auth.errors')
   const duration = useDuration()
   const state = hookFeedback(error, guarded)
   if (state.status !== 'error') return null
 
   const key = state.error
-  if (key !== 'codeRateLimited' && key !== 'codeLocked' && !t.has(key)) {
-    return <AuthFeedback state={state} />
-  }
+  if (key === 'expiredSession') return <AuthFeedback state={state} />
   const wait = error?.retryAfterSeconds
   const message =
     key === 'codeRateLimited' || key === 'codeLocked'
       ? wait
         ? t(key, { time: duration(wait) })
         : t(`${key}NoTime`)
-      : t(key)
+      : t.has(key)
+        ? t(key)
+        : authT(key)
 
   return (
-    <p
-      role="alert"
-      className="rounded-md border border-danger-border bg-danger-subtle p-3 text-body text-danger-emphasis"
-    >
+    <AuthErrorLine role="alert" centered={centered}>
       {message}
-    </p>
+    </AuthErrorLine>
   )
 }

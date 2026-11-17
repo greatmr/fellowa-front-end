@@ -8,14 +8,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { Form, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useCompleteAccountMutation } from '@/features/auth/api/auth-hooks'
 import {
@@ -29,6 +22,7 @@ import type { AuthHref } from '@/features/auth/lib/return-to'
 import type { CompleteAccountPayload } from '@/features/auth/types'
 import { useRouter } from '@/i18n/navigation'
 
+import { AuthFieldHint } from './auth-error-line'
 import { AuthFormControl } from './auth-form-control'
 import { PasswordInput } from './password-input'
 import { useAuthFlow } from './auth-flow-context'
@@ -38,7 +32,8 @@ import { PhoneFeedback, PhoneNumber } from './phone-ui'
 /**
  * Step 1 of 2 (presentation `CompleteAccountScreen` @ fdb5f6c): a display name
  * and, optionally, a first password (`PUT /auth/account`). The name is also
- * the page's public name (FQ-17, BE-USER-07). "Skip" still sends the name; it
+ * the page's public name (FQ-17, BE-USER-07). Both fields are filled wells
+ * that show their hint or their error, never both. "Skip" still sends the name; it
  * only leaves the password out. Then the page address step, or straight back
  * to the page the account started from (FQ-17). Not ported: the bottom "back
  * to the previous step" link; the account is signed in by now, and the
@@ -143,6 +138,7 @@ export function CompleteAccountForm({
                 <AuthFormControl serverError={false}>
                   <Input
                     {...field}
+                    variant="filled"
                     type="text"
                     autoComplete="name"
                     autoFocus
@@ -153,8 +149,7 @@ export function CompleteAccountForm({
                     className="h-12"
                   />
                 </AuthFormControl>
-                <FormDescription>{t('account.nameHint')}</FormDescription>
-                <FormMessage />
+                <AuthFieldHint>{t('account.nameHint')}</AuthFieldHint>
               </FormItem>
             )}
           />
@@ -184,6 +179,8 @@ export function CompleteAccountForm({
                 <PasswordInput
                   {...field}
                   value={field.value ?? ''}
+                  variant="filled"
+                  className="h-12"
                   autoComplete="new-password"
                   placeholder={t('account.passwordPlaceholder', {
                     min: PASSWORD_MIN,
@@ -191,8 +188,7 @@ export function CompleteAccountForm({
                   readOnly={pending}
                   aria-invalid={fieldState.invalid}
                 />
-                <FormDescription>{t('account.passwordHint')}</FormDescription>
-                <FormMessage />
+                <AuthFieldHint>{t('account.passwordHint')}</AuthFieldHint>
               </FormItem>
             )}
           />

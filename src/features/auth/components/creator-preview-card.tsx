@@ -4,7 +4,8 @@ import { useTranslations } from 'next-intl'
 /**
  * The live page preview of the address step (presentation
  * `CreatorPreviewCard` @ fdb5f6c): the name saved on the account step and the
- * address being typed, skeletons until there is one. Not ported: the topic
+ * address being typed as `@username` (FQ-18: no `fellowa.ir/` link exists),
+ * skeletons until there is one. Not ported: the topic
  * chips (interests are out, FQ-4) and social icons (socials are not part of
  * sign-up); the row says none are added yet, which is true of a page being
  * created.

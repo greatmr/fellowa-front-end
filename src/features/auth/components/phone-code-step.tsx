@@ -10,6 +10,7 @@ import {
   type ClipboardEvent,
   type KeyboardEvent,
 } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -47,8 +48,10 @@ function useSecondsLeft({ until, setAt }: Deadline) {
 
 /**
  * Step 2a (presentation `VerifyCodeScreen` @ fdb5f6c): the 5-digit SMS code,
- * pasted or typed, submitted as soon as it is complete. Not ported: the demo
- * code banner and its auto-fill button (mock only).
+ * pasted or typed, submitted as soon as it is complete. Any verify error marks
+ * all five boxes and shows one line under them; a new code is confirmed with
+ * a toast. Not ported: the demo code banner and its auto-fill button (mock
+ * only).
  */
 export function PhoneCodeStep({
   phone,
@@ -146,6 +149,7 @@ export function PhoneCodeStep({
       return
     }
     if (!typed) {
+      if (verify.error) verify.reset()
       const next = [...digits]
       next[index] = ''
       setDigits(next)
@@ -181,6 +185,7 @@ export function PhoneCodeStep({
       { phone },
       {
         onSuccess: (sent) => {
+          toast.success(t('code.sent'))
           setLocked(false)
           setDigits(empty())
           onResent(deadlineIn(sent.resendAfterSeconds))
@@ -195,8 +200,8 @@ export function PhoneCodeStep({
     )
   }
 
+  // As designed: any verify error shown turns every box red.
   const verifyFailed = lastAction === 'verify' && verify.isError
-  const wrong = verifyFailed && verify.error?.code === 'AUTH_CODE_INVALID'
   const entryClosed = locked || pending
 
   return (
@@ -258,7 +263,7 @@ export function PhoneCodeStep({
                   index: index + 1,
                   total: PHONE_CODE_LENGTH,
                 })}
-                aria-invalid={wrong || undefined}
+                aria-invalid={verifyFailed || undefined}
                 value={digit ? format.number(Number(digit)) : ''}
                 onChange={(event) => change(index, event.target.value)}
                 onKeyDown={(event) => keyDown(index, event)}
@@ -271,7 +276,7 @@ export function PhoneCodeStep({
                   'focus-visible:border-ring focus-visible:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                   digit ? 'border-primary bg-background' : 'border-input',
-                  'aria-invalid:border-destructive aria-invalid:ring-destructive/20'
+                  'aria-invalid:border-destructive aria-invalid:bg-danger-subtle/30 aria-invalid:ring-destructive/20'
                 )}
               />
             ))}
@@ -279,20 +284,10 @@ export function PhoneCodeStep({
         </div>
 
         {lastAction === 'verify' && !pending && (
-          <PhoneFeedback error={verify.error} />
+          <PhoneFeedback error={verify.error} centered />
         )}
         {lastAction === 'resend' && !pending && (
-          <>
-            <PhoneFeedback error={resend.error} />
-            {resend.isSuccess && (
-              <p
-                role="status"
-                className="rounded-md border border-success-border bg-success-subtle p-3 text-body text-success-emphasis"
-              >
-                {t('code.sent')}
-              </p>
-            )}
-          </>
+          <PhoneFeedback error={resend.error} centered />
         )}
 
         <Button

@@ -162,7 +162,11 @@ export async function PageAddressScreen({ locale, searchParams }: StepProps) {
     return redirect({ href: safeReturnTo(returnTo), locale })
   }
   return (
-    <PageAddressForm destination={safeReturnTo(returnTo)} returnTo={returnTo} />
+    <PageAddressForm
+      destination={safeReturnTo(returnTo)}
+      returnTo={returnTo}
+      profileName={session.user.displayName}
+    />
   )
 }
 

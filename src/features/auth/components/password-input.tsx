@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 import { AuthFormControl } from './auth-form-control'
 
@@ -21,7 +22,7 @@ export function PasswordInput(
       <AuthFormControl serverError={false}>
         <Input
           {...props}
-          className="pe-12"
+          className={cn('pe-12', props.className)}
           type={visible ? 'text' : 'password'}
           dir="ltr"
         />
