@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import type { ComponentProps } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -33,8 +34,12 @@ const STEP_ICONS: Record<SetupStepId, LucideIcon> = {
  * (FE-PAYOUT-01 is blocked), so it shows state only — never a button that
  * leads nowhere.
  */
-const STEP_HREFS: Partial<Record<SetupStepId, string>> = {
-  basics: '/onboarding',
+type Href = ComponentProps<typeof Link>['href']
+
+const STEP_HREFS: Partial<Record<SetupStepId, Href>> = {
+  // The address step (FE-ONB-02, FQ-20): choosing the username creates the
+  // page; `returnTo` opens it outside sign-up and brings the account back.
+  basics: { pathname: '/auth/url', query: { returnTo: '/studio' } },
   firstTier: '/studio/tiers',
   firstPost: '/studio/posts/new',
 }

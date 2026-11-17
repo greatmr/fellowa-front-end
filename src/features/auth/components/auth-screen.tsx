@@ -145,7 +145,8 @@ export async function AccountScreen({ locale, searchParams }: StepProps) {
 }
 
 /**
- * `/auth/url` (FE-AUTH-04): the page address, step 2 of 2. An account that
+ * `/auth/url` (FE-AUTH-04): the page address, step 2 of 2 of sign-up, or on
+ * its own when opened from settings or the studio (FE-ONB-02). An account that
  * already has a page has nothing to choose here and goes on.
  */
 export async function PageAddressScreen({ locale, searchParams }: StepProps) {

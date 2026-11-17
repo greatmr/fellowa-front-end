@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  addressStepStandsAlone,
   afterAccountDestination,
   choosesPageAddress,
   googleSignInDestination,
@@ -11,15 +12,14 @@ import {
 } from './return-to'
 
 describe('safeReturnTo', () => {
-  it.each([
-    '/studio',
-    '/studio/posts/new',
-    '/memberships',
-    '/settings',
-    '/onboarding',
-  ])('accepts existing private route %s', (path) =>
-    expect(safeReturnTo(path)).toBe(path)
+  it.each(['/studio', '/studio/posts/new', '/memberships', '/settings'])(
+    'accepts existing private route %s',
+    (path) => expect(safeReturnTo(path)).toBe(path)
   )
+
+  it('no longer accepts the retired /onboarding (FE-ONB-02)', () => {
+    expect(safeReturnTo('/onboarding')).toBe('/studio')
+  })
 
   it.each(['/en/studio/tiers', '/fa/studio/tiers'])(
     'canonicalizes locale-prefixed %s',
@@ -102,7 +102,9 @@ describe('after the account step (FQ-17)', () => {
     [
       newAccount,
       '/studio',
-      { pathname: '/auth/url', query: { returnTo: '/studio' } },
+      // The default destination does not travel: a returnTo on /auth/url
+      // means it was opened outside sign-up (FE-ONB-02).
+      '/auth/url',
       true,
     ],
     // Started from a page: straight back to it.
@@ -113,6 +115,12 @@ describe('after the account step (FQ-17)', () => {
   ])('%o with returnTo %s → %j', (user, returnTo, expected, choosesAddress) => {
     expect(afterAccountDestination(user, returnTo)).toEqual(expected)
     expect(choosesPageAddress(user, returnTo)).toBe(choosesAddress)
+  })
+
+  it('treats the address step as standalone only when opened with a returnTo (FE-ONB-02)', () => {
+    expect(addressStepStandsAlone(undefined)).toBe(false)
+    expect(addressStepStandsAlone('/settings')).toBe(true)
+    expect(addressStepStandsAlone('/studio')).toBe(true)
   })
 
   it('only a non-studio destination counts as a page to return to', () => {
@@ -134,7 +142,9 @@ describe('after a Google sign-in (FE-AUTH-05, FE-AUTH-06)', () => {
     [
       created,
       '/studio',
-      { pathname: '/auth/url', query: { returnTo: '/studio' } },
+      // The default destination does not travel: a returnTo on /auth/url
+      // means it was opened outside sign-up (FE-ONB-02).
+      '/auth/url',
     ],
     // Started from a page: straight back to it (FQ-17).
     [created, '/creators/5', '/creators/5'],

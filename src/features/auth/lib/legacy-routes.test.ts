@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { legacyAuthRedirects } from './legacy-routes'
 
 describe('legacyAuthRedirects', () => {
-  it('sends the old entries to /auth, temporarily, in both locales', () => {
+  it('sends the retired routes on, temporarily, in both locales', () => {
     expect(legacyAuthRedirects()).toEqual([
       { source: '/auth/login', destination: '/auth', permanent: false },
       {
@@ -15,6 +15,13 @@ describe('legacyAuthRedirects', () => {
       {
         source: '/:locale(fa|en)/auth/register',
         destination: '/:locale/auth',
+        permanent: false,
+      },
+      // FE-ONB-02 (FQ-20): the old onboarding opens the address step.
+      { source: '/onboarding', destination: '/auth/url', permanent: false },
+      {
+        source: '/:locale(fa|en)/onboarding',
+        destination: '/:locale/auth/url',
         permanent: false,
       },
     ])

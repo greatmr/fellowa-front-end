@@ -26,7 +26,10 @@ import {
   cleanAddressInput,
   type AddressStatus,
 } from '@/features/auth/lib/page-address'
-import { authHref } from '@/features/auth/lib/return-to'
+import {
+  addressStepStandsAlone,
+  safeReturnTo,
+} from '@/features/auth/lib/return-to'
 import { ALIAS_MIN_LENGTH } from '@/features/auth/schemas'
 import { Link, useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
@@ -56,7 +59,8 @@ const BAD: readonly AddressStatus[] = [
 ]
 
 /**
- * Step 2 of 2 (presentation `OnboardingUrlScreen` @ fdb5f6c): the page's
+ * Step 2 of 2 of sign-up, or on its own from settings or the studio checklist
+ * (presentation `OnboardingUrlScreen` @ fdb5f6c; FE-ONB-02): the page's
  * address, checked as it is typed (`GET /auth/alias/availability`, BE-AUTH-09)
  * and saved with `PUT /auth/alias`, which creates the page. The live preview
  * in the visual column follows the field. The name comes from the owner
@@ -82,6 +86,9 @@ export function PageAddressForm({
   const statusId = useId()
   const { pageName, setPageName, setPageAddress } = useAuthFlow()
   const name = profileName ?? pageName
+  // Opened from settings or the studio checklist rather than sign-up
+  // (FE-ONB-02): no step count, and "back" returns there.
+  const inSignUp = !addressStepStandsAlone(returnTo)
   // A Latin page name gives a first address, as in the prototype.
   const [value, setValue] = useState(() => addressFromName(name))
   const [dropped, setDropped] = useState(false)
@@ -155,7 +162,9 @@ export function PageAddressForm({
 
   return (
     <div className="w-full">
-      <AuthStepIndicator current={2} total={SIGN_UP_STEPS} />
+      {inSignUp ? (
+        <AuthStepIndicator current={2} total={SIGN_UP_STEPS} />
+      ) : null}
       <AuthScreenHeading
         tone="inverse"
         title={t('title')}
@@ -298,7 +307,7 @@ export function PageAddressForm({
 
         <div className="text-center">
           <Link
-            href={authHref('/auth/account', returnTo)}
+            href={inSignUp ? '/auth/account' : safeReturnTo(returnTo)}
             className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             {t('back')}

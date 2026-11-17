@@ -62,7 +62,11 @@ function setup() {
  * `pageName`: what the account step left in memory. `profileName`: the owner
  * profile's `displayName` the route reads (`null` for the placeholder).
  */
-function renderStep(pageName = '', profileName: string | null = null) {
+function renderStep(
+  pageName = '',
+  profileName: string | null = null,
+  returnTo?: string
+) {
   function Seeded() {
     const { setPageName } = useAuthFlow()
     const [ready, setReady] = useState(false)
@@ -72,7 +76,11 @@ function renderStep(pageName = '', profileName: string | null = null) {
     }, [setPageName])
     return ready ? (
       <>
-        <PageAddressForm destination="/studio" profileName={profileName} />
+        <PageAddressForm
+          destination={returnTo ?? '/studio'}
+          returnTo={returnTo}
+          profileName={profileName}
+        />
         <AuthVisual samples={null} />
       </>
     ) : null
@@ -134,6 +142,36 @@ describe('page address (OnboardingUrlScreen)', () => {
     expect(
       screen.getAllByRole('heading', { hidden: true }).map((h) => h.textContent)
     ).toEqual([t.title])
+  })
+
+  it('stands alone when reached from settings: no step count, back to settings (FE-ONB-02)', async () => {
+    const user = setup()
+    renderStep('', 'Sara', '/settings')
+    await user.clear(await field())
+    await user.type(await field(), 'sara_art')
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: t.back })).toHaveAttribute(
+      'href',
+      '/en/settings'
+    )
+    await settle()
+    await waitFor(() => expect(submit()).toBeEnabled())
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/settings')
+    )
+    expect(mocked.actions.setAliasForHook).toHaveBeenCalledWith({
+      alias: 'sara_art',
+    })
+  })
+
+  it('in sign-up, goes back to the account step', async () => {
+    setup()
+    renderStep('Sara')
+    expect(await screen.findByRole('link', { name: t.back })).toHaveAttribute(
+      'href',
+      '/en/auth/account'
+    )
   })
 
   it('does not prefill from a Persian name', async () => {

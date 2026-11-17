@@ -87,8 +87,12 @@ export function SettingsView({
               {t('pageName.noPage')}
             </p>
             <Button asChild variant="outline">
+              {/* FE-ONB-02 (FQ-20): the address step, then back here. */}
               <Link
-                href={{ pathname: '/onboarding', query: { step: 'username' } }}
+                href={{
+                  pathname: '/auth/url',
+                  query: { returnTo: '/settings' },
+                }}
               >
                 {t('pageName.noPageAction')}
               </Link>
