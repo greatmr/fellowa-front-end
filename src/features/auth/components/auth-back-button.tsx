@@ -21,10 +21,9 @@ export function AuthBackSpacer() {
 export function AuthBackButton() {
   const t = useTranslations('auth.layout')
   const pathname = usePathname()
-  const returnTo = requestedReturnTo(
-    useSearchParams().get('returnTo') ?? undefined
-  )
-  const href = authBackHref(pathname, returnTo)
+  const searchParams = useSearchParams()
+  const returnTo = requestedReturnTo(searchParams.get('returnTo') ?? undefined)
+  const href = authBackHref(pathname, returnTo, searchParams.get('from'))
   if (!href) return <AuthBackSpacer />
 
   return (

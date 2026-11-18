@@ -239,6 +239,7 @@
       "rejected": "This username was not accepted. Try another one.",
       "submit": "Continue",
       "pending": "Creating your page…",
+      "renaming": "Saving your username…",
       "back": "Back"
     },
     "categoryList": {

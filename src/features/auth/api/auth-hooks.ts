@@ -62,7 +62,6 @@ export const authKeys = {
   mutation: (name: string) => ['auth', name] as const,
   aliasAvailability: (alias: string) =>
     ['auth', 'alias-availability', alias] as const,
-  interestsAll: ['auth', 'interests'] as const,
   interests: (viewerId: number) => ['auth', 'interests', viewerId] as const,
 }
 
@@ -74,7 +73,7 @@ type MutationOptions<TData, TVariables> = Omit<
 function useAuthMutation<TData, TVariables>(
   name: string,
   action: (variables: TVariables) => Promise<ApiActionResult<TData>>,
-  cacheChange: 'identity' | 'profile' | 'interests' | null,
+  cacheChange: 'identity' | 'profile' | null,
   options?: MutationOptions<TData, TVariables>
 ) {
   const queryClient = useQueryClient()
@@ -92,15 +91,6 @@ function useAuthMutation<TData, TVariables>(
       if (cacheChange === 'identity') queryClient.removeQueries()
       if (cacheChange === 'profile') {
         await queryClient.invalidateQueries({ queryKey: authKeys.profileAll })
-      }
-      if (cacheChange === 'interests') {
-        // The saved set is stale now. The step leaves at once, so nothing is
-        // refetched here (server actions run one at a time, and a refetch
-        // would hold the navigation back); the next screen to read it does.
-        await queryClient.invalidateQueries({
-          queryKey: authKeys.interestsAll,
-          refetchType: 'none',
-        })
       }
       await options?.onSuccess?.(data, variables, onMutateResult, context)
     },
@@ -181,15 +171,28 @@ export function useInterestsQuery(viewerId: number) {
   })
 }
 
+/**
+ * Replaces the account's interests. The PUT answers the saved set, which
+ * becomes the cached `GET /user/interests` at once: a return to the step
+ * (back from the category step) shows it, never the set it replaced, and no
+ * refetch holds the navigation back (server actions run one at a time).
+ */
 export function useSaveInterestsMutation(
   viewerId: number,
   options?: MutationOptions<number[], InterestsPayload>
 ) {
+  const queryClient = useQueryClient()
   return useAuthMutation(
     'save-interests',
     (input: InterestsPayload) => saveInterestsForHook(viewerId, input),
-    'interests',
-    options
+    null,
+    {
+      ...options,
+      onSuccess: async (saved, variables, onMutateResult, context) => {
+        queryClient.setQueryData(authKeys.interests(viewerId), saved)
+        await options?.onSuccess?.(saved, variables, onMutateResult, context)
+      },
+    }
   )
 }
 

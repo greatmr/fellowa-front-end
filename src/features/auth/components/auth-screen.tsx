@@ -13,8 +13,8 @@ import { ResetPasswordForm } from '@/features/auth/components/reset-password-for
 import { VerificationForm } from '@/features/auth/components/verification-form'
 import {
   INTERESTS_PATH,
-  PAGE_ADDRESS_PATH,
   PAGE_CATEGORY_PATH,
+  returnsFromInterests,
 } from '@/features/auth/lib/auth-steps'
 import { googleErrorFrom } from '@/features/auth/lib/google-error'
 import {
@@ -155,9 +155,9 @@ export async function AccountScreen({ locale, searchParams }: StepProps) {
 /**
  * `/auth/url` (FE-AUTH-04): the page address, step 2 of 4 of sign-up, then on
  * to the interests (FE-AUTH-08); or on its own when opened from settings or
- * the studio (FE-ONB-02), where an account that already has a page has
- * nothing to choose and goes on. In sign-up, an account with a page is back
- * from the interests step: it sees its address and may change it.
+ * the studio (FE-ONB-02). An account that already has a page has nothing to
+ * choose and goes on — unless it is back from the interests step in sign-up
+ * (`BACK_FROM_INTERESTS`): then it sees its page's address and may change it.
  */
 export async function PageAddressScreen({ locale, searchParams }: StepProps) {
   const query = await searchParams
@@ -170,7 +170,8 @@ export async function PageAddressScreen({ locale, searchParams }: StepProps) {
     return redirect({ href: '/auth/verify-email', locale })
   }
   const standsAlone = addressStepStandsAlone(returnTo)
-  if (standsAlone && !choosesPageAddress(session.user)) {
+  const backFromInterests = !standsAlone && returnsFromInterests(query.from)
+  if (!choosesPageAddress(session.user) && !backFromInterests) {
     return redirect({ href: safeReturnTo(returnTo), locale })
   }
   return (
@@ -178,7 +179,8 @@ export async function PageAddressScreen({ locale, searchParams }: StepProps) {
       destination={standsAlone ? safeReturnTo(returnTo) : INTERESTS_PATH}
       returnTo={returnTo}
       profileName={session.user.displayName}
-      currentAddress={session.user.alias}
+      currentAddress={backFromInterests ? session.user.alias : null}
+      backFromInterests={backFromInterests}
     />
   )
 }
@@ -186,7 +188,9 @@ export async function PageAddressScreen({ locale, searchParams }: StepProps) {
 /**
  * `/auth/interests` (FE-AUTH-08): the categories the account likes, step 3 of
  * 4 of sign-up, then the page's category. Any signed-in account may open it,
- * page or not: the set is its own, and skipping changes nothing.
+ * page or not: the set is its own, and skipping changes nothing. An account
+ * with no page (a fan) goes on to its destination: it has no category to
+ * give, and is not pushed into making a page.
  */
 export async function InterestsScreen({ locale, searchParams }: StepProps) {
   const query = await searchParams
@@ -201,7 +205,11 @@ export async function InterestsScreen({ locale, searchParams }: StepProps) {
   return (
     <InterestsForm
       viewerId={session.user.id}
-      next={authHref(PAGE_CATEGORY_PATH, returnTo)}
+      next={
+        session.user.alias === null
+          ? safeReturnTo(returnTo)
+          : authHref(PAGE_CATEGORY_PATH, returnTo)
+      }
     />
   )
 }
@@ -210,7 +218,7 @@ export async function InterestsScreen({ locale, searchParams }: StepProps) {
  * `/auth/category` (FE-AUTH-08, FQ-23): the page's one category, step 4 of 4
  * of sign-up. It starts from the owner profile the session has just read
  * (`categoryId`), so no other request is made for it. An account with no page
- * has no category to choose and goes to the address step first.
+ * has no category to choose and goes on to its destination.
  */
 export async function PageCategoryScreen({ locale, searchParams }: StepProps) {
   const query = await searchParams
@@ -223,7 +231,7 @@ export async function PageCategoryScreen({ locale, searchParams }: StepProps) {
     return redirect({ href: '/auth/verify-email', locale })
   }
   if (session.user.alias === null) {
-    return redirect({ href: authHref(PAGE_ADDRESS_PATH, returnTo), locale })
+    return redirect({ href: safeReturnTo(returnTo), locale })
   }
   return (
     <PageCategoryForm

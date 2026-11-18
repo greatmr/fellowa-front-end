@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
+import type { QueryClient } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -73,9 +74,12 @@ beforeEach(() => {
 function renderStep({
   next = '/auth/category',
   locale = 'en',
+  queryClient,
 }: {
   next?: ComponentProps<typeof InterestsForm>['next']
   locale?: 'en' | 'fa'
+  /** Shared across two renders: a return to the step in the same tab. */
+  queryClient?: QueryClient
 } = {}) {
   return renderAuth(
     <AuthFlowProvider>
@@ -84,7 +88,7 @@ function renderStep({
         <AuthVisual samples={<p>default samples</p>} />
       </aside>
     </AuthFlowProvider>,
-    { locale }
+    { locale, ...(queryClient ? { queryClient } : {}) }
   )
 }
 
@@ -171,6 +175,43 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     expect(mocked.toast.success).toHaveBeenCalledWith(
       en.auth.phone.toast.interestsSaved
     )
+  })
+
+  it('back on the step after saving, shows the saved set at once, not the one it replaced', async () => {
+    const user = userEvent.setup()
+    mocked.auth.interestsForHook.mockResolvedValue(ok([2]))
+    // The PUT answers the saved set, in list order.
+    mocked.auth.saveInterestsForHook.mockResolvedValue(ok([4, 7]))
+    const first = renderStep()
+    await waitFor(() =>
+      expect(chip('پادکست')).toHaveAttribute('aria-pressed', 'true')
+    )
+    await user.click(chip('پادکست'))
+    await user.click(chip('موسیقی'))
+    await user.click(chip('ویدیو'))
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/category')
+    )
+    first.unmount()
+
+    // Back from the category step: the step reads the set again, and that
+    // read is still out. The old set must not be what a tap builds on.
+    const reread = deferred<ReturnType<typeof ok<number[]>>>()
+    mocked.auth.interestsForHook.mockReturnValue(reread.promise)
+    renderStep({ queryClient: first.queryClient })
+    expect(chip('ویدیو')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('موسیقی')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('پادکست')).toHaveAttribute('aria-pressed', 'false')
+    await user.click(chip('طراحی'))
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.auth.saveInterestsForHook).toHaveBeenLastCalledWith(
+        viewerId,
+        { categoryIds: [4, 7, 1] }
+      )
+    )
+    reread.resolve(ok([4, 7]))
   })
 
   it('sends once and shows that it is saving', async () => {
@@ -376,5 +417,26 @@ describe('interests visual column (AuthLayout [C2])', () => {
     expect(cardOf(creators.arman)).toHaveAttribute('data-match', 'true')
     expect(cardOf(creators.sara)).not.toHaveAttribute('data-match')
     expect(cardOf(creators.sara)).toHaveClass('opacity-40')
+  })
+
+  it('gives a picked category beyond the first six a card of its own, first', async () => {
+    const user = userEvent.setup()
+    renderStep()
+    await column().findByText(t.preview.badge)
+    expect(column().queryByText('عکاسی')).not.toBeInTheDocument()
+
+    // The seventh category: it takes the last card, and the rest dim.
+    await user.click(screen.getByRole('button', { name: 'عکاسی' }))
+    await waitFor(() =>
+      expect(cardOf(creators.mahsa)).toHaveAttribute('data-match', 'true')
+    )
+    expect(cardOf(creators.mahsa)).toHaveTextContent('عکاسی')
+    expect(
+      column()
+        .getAllByText(new RegExp(Object.values(creators).join('|')))
+        .map((node) => node.textContent)[0]
+    ).toBe(creators.mahsa)
+    expect(column().queryByText('آموزش')).not.toBeInTheDocument()
+    expect(cardOf(creators.sara)).toHaveTextContent('ویدیو')
   })
 })
