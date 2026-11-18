@@ -845,9 +845,10 @@ describe('complete account (CompleteAccountScreen)', () => {
       'aria-valuenow',
       '1'
     )
+    // Account, address, interests (FE-AUTH-08).
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuemax',
-      '2'
+      '3'
     )
     const skip = screen.getByRole('button', { name: t.account.skip })
     expect(skip).toBeDisabled()

@@ -28,11 +28,13 @@ const {
   changePasswordForHook,
   confirmPasswordResetForHook,
   exchangeGoogleCodeForHook,
+  interestsForHook,
   loginForHook,
   logoutForHook,
   ownProfileForHook,
   requestPasswordResetForHook,
   resendEmailForHook,
+  saveInterestsForHook,
   setAliasForHook,
   verifyEmailForHook,
   verifyAuthTokenForHook,
@@ -613,5 +615,123 @@ describe('verification states against the backend contract', () => {
       )
     )
     expect(await resendEmailForHook()).toEqual({ ok: true, data: null })
+  })
+})
+
+describe('interests against the backend contract (BE-USER-08)', () => {
+  let saved: unknown = null
+
+  beforeEach(() => {
+    saved = null
+    server.use(
+      http.get(`${apiOrigin}/user/interests`, ({ request: upstream }) => {
+        upstreamCalls++
+        expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
+        return HttpResponse.json({
+          data: { categoryIds: [2, 9] },
+          errors: null,
+        })
+      }),
+      http.put(`${apiOrigin}/user/interests`, async ({ request: upstream }) => {
+        upstreamCalls++
+        expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
+        saved = await upstream.json()
+        return HttpResponse.json({
+          data: { categoryIds: [1, 3] },
+          errors: null,
+        })
+      })
+    )
+  })
+
+  it('reads and replaces the set of the signed-in account', async () => {
+    request.cookies.set(sessionCookieName, token())
+    expect(await interestsForHook(42)).toEqual({ ok: true, data: [2, 9] })
+    expect(await saveInterestsForHook(42, { categoryIds: [3, 1] })).toEqual({
+      ok: true,
+      data: [1, 3],
+    })
+    expect(saved).toEqual({ categoryIds: [3, 1] })
+  })
+
+  it('refuses a cookie that now belongs to another account', async () => {
+    request.cookies.set(sessionCookieName, token())
+    expect(await interestsForHook(7)).toEqual({
+      ok: false,
+      status: 401,
+      code: 'SESSION_CHANGED',
+      isNetworkError: false,
+    })
+    expect(await saveInterestsForHook(7, { categoryIds: [1] })).toMatchObject({
+      ok: false,
+      status: 401,
+      code: 'SESSION_CHANGED',
+    })
+    expect(saved).toBeNull()
+  })
+
+  it('answers 401 without a session, before the API', async () => {
+    expect(await interestsForHook(42)).toMatchObject({
+      ok: false,
+      status: 401,
+    })
+    expect(await saveInterestsForHook(42, { categoryIds: [1] })).toMatchObject({
+      ok: false,
+      status: 401,
+    })
+    expect(upstreamCalls).toBe(0)
+  })
+
+  it.each([
+    [[1, 1]],
+    [[0]],
+    [[32768]],
+    [[1.5]],
+    [Array.from({ length: 51 }, (_, index) => index + 1)],
+  ])('refuses %j before it reaches the API', async (categoryIds) => {
+    request.cookies.set(sessionCookieName, token())
+    expect(await saveInterestsForHook(42, { categoryIds })).toEqual({
+      ok: false,
+      status: 400,
+      code: 'INVALID_REQUEST',
+    })
+    expect(upstreamCalls).toBe(0)
+  })
+
+  it('refuses a save from another origin', async () => {
+    request.cookies.set(sessionCookieName, token())
+    request.origin = 'https://evil.example'
+    expect(await saveInterestsForHook(42, { categoryIds: [1] })).toEqual({
+      ok: false,
+      status: 403,
+      code: 'INVALID_REQUEST',
+    })
+    expect(upstreamCalls).toBe(0)
+  })
+
+  it('passes on 400 USER_CATEGORY_NOT_FOUND with its code', async () => {
+    request.cookies.set(sessionCookieName, token())
+    server.use(
+      http.put(`${apiOrigin}/user/interests`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Category not found',
+                code: 'USER_CATEGORY_NOT_FOUND',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      )
+    )
+    expect(await saveInterestsForHook(42, { categoryIds: [999] })).toEqual({
+      ok: false,
+      status: 400,
+      code: 'USER_CATEGORY_NOT_FOUND',
+      isNetworkError: false,
+    })
   })
 })

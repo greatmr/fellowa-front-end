@@ -59,10 +59,11 @@ const BAD: readonly AddressStatus[] = [
 ]
 
 /**
- * Step 2 of 2 of sign-up, or on its own from settings or the studio checklist
+ * Step 2 of 3 of sign-up, or on its own from settings or the studio checklist
  * (presentation `OnboardingUrlScreen` @ fdb5f6c; FE-ONB-02): the page's
  * address, checked as it is typed (`GET /auth/alias/availability`, BE-AUTH-09)
- * and saved with `PUT /auth/alias`, which creates the page. The live preview
+ * and saved with `PUT /auth/alias`, which creates the page, or renames it when
+ * the account is back from the interests step (FE-AUTH-08). The live preview
  * in the visual column follows the field. The name comes from the owner
  * profile, so a Google sign-up or a reload still shows it (FE-AUTH-06); the
  * in-memory name from the account step covers a profile read without one.
@@ -73,12 +74,15 @@ export function PageAddressForm({
   destination,
   returnTo,
   profileName,
+  currentAddress = null,
 }: {
   /** Where the account goes once the page has its address. */
   destination: string
   returnTo?: string
   /** The owner profile's `displayName`; `null` while it is the placeholder. */
   profileName: string | null
+  /** The page's address when it already has one (`alias`), else `null`. */
+  currentAddress?: string | null
 }) {
   const t = useTranslations('auth.url')
   const toastT = useTranslations('auth.phone.toast')
@@ -89,8 +93,11 @@ export function PageAddressForm({
   // Opened from settings or the studio checklist rather than sign-up
   // (FE-ONB-02): no step count, and "back" returns there.
   const inSignUp = !addressStepStandsAlone(returnTo)
-  // A Latin page name gives a first address, as in the prototype.
-  const [value, setValue] = useState(() => addressFromName(name))
+  // The page's own address; else a Latin page name gives a first one, as in
+  // the prototype.
+  const [value, setValue] = useState(
+    () => currentAddress ?? addressFromName(name)
+  )
   const [dropped, setDropped] = useState(false)
   const [takenOnSave, setTakenOnSave] = useState<string | null>(null)
   const submitting = useRef(false)
@@ -134,11 +141,18 @@ export function PageAddressForm({
     event.preventDefault()
     if (submitting.current || save.isPending || !canSaveAddress(status)) return
     submitting.current = true
+    // Back from the interests step with the address unchanged: nothing to save.
+    if (value === currentAddress) {
+      router.replace(destination)
+      return
+    }
     save.mutate(
       { alias: value },
       {
         onSuccess: () => {
-          toast.success(toastT('pageCreated'))
+          toast.success(
+            toastT(currentAddress === null ? 'pageCreated' : 'saved')
+          )
           router.replace(destination)
         },
         onError: (error) => {

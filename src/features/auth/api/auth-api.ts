@@ -10,6 +10,7 @@ import type {
   ForgotPasswordPayload,
   GoogleAuthPayload,
   GoogleSignIn,
+  InterestsPayload,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -97,6 +98,10 @@ const googleSignInSchema = z.object({
 const completedAccountSchema = z.object({
   displayName: z.string(),
   hasPassword: z.boolean(),
+})
+/** BE-USER-08 `UserInterests`: ids only, in `GET /landing/categories` order. */
+const interestsSchema = z.object({
+  categoryIds: z.array(z.number().int().positive().safe()),
 })
 
 export async function submitCredentials(
@@ -258,4 +263,27 @@ export async function completeAccount(
     withBearer(token)
   )
   return parseEnvelope(completedAccountSchema, response, invalid)
+}
+
+/** `GET /user/interests` (BE-USER-08): the caller's liked category ids. */
+export async function fetchInterests(token: string): Promise<number[]> {
+  const response = await apiGet<unknown>('/user/interests', withBearer(token))
+  return parseEnvelope(interestsSchema, response, invalid).categoryIds
+}
+
+/**
+ * `PUT /user/interests` (BE-USER-08): replaces the caller's whole set and
+ * answers the saved one. An unknown id is 400 `USER_CATEGORY_NOT_FOUND`, and
+ * nothing changed.
+ */
+export async function saveInterests(
+  token: string,
+  categoryIds: number[]
+): Promise<number[]> {
+  const response = await apiPut<unknown, InterestsPayload>(
+    '/user/interests',
+    { categoryIds },
+    withBearer(token)
+  )
+  return parseEnvelope(interestsSchema, response, invalid).categoryIds
 }

@@ -2,12 +2,16 @@
 
 import { z } from 'zod'
 
-import { listExploreCreators } from '@/features/explore/api/explore-api'
+import {
+  listExploreCategories,
+  listExploreCreators,
+} from '@/features/explore/api/explore-api'
 import {
   InvalidExploreResponseError,
   exploreQuerySchema,
 } from '@/features/explore/schemas/creator'
 import type {
+  ExploreCategory,
   ExploreCreatorPage,
   ExploreQuery,
 } from '@/features/explore/types/creator'
@@ -15,6 +19,23 @@ import { readOptionalSessionToken } from '@/features/auth/server'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 
 const viewerSchema = z.number().int().positive().safe().nullable()
+
+function invalidExplore(error: unknown) {
+  return error instanceof InvalidExploreResponseError
+    ? { code: 'INVALID_EXPLORE_RESPONSE' }
+    : undefined
+}
+
+/**
+ * The public category list (BE-LAND-07) for a client screen: the sign-up
+ * interests step (FE-AUTH-08). Unlike the server loader, a failure reaches
+ * the caller, which offers a retry. No token: the list is the same for all.
+ */
+export async function listExploreCategoriesForHook(): Promise<
+  ApiActionResult<ExploreCategory[]>
+> {
+  return runApiAction(() => listExploreCategories(), invalidExplore)
+}
 
 /**
  * Explore lists are public data; a token only lets the backend leave the
@@ -42,9 +63,6 @@ export async function listExploreCreatorsForHook(
   }
   return runApiAction(
     () => listExploreCreators(query.data, token),
-    (error) =>
-      error instanceof InvalidExploreResponseError
-        ? { code: 'INVALID_EXPLORE_RESPONSE' }
-        : undefined
+    invalidExplore
   )
 }

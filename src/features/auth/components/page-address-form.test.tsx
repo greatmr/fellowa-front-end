@@ -11,12 +11,19 @@ import { renderAuth } from './test-utils'
 
 const mocked = vi.hoisted(() => ({
   replace: vi.fn(),
+  toast: { success: vi.fn() },
   actions: {
     aliasAvailabilityForHook: vi.fn(),
     setAliasForHook: vi.fn(),
   },
 }))
 vi.mock('@/features/auth/server/hook-actions', () => mocked.actions)
+// Imported by the visual column's interests preview; not used on this step.
+vi.mock('@/features/explore/server/actions', () => ({
+  listExploreCategoriesForHook: vi.fn(),
+  listExploreCreatorsForHook: vi.fn(),
+}))
+vi.mock('sonner', () => ({ toast: mocked.toast }))
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useRouter: () => ({ replace: mocked.replace }),
@@ -61,11 +68,14 @@ function setup() {
 /**
  * `pageName`: what the account step left in memory. `profileName`: the owner
  * profile's `displayName` the route reads (`null` for the placeholder).
+ * `currentAddress`: the page's alias, once it has one. The destination is the
+ * route's: the interests step in sign-up, `returnTo` when it stands alone.
  */
 function renderStep(
   pageName = '',
   profileName: string | null = null,
-  returnTo?: string
+  returnTo?: string,
+  currentAddress: string | null = null
 ) {
   function Seeded() {
     const { setPageName } = useAuthFlow()
@@ -77,9 +87,10 @@ function renderStep(
     return ready ? (
       <>
         <PageAddressForm
-          destination={returnTo ?? '/studio'}
+          destination={returnTo ?? '/auth/interests'}
           returnTo={returnTo}
           profileName={profileName}
+          currentAddress={currentAddress}
         />
         <AuthVisual samples={null} />
       </>
@@ -97,13 +108,17 @@ const submit = () => screen.getByRole('button', { name: t.submit })
 const settle = () => act(() => vi.advanceTimersByTimeAsync(400))
 
 describe('page address (OnboardingUrlScreen)', () => {
-  it('is step 2 of 2 and prefills from a Latin page name', async () => {
+  it('is step 2 of 3 and prefills from a Latin page name', async () => {
     setup()
     renderStep('Studio Sara')
     expect(await field()).toHaveValue('studiosara')
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '2'
+    )
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuemax',
+      '3'
     )
     expect(screen.getAllByText(t.prefix)).toHaveLength(2)
   })
@@ -294,10 +309,61 @@ describe('page address (OnboardingUrlScreen)', () => {
     await settle()
     await waitFor(() => expect(submit()).toBeEnabled())
     await user.click(submit())
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
+    )
     expect(mocked.actions.setAliasForHook).toHaveBeenLastCalledWith({
       alias: 'sara2',
     })
+  })
+
+  it('in sign-up, creates the page and goes on to the interests step (FE-AUTH-08)', async () => {
+    const user = setup()
+    renderStep('Sara')
+    await user.type(await field(), '_art')
+    await settle()
+    await waitFor(() => expect(submit()).toBeEnabled())
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
+    )
+    expect(mocked.actions.setAliasForHook).toHaveBeenCalledWith({
+      alias: 'sara_art',
+    })
+    expect(mocked.toast.success).toHaveBeenCalledWith(
+      en.auth.phone.toast.pageCreated
+    )
+  })
+
+  it('back from the interests step, starts from the page address and saves nothing unchanged', async () => {
+    const user = setup()
+    renderStep('Sara', 'Sara', undefined, 'sara_art')
+    expect(await field()).toHaveValue('sara_art')
+    await settle()
+    expect(await screen.findByText(t.available)).toBeInTheDocument()
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
+    )
+    expect(mocked.actions.setAliasForHook).not.toHaveBeenCalled()
+    expect(mocked.toast.success).not.toHaveBeenCalled()
+  })
+
+  it('back from the interests step, renames the page with a plain "saved"', async () => {
+    const user = setup()
+    renderStep('Sara', 'Sara', undefined, 'sara_art')
+    await user.clear(await field())
+    await user.type(await field(), 'sara_studio')
+    await settle()
+    await waitFor(() => expect(submit()).toBeEnabled())
+    await user.click(submit())
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
+    )
+    expect(mocked.actions.setAliasForHook).toHaveBeenCalledWith({
+      alias: 'sara_studio',
+    })
+    expect(mocked.toast.success).toHaveBeenCalledWith(en.auth.phone.toast.saved)
   })
 
   it('feeds the live preview card with the name and the address', async () => {

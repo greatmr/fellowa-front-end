@@ -14,6 +14,7 @@ import {
   completeAccountForHook,
   confirmPasswordResetForHook,
   exchangeGoogleCodeForHook,
+  interestsForHook,
   loginForHook,
   logoutForHook,
   ownProfileForHook,
@@ -23,6 +24,7 @@ import {
   requestPasswordResetForHook,
   requestPhoneCodeForHook,
   resendEmailForHook,
+  saveInterestsForHook,
   setAliasForHook,
   verifyAuthTokenForHook,
   verifyEmailForHook,
@@ -35,6 +37,7 @@ import type {
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
+  InterestsPayload,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -57,6 +60,8 @@ export const authKeys = {
   mutation: (name: string) => ['auth', name] as const,
   aliasAvailability: (alias: string) =>
     ['auth', 'alias-availability', alias] as const,
+  interestsAll: ['auth', 'interests'] as const,
+  interests: (viewerId: number) => ['auth', 'interests', viewerId] as const,
 }
 
 type MutationOptions<TData, TVariables> = Omit<
@@ -67,7 +72,7 @@ type MutationOptions<TData, TVariables> = Omit<
 function useAuthMutation<TData, TVariables>(
   name: string,
   action: (variables: TVariables) => Promise<ApiActionResult<TData>>,
-  cacheChange: 'identity' | 'profile' | null,
+  cacheChange: 'identity' | 'profile' | 'interests' | null,
   options?: MutationOptions<TData, TVariables>
 ) {
   const queryClient = useQueryClient()
@@ -85,6 +90,15 @@ function useAuthMutation<TData, TVariables>(
       if (cacheChange === 'identity') queryClient.removeQueries()
       if (cacheChange === 'profile') {
         await queryClient.invalidateQueries({ queryKey: authKeys.profileAll })
+      }
+      if (cacheChange === 'interests') {
+        // The saved set is stale now. The step leaves at once, so nothing is
+        // refetched here (server actions run one at a time, and a refetch
+        // would hold the navigation back); the next screen to read it does.
+        await queryClient.invalidateQueries({
+          queryKey: authKeys.interestsAll,
+          refetchType: 'none',
+        })
       }
       await options?.onSuccess?.(data, variables, onMutateResult, context)
     },
@@ -150,6 +164,31 @@ export function useAliasAvailabilityQuery(alias: string, enabled: boolean) {
     retry: false,
     refetchOnWindowFocus: false,
   })
+}
+
+/**
+ * The categories the account likes (BE-USER-08), per account: the viewer is
+ * in the key, and the action refuses a cookie that is now someone else's.
+ */
+export function useInterestsQuery(viewerId: number) {
+  return useQuery<number[], ApiError>({
+    queryKey: authKeys.interests(viewerId),
+    queryFn: async () =>
+      unwrapApiActionResult(await interestsForHook(viewerId)),
+    enabled: Number.isSafeInteger(viewerId) && viewerId > 0,
+  })
+}
+
+export function useSaveInterestsMutation(
+  viewerId: number,
+  options?: MutationOptions<number[], InterestsPayload>
+) {
+  return useAuthMutation(
+    'save-interests',
+    (input: InterestsPayload) => saveInterestsForHook(viewerId, input),
+    'interests',
+    options
+  )
 }
 
 export function useRequestPasswordResetMutation(
