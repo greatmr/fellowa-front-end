@@ -10,6 +10,12 @@ const route = vi.hoisted(() => ({
   pathname: '/auth',
   search: '',
 }))
+const explore = vi.hoisted(() => ({
+  listExploreCategoriesForHook: vi.fn(),
+  listExploreCreatorsForHook: vi.fn(),
+}))
+// The interests column reads the category list; the frame never fetches it.
+vi.mock('@/features/explore/server/actions', () => explore)
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   usePathname: () => route.pathname,
@@ -89,6 +95,15 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
     expect(backLink(messages)).toHaveAttribute('href', href)
   })
 
+  it.each([
+    ['/auth/interests', '/auth/url'],
+    ['/auth/category', '/auth/interests'],
+  ])('on %s goes back to %s (FE-AUTH-08)', (pathname, href) => {
+    route.pathname = pathname
+    const messages = renderLayout()
+    expect(backLink(messages)).toHaveAttribute('href', href)
+  })
+
   it('drops an unsafe returnTo from the back link', () => {
     route.pathname = '/auth/otp'
     route.search = 'returnTo=//evil.example'
@@ -121,6 +136,31 @@ describe('AuthLayout visual column', () => {
     expect(column.getByText(samples.podcaster.benefit3)).toBeInTheDocument()
     expect(column.getByText('120,000')).toBeInTheDocument()
     expect(column.queryByRole('img')).not.toBeInTheDocument()
+    expect(
+      column.queryByText(messages.auth.preview.badge)
+    ).not.toBeInTheDocument()
+  })
+
+  it('on the interests step, keeps the sample cards until the step has the topics, without asking for them', () => {
+    route.pathname = '/auth/interests'
+    const messages = renderLayout()
+    const column = within(visual())
+    expect(
+      column.getByText(messages.auth.samples.musician.tag)
+    ).toBeInTheDocument()
+    expect(
+      column.queryByText(messages.auth.interests.preview.badge)
+    ).not.toBeInTheDocument()
+    expect(explore.listExploreCategoriesForHook).not.toHaveBeenCalled()
+  })
+
+  it('keeps the sample cards on the page category step (the preview card has no category)', () => {
+    route.pathname = '/auth/category'
+    const messages = renderLayout()
+    const column = within(visual())
+    expect(
+      column.getByText(messages.auth.samples.podcaster.tag)
+    ).toBeInTheDocument()
     expect(
       column.queryByText(messages.auth.preview.badge)
     ).not.toBeInTheDocument()

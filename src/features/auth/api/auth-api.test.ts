@@ -9,10 +9,13 @@ const {
   changePassword,
   confirmPasswordReset,
   exchangeGoogleCode,
+  fetchInterests,
   fetchOwnProfile,
   requestPasswordReset,
   resendEmailCode,
+  saveInterests,
   setCreatorAlias,
+  setPageCategory,
   submitCredentials,
   verifyAuthToken,
   verifyEmailCode,
@@ -187,6 +190,134 @@ describe('server authentication API', () => {
         newPassword: 'new-password',
       })
     ).resolves.toBeUndefined()
+  })
+
+  it("keeps the owner profile's page category (toSelfProfile categoryId)", async () => {
+    const profile = {
+      id: 4,
+      email: null,
+      alias: 'sara_art',
+      isVerified: true,
+      displayName: 'Sara',
+      hasPassword: false,
+    }
+    server.use(
+      http.get(`${origin}/api/user/4/profile`, () =>
+        HttpResponse.json({ data: { ...profile, categoryId: 7 }, errors: null })
+      ),
+      http.get(`${origin}/api/user/5/profile`, () =>
+        HttpResponse.json({
+          data: { ...profile, id: 5, alias: null, categoryId: null },
+          errors: null,
+        })
+      )
+    )
+    expect(await fetchOwnProfile('token', 4)).toEqual({
+      ...profile,
+      categoryId: 7,
+    })
+    expect(await fetchOwnProfile('token', 5)).toMatchObject({
+      alias: null,
+      categoryId: null,
+    })
+  })
+
+  it('sets the page category with the bearer token, and keeps a refusal code', async () => {
+    server.use(
+      http.put(`${origin}/api/user/category`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        const { categoryId } = (await request.json()) as {
+          categoryId: number
+        }
+        if (categoryId === 2) {
+          return HttpResponse.json({
+            data: { message: 'Category updated' },
+            errors: null,
+          })
+        }
+        return HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Set an alias before setting up your page',
+                code: 'USER_ALIAS_REQUIRED',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      })
+    )
+    await expect(setPageCategory('token', 2)).resolves.toBeUndefined()
+    await expect(setPageCategory('token', 3)).rejects.toMatchObject({
+      status: 400,
+      code: 'USER_ALIAS_REQUIRED',
+    })
+  })
+
+  it('reads and replaces the account interests with its bearer token (BE-USER-08)', async () => {
+    server.use(
+      http.get(`${origin}/api/user/interests`, ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        return HttpResponse.json({
+          data: { categoryIds: [1, 3, 9] },
+          errors: null,
+        })
+      }),
+      http.put(`${origin}/api/user/interests`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        expect(await request.json()).toEqual({ categoryIds: [9, 1] })
+        // The saved set, in the category list's order.
+        return HttpResponse.json({
+          data: { categoryIds: [1, 9] },
+          errors: null,
+        })
+      })
+    )
+
+    await expect(fetchInterests('token')).resolves.toEqual([1, 3, 9])
+    await expect(saveInterests('token', [9, 1])).resolves.toEqual([1, 9])
+  })
+
+  it('reads an empty set, and keeps the code of a refused save', async () => {
+    server.use(
+      http.get(`${origin}/api/user/interests`, () =>
+        HttpResponse.json({ data: { categoryIds: [] }, errors: null })
+      ),
+      http.put(`${origin}/api/user/interests`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Category not found',
+                code: 'USER_CATEGORY_NOT_FOUND',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      )
+    )
+
+    await expect(fetchInterests('token')).resolves.toEqual([])
+    await expect(saveInterests('token', [999])).rejects.toMatchObject({
+      status: 400,
+      code: 'USER_CATEGORY_NOT_FOUND',
+    })
+  })
+
+  it('rejects a malformed interests body', async () => {
+    server.use(
+      http.get(`${origin}/api/user/interests`, () =>
+        HttpResponse.json({ data: { categoryIds: ['1'] }, errors: null })
+      )
+    )
+
+    await expect(fetchInterests('token')).rejects.toMatchObject({
+      name: 'InvalidAuthResponseError',
+    })
   })
 
   it('uses the public password recovery routes and DTO bodies', async () => {

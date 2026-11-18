@@ -10,6 +10,8 @@ import type {
   ForgotPasswordPayload,
   GoogleAuthPayload,
   GoogleSignIn,
+  InterestsPayload,
+  PageCategoryPayload,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -44,6 +46,8 @@ const userSchema = z.object({
   displayName: z.string().nullable(),
   // BE-AUTH-10: always present for the owner.
   hasPassword: z.boolean(),
+  // `toSelfProfile`: the page's category, `null` with no page or none chosen.
+  categoryId: z.number().int().positive().safe().nullable().optional(),
 })
 const tokenSchema = z.object({ token: z.string().min(1) })
 const messageSchema = z.object({ message: z.string() })
@@ -97,6 +101,10 @@ const googleSignInSchema = z.object({
 const completedAccountSchema = z.object({
   displayName: z.string(),
   hasPassword: z.boolean(),
+})
+/** BE-USER-08 `UserInterests`: ids only, in `GET /landing/categories` order. */
+const interestsSchema = z.object({
+  categoryIds: z.array(z.number().int().positive().safe()),
 })
 
 export async function submitCredentials(
@@ -258,4 +266,41 @@ export async function completeAccount(
     withBearer(token)
   )
   return parseEnvelope(completedAccountSchema, response, invalid)
+}
+
+/**
+ * `PUT /user/category`: the caller's page's one category. 400
+ * `USER_ALIAS_REQUIRED` with no page; 400 `USER_CATEGORY_NOT_FOUND` for an
+ * unknown id.
+ */
+export async function setPageCategory(token: string, categoryId: number) {
+  const response = await apiPut<unknown, PageCategoryPayload>(
+    '/user/category',
+    { categoryId },
+    withBearer(token)
+  )
+  parseEnvelope(messageSchema, response, invalid)
+}
+
+/** `GET /user/interests` (BE-USER-08): the caller's liked category ids. */
+export async function fetchInterests(token: string): Promise<number[]> {
+  const response = await apiGet<unknown>('/user/interests', withBearer(token))
+  return parseEnvelope(interestsSchema, response, invalid).categoryIds
+}
+
+/**
+ * `PUT /user/interests` (BE-USER-08): replaces the caller's whole set and
+ * answers the saved one. An unknown id is 400 `USER_CATEGORY_NOT_FOUND`, and
+ * nothing changed.
+ */
+export async function saveInterests(
+  token: string,
+  categoryIds: number[]
+): Promise<number[]> {
+  const response = await apiPut<unknown, InterestsPayload>(
+    '/user/interests',
+    { categoryIds },
+    withBearer(token)
+  )
+  return parseEnvelope(interestsSchema, response, invalid).categoryIds
 }

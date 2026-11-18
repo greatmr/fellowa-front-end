@@ -186,6 +186,25 @@ export function createAliasSchema(
   })
 }
 
+/** BE-USER-08 `MAX_INTERESTS`: the most ids one save may carry. */
+export const MAX_INTERESTS = 50
+
+/**
+ * `UpdateInterestsDto` (BE-USER-08), checked before the API: distinct
+ * integers 1–32767 (`page_category.id` is a `smallint`), at most 50.
+ */
+export const interestsPayloadSchema = z.object({
+  categoryIds: z
+    .array(z.number().int().min(1).max(32767))
+    .max(MAX_INTERESTS)
+    .refine((ids) => new Set(ids).size === ids.length),
+})
+
+/** `UpdateCategoryDto`: one positive integer, a `smallint` id. */
+export const pageCategoryPayloadSchema = z.object({
+  categoryId: z.number().int().min(1).max(32767),
+})
+
 /** What the backend stores for a valid alias: `Studio` reads back `studio`. */
 export function normalizeAlias(alias: string): string {
   return alias.trim().toLowerCase()

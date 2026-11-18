@@ -8,6 +8,7 @@ import {
   completeAccount,
   confirmPasswordReset,
   exchangeGoogleCode,
+  fetchInterests,
   fetchOwnProfile,
   InvalidAuthResponseError,
   loginWithPhonePassword,
@@ -15,7 +16,9 @@ import {
   requestPasswordReset,
   requestPhoneCode,
   resendEmailCode,
+  saveInterests,
   setCreatorAlias,
+  setPageCategory,
   submitCredentials,
   verifyAuthToken,
   verifyEmailCode,
@@ -40,6 +43,8 @@ import {
   createPhoneVerifySchema,
   createResetPasswordSchema,
   createVerificationSchema,
+  interestsPayloadSchema,
+  pageCategoryPayloadSchema,
 } from '@/features/auth/schemas'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import type {
@@ -48,6 +53,8 @@ import type {
   ConfirmPasswordResetPayload,
   CredentialsPayload,
   GoogleAuthPayload,
+  InterestsPayload,
+  PageCategoryPayload,
   PhoneCodeRequestPayload,
   PhoneLoginPayload,
   PhoneLookupPayload,
@@ -67,6 +74,7 @@ const googleSchema = z.object({
   code: z.string(),
   redirectUri: z.string(),
 })
+const viewerIdSchema = z.number().int().positive().safe()
 
 function execute<T>(operation: () => Promise<T>) {
   return runApiAction(operation, (error) =>
@@ -95,6 +103,23 @@ async function activeSession(): Promise<AuthSession> {
   if (!session) {
     await clearSession()
     throw new ApiError({ message: 'Session expired', status: 401 })
+  }
+  return session
+}
+
+/**
+ * The session of the account the screen rendered for. A cookie that now
+ * belongs to another account is refused (401), not read or edited, so a
+ * per-viewer cache entry never holds another account's data.
+ */
+async function viewerSession(viewerId: number): Promise<AuthSession> {
+  const session = await activeSession()
+  if (session.user.id !== viewerId) {
+    throw new ApiError({
+      message: 'Session changed',
+      status: 401,
+      code: 'SESSION_CHANGED',
+    })
   }
   return session
 }
@@ -174,6 +199,45 @@ export async function setAliasForHook(input: { alias: string }) {
   return mutate(aliasSchema, input, async ({ alias }) => {
     const session = await activeSession()
     await setCreatorAlias(session.token, alias)
+    return null
+  })
+}
+
+/** BE-USER-08: the categories the signed-in account likes. */
+export async function interestsForHook(
+  viewerId: number
+): Promise<ApiActionResult<number[]>> {
+  if (!viewerIdSchema.safeParse(viewerId).success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return execute(async () =>
+    fetchInterests((await viewerSession(viewerId)).token)
+  )
+}
+
+/** BE-USER-08: replaces them; answers the saved set. */
+export async function saveInterestsForHook(
+  viewerId: number,
+  input: InterestsPayload
+): Promise<ApiActionResult<number[]>> {
+  if (!viewerIdSchema.safeParse(viewerId).success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return mutate(interestsPayloadSchema, input, async ({ categoryIds }) =>
+    saveInterests((await viewerSession(viewerId)).token, categoryIds)
+  )
+}
+
+/** The page's one category (`PUT /user/category`), sign-up's last step. */
+export async function setPageCategoryForHook(
+  viewerId: number,
+  input: PageCategoryPayload
+): Promise<ApiActionResult<null>> {
+  if (!viewerIdSchema.safeParse(viewerId).success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return mutate(pageCategoryPayloadSchema, input, async ({ categoryId }) => {
+    await setPageCategory((await viewerSession(viewerId)).token, categoryId)
     return null
   })
 }

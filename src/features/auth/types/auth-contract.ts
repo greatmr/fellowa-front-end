@@ -21,3 +21,12 @@ export type PhoneLookupPayload = { phone: string }
 export type PhoneVerifyPayload = { phone: string; code: string }
 export type PhoneLoginPayload = { phone: string; password: string }
 export type CompleteAccountPayload = { displayName: string; password?: string }
+
+/**
+ * BE-USER-08, `update-interests.dto.ts`: the account's whole set of liked
+ * categories, ids from `GET /landing/categories`; `[]` clears it.
+ */
+export type InterestsPayload = { categoryIds: number[] }
+
+/** `update-category.dto.ts`: the page's one category (`PUT /user/category`). */
+export type PageCategoryPayload = { categoryId: number }

@@ -18,7 +18,8 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { listExploreCreatorsForHook } = await import('./actions')
+const { listExploreCategoriesForHook, listExploreCreatorsForHook } =
+  await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -300,5 +301,55 @@ describe('explore server boundary', () => {
         page: 1,
       })
     ).toMatchObject({ ok: false, status: 500 })
+  })
+})
+
+describe('category list for a client screen (BE-LAND-07, FE-AUTH-08)', () => {
+  it('reads the public list without a token, even with a cookie, in its order', async () => {
+    request.cookie = token()
+    let auth: string | null = 'unset'
+    server.use(
+      http.get(`${apiOrigin}/landing/categories`, ({ request: upstream }) => {
+        auth = upstream.headers.get('authorization')
+        return HttpResponse.json({
+          data: [
+            { id: 3, title: 'ویدیو' },
+            { id: 1, title: 'پادکست', extra: 'dropped' },
+          ],
+          errors: null,
+        })
+      })
+    )
+
+    expect(await listExploreCategoriesForHook()).toEqual({
+      ok: true,
+      data: [
+        { id: 3, title: 'ویدیو' },
+        { id: 1, title: 'پادکست' },
+      ],
+    })
+    expect(auth).toBeNull()
+  })
+
+  it('passes a failure on, so the screen can offer a retry', async () => {
+    server.use(
+      http.get(`${apiOrigin}/landing/categories`, () =>
+        HttpResponse.json({}, { status: 503 })
+      )
+    )
+    expect(await listExploreCategoriesForHook()).toMatchObject({
+      ok: false,
+      status: 503,
+    })
+
+    server.use(
+      http.get(`${apiOrigin}/landing/categories`, () =>
+        HttpResponse.json({ data: [{ id: 'x' }], errors: null })
+      )
+    )
+    expect(await listExploreCategoriesForHook()).toEqual({
+      ok: false,
+      code: 'INVALID_EXPLORE_RESPONSE',
+    })
   })
 })

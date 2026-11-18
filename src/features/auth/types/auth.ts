@@ -40,6 +40,12 @@ export type AuthUser = {
   displayName: string | null
   /** The account has a password (BE-AUTH-10); the hash is never sent. */
   hasPassword: boolean
+  /**
+   * The page's category (`toSelfProfile`: `null` with no page or none
+   * chosen), for the sign-up category step (FE-AUTH-08). Optional: only
+   * that step reads it.
+   */
+  categoryId?: number | null
 }
 
 export type AuthValidationMessages = Record<AuthFieldError, string>

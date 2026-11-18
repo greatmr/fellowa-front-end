@@ -199,7 +199,8 @@
         "welcomeBack": "Welcome back!",
         "saved": "Saved.",
         "skipped": "Password skipped. You can set one later in settings.",
-        "pageCreated": "Your studio page is ready!"
+        "pageCreated": "Your studio page is ready!",
+        "interestsSaved": "Your interests are saved!"
       }
     },
     "samples": {
@@ -239,6 +240,42 @@
       "submit": "Continue",
       "pending": "Creating your page…",
       "back": "Back"
+    },
+    "categoryList": {
+      "loadFailed": "The topics could not be loaded.",
+      "stale": "The list of topics has changed. Check your picks again."
+    },
+    "interests": {
+      "pageTitle": "Interests",
+      "title": "What are you into?",
+      "description": "Pick a few topics to see related creators sooner.",
+      "topics": "Topics",
+      "helper": "The more you pick, the better the suggestions.",
+      "submit": "Continue",
+      "pending": "Saving…",
+      "skip": "Skip for now",
+      "preview": {
+        "badge": "Preview: how creators are ordered in Explore",
+        "monthly": "Monthly membership",
+        "creators": {
+          "sara": "Sara Mohammadi",
+          "negar": "Negar Ahmadi",
+          "arman": "Arman Yousefi",
+          "amirhossein": "Amirhossein Farahani",
+          "reza": "Reza Kheradmand",
+          "mahsa": "Mahsa Karimi"
+        }
+      }
+    },
+    "pageCategory": {
+      "pageTitle": "Your page",
+      "title": "What do you mostly make?",
+      "description": "Pick one so the right fans can find you more easily.",
+      "options": "Page topic",
+      "helper": "Just one.",
+      "submit": "Continue",
+      "pending": "Saving…",
+      "skip": "Skip for now"
     }
   },
   "common": {

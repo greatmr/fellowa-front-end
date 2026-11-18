@@ -1,9 +1,15 @@
 'use client'
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
-import { listExploreCreatorsForHook } from '@/features/explore/server/actions'
-import type { ExploreCreatorPage } from '@/features/explore/types/creator'
+import {
+  listExploreCategoriesForHook,
+  listExploreCreatorsForHook,
+} from '@/features/explore/server/actions'
+import type {
+  ExploreCategory,
+  ExploreCreatorPage,
+} from '@/features/explore/types/creator'
 import { unwrapApiActionResult } from '@/lib/api/action-result'
 import type { ApiError } from '@/lib/api/errors'
 
@@ -25,6 +31,22 @@ export const exploreKeys = {
       alias,
       categoryId ?? 'all',
     ] as const,
+  categories: ['explore', 'categories'] as const,
+}
+
+/**
+ * The public category list (BE-LAND-07) on the client, for the sign-up
+ * interests step (FE-AUTH-08); explore's own pages load it on the server.
+ * `enabled: false` only reads what another caller loaded (the auth frame's
+ * decorative column), so it never asks on its own.
+ */
+export function useExploreCategoriesQuery({ enabled = true } = {}) {
+  return useQuery<ExploreCategory[], ApiError>({
+    queryKey: exploreKeys.categories,
+    queryFn: async () =>
+      unwrapApiActionResult(await listExploreCategoriesForHook()),
+    enabled,
+  })
 }
 
 export function useExploreCreatorsQuery(

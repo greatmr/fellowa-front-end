@@ -37,13 +37,19 @@ type AuthFlow = {
   /** The address being typed on the address step, for the live preview. */
   pageAddress: string
   setPageAddress: (address: string) => void
+  /** The categories ticked on the interests step, for its preview column. */
+  pickedCategoryIds: readonly number[]
+  setPickedCategoryIds: (ids: readonly number[]) => void
 }
+
+const NO_PICKS: readonly number[] = []
 
 const AuthFlowContext = createContext<AuthFlow | null>(null)
 
 /**
  * What the per-step auth routes share (`/auth` → `/auth/otp` →
- * `/auth/account` → `/auth/url`). It lives in the auth layout, in memory only:
+ * `/auth/account` → `/auth/url` → `/auth/interests` → `/auth/category`). It
+ * lives in the auth layout, in memory only:
  * the number and the name never reach storage, the token stays in the
  * httpOnly cookie, and a reload starts the flow again.
  */
@@ -52,6 +58,7 @@ export function AuthFlowProvider({ children }: { children: ReactNode }) {
   const [signedInPhone, setSignedInPhone] = useState<string | null>(null)
   const [pageName, setPageName] = useState('')
   const [pageAddress, setPageAddress] = useState('')
+  const [pickedCategoryIds, setPickedCategoryIds] = useState(NO_PICKS)
 
   const value = useMemo(
     () => ({
@@ -63,8 +70,10 @@ export function AuthFlowProvider({ children }: { children: ReactNode }) {
       setPageName,
       pageAddress,
       setPageAddress,
+      pickedCategoryIds,
+      setPickedCategoryIds,
     }),
-    [target, signedInPhone, pageName, pageAddress]
+    [target, signedInPhone, pageName, pageAddress, pickedCategoryIds]
   )
 
   return (
