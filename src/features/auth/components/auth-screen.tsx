@@ -1,6 +1,4 @@
 import { getTranslations } from 'next-intl/server'
-import { useTranslations } from 'next-intl'
-import { Skeleton } from '@/components/ui/skeleton'
 
 import { CompleteAccountForm } from '@/features/auth/components/complete-account-form'
 import { CredentialsForm } from '@/features/auth/components/credentials-form'
@@ -44,19 +42,11 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export function AuthScreenFallback() {
-  const t = useTranslations('common')
-  return (
-    <div role="status" aria-label={t('loading')} className="space-y-5">
-      <Skeleton className="h-8 w-3/4" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-10 w-full" />
-    </div>
-  )
-}
-
-/** Request-dependent auth content stays inside the route's Suspense boundary. */
+/**
+ * Request-dependent auth content: it renders inside the auth layout's
+ * Suspense boundary (`AuthLayout`), so moving between steps keeps the current
+ * one on screen until this one is ready.
+ */
 export async function AuthScreen({ mode, locale, searchParams }: Props) {
   const query = await searchParams
   const returnTo = safeReturnTo(query.returnTo)

@@ -1,13 +1,13 @@
-import { Suspense } from 'react'
 import { hasLocale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 
-import {
-  AuthScreen,
-  AuthScreenFallback,
-} from '@/features/auth/components/auth-screen'
+import { AuthScreen } from '@/features/auth/components/auth-screen'
 import { routing } from '@/i18n/routing'
+
+// Moving between auth steps keeps the current one on screen until this one
+// has rendered (the auth layout's Suspense boundary), never a fallback.
+export const instant = false
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -28,12 +28,10 @@ export default async function AuthenticationPage({
   if (!hasLocale(routing.locales, locale)) notFound()
   setRequestLocale(locale)
   return (
-    <Suspense fallback={<AuthScreenFallback />}>
-      <AuthScreen
-        mode="email-login"
-        locale={locale}
-        searchParams={searchParams}
-      />
-    </Suspense>
+    <AuthScreen
+      mode="email-login"
+      locale={locale}
+      searchParams={searchParams}
+    />
   )
 }

@@ -1,8 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import type { QueryClient } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
-import type { ComponentProps } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Suspense, use, useEffect, useState, type ComponentProps } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
 import fa from '../../../../messages/fa.json'
@@ -438,5 +438,91 @@ describe('interests visual column (AuthLayout [C2])', () => {
     ).toBe(creators.mahsa)
     expect(column().queryByText('آموزش')).not.toBeInTheDocument()
     expect(cardOf(creators.sara)).toHaveTextContent('ویدیو')
+  })
+})
+
+/** The next step, still rendering on the server. */
+function NextStep({ ready }: { ready: Promise<void> }) {
+  use(ready)
+  return <p data-testid="next-step" />
+}
+
+/**
+ * The step under the auth layout's one Suspense boundary, already on screen:
+ * the router's move to the next step is a transition React holds until the
+ * next step is ready.
+ */
+function SlowRoute({ ready }: { ready: Promise<void> }) {
+  const [left, setLeft] = useState(false)
+  useEffect(() => {
+    mocked.replace.mockImplementation(() => setLeft(true))
+  }, [])
+  return (
+    <Suspense fallback={<p data-testid="step-fallback" />}>
+      {left ? (
+        <NextStep ready={ready} />
+      ) : (
+        <InterestsForm viewerId={viewerId} next="/auth/category" />
+      )}
+    </Suspense>
+  )
+}
+
+describe('interests: moving on keeps the step, its button pending', () => {
+  afterEach(() => {
+    mocked.replace.mockReset()
+  })
+
+  function renderSlow() {
+    const ready = deferred<void>()
+    renderAuth(
+      <AuthFlowProvider>
+        <SlowRoute ready={ready.promise} />
+      </AuthFlowProvider>
+    )
+    return ready
+  }
+
+  it('keeps "continue" loading, with no skeleton, until the next step has rendered', async () => {
+    const user = userEvent.setup()
+    const ready = renderSlow()
+    await user.click(await screen.findByRole('button', { name: 'موسیقی' }))
+    await user.click(submit())
+    await waitFor(() => expect(mocked.replace).toHaveBeenCalledTimes(1))
+
+    const button = screen.getByRole('button', { name: t.pending })
+    expect(button).toBeDisabled()
+    expect(button.closest('form')).toHaveAttribute('aria-busy', 'true')
+    expect(skip()).toBeDisabled()
+    expect(skip()).not.toHaveAttribute('aria-busy')
+    expect(screen.getByRole('heading', { name: t.title })).toBeInTheDocument()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+
+    await user.click(skip())
+    expect(mocked.auth.saveInterestsForHook).toHaveBeenCalledTimes(1)
+    expect(mocked.replace).toHaveBeenCalledTimes(1)
+
+    await act(async () => ready.resolve())
+    expect(await screen.findByTestId('next-step')).toBeInTheDocument()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+  })
+
+  it('marks "skip" busy, not "continue", while the next step loads', async () => {
+    const ready = renderSlow()
+    await screen.findByRole('button', { name: 'موسیقی' })
+    // An awaited act: the click starts a transition that suspends.
+    await act(async () => skip().click())
+
+    expect(skip()).toHaveAttribute('aria-busy', 'true')
+    expect(skip()).toBeDisabled()
+    expect(submit()).not.toHaveAttribute('aria-busy')
+    expect(screen.queryByRole('button', { name: t.pending })).toBeNull()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+    await act(async () => skip().click())
+    expect(mocked.replace).toHaveBeenCalledTimes(1)
+    expect(mocked.replace).toHaveBeenCalledWith('/auth/category')
+
+    await act(async () => ready.resolve())
+    expect(await screen.findByTestId('next-step')).toBeInTheDocument()
   })
 })

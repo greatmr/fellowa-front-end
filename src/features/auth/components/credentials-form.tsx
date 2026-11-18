@@ -20,15 +20,20 @@ import {
   useLoginMutation,
   useRegisterMutation,
 } from '@/features/auth/api/auth-hooks'
+import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
 import { hookFeedback } from '@/features/auth/lib/hook-feedback'
 import { authHref, safeReturnTo } from '@/features/auth/lib/return-to'
 import { createCredentialsSchema } from '@/features/auth/schemas'
-import { Link, useRouter } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 
 import { AuthFeedback } from './auth-feedback'
 import { AuthFormControl } from './auth-form-control'
 import { PasswordInput } from './password-input'
 import { AuthScreenHeading } from './auth-heading'
+import { LinkPending } from './link-pending'
 
 export function CredentialsForm({
   mode,
@@ -38,12 +43,14 @@ export function CredentialsForm({
   returnTo?: string
 }) {
   const t = useTranslations('auth')
-  const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const submitting = useRef(false)
+  useReleaseWhenHidden(submitting)
   const login = useLoginMutation()
   const register = useRegisterMutation()
   const mutation = mode === 'login' ? login : register
-  const pending = mutation.isPending
+  // Signing in, then moving on: pending until the next page has rendered.
+  const pending = mutation.isPending || navigating
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(
       createCredentialsSchema(mode, {
@@ -66,7 +73,7 @@ export function CredentialsForm({
           onSuccess: (user) => {
             mutation.reset()
             const destination = safeReturnTo(returnTo)
-            router.replace(
+            replace(
               user.isVerified
                 ? destination
                 : {
@@ -186,7 +193,7 @@ export function CredentialsForm({
           href={href}
           className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
-          {t(`${mode}.switchLink`)}
+          <LinkPending>{t(`${mode}.switchLink`)}</LinkPending>
         </Link>
       </p>
       <p className="text-center text-body">
@@ -194,7 +201,7 @@ export function CredentialsForm({
           href={authHref('/auth', returnTo)}
           className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
-          {t(`${mode}.phoneLink`)}
+          <LinkPending>{t(`${mode}.phoneLink`)}</LinkPending>
         </Link>
       </p>
     </div>

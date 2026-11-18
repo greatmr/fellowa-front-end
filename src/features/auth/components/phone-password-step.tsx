@@ -13,8 +13,10 @@ import {
   usePhoneLoginMutation,
   useRequestPhoneCodeMutation,
 } from '@/features/auth/api/auth-hooks'
+import { useReleaseWhenHidden } from '@/features/auth/hooks/use-step-navigation'
 import type { Deadline } from '@/features/auth/lib/phone'
 import type { PhoneCodeSent, PhoneSignIn } from '@/features/auth/types'
+import { cn } from '@/lib/utils'
 
 import { AuthFieldMessage } from './auth-error-line'
 import { AuthScreenHeading } from './auth-heading'
@@ -30,12 +32,15 @@ import { PhoneFeedback, PhoneNumber } from './phone-ui'
 export function PhonePasswordStep({
   phone,
   wait,
+  navigating = false,
   onSignedIn,
   onUseCode,
   onChangePhone,
 }: {
   phone: string
   wait: Deadline
+  /** The flow is moving to another step: stay pending until it renders. */
+  navigating?: boolean
   onSignedIn: (result: PhoneSignIn) => void
   onUseCode: (sent?: PhoneCodeSent) => void
   onChangePhone: () => void
@@ -44,8 +49,14 @@ export function PhonePasswordStep({
   const submitting = useRef(false)
   const login = usePhoneLoginMutation()
   const request = useRequestPhoneCodeMutation()
-  const [lastAction, setLastAction] = useState<'login' | 'code' | null>(null)
-  const pending = login.isPending || request.isPending
+  const [lastAction, setLastAction] = useState<
+    'login' | 'code' | 'change' | null
+  >(null)
+  const pending = login.isPending || request.isPending || navigating
+  // The button used keeps its loading state until the next route renders.
+  const loggingIn = login.isPending || (navigating && lastAction === 'login')
+  const toCode = request.isPending || (navigating && lastAction === 'code')
+  useReleaseWhenHidden(submitting)
   const form = useForm({
     resolver: zodResolver(
       z.object({
@@ -84,12 +95,12 @@ export function PhonePasswordStep({
     // has not rendered yet, and a second request would be refused as
     // rate-limited while the first's SMS is on its way.
     if (submitting.current || pending) return
+    submitting.current = true
+    setLastAction('code')
     if (Date.now() < wait.until) {
       onUseCode()
       return
     }
-    submitting.current = true
-    setLastAction('code')
     login.reset()
     request.mutate(
       { phone },
@@ -114,7 +125,7 @@ export function PhonePasswordStep({
         <form
           onSubmit={submit}
           noValidate
-          aria-busy={login.isPending}
+          aria-busy={loggingIn}
           className="space-y-4"
         >
           {/* For password managers: the account this password belongs to. */}
@@ -175,13 +186,13 @@ export function PhonePasswordStep({
             className="h-12 w-full"
             disabled={!password || pending}
           >
-            {login.isPending && (
+            {loggingIn && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(login.isPending ? 'password.pending' : 'password.submit')}
+            {t(loggingIn ? 'password.pending' : 'password.submit')}
           </Button>
           <Button
             type="button"
@@ -189,7 +200,14 @@ export function PhonePasswordStep({
             className="h-11 w-full"
             onClick={switchToCode}
             disabled={pending}
+            aria-busy={toCode || undefined}
           >
+            {toCode && (
+              <LoaderCircleIcon
+                className="animate-spin motion-reduce:animate-none"
+                aria-hidden
+              />
+            )}
             {t(
               request.isPending ? 'password.sendingCode' : 'password.sendCode'
             )}
@@ -200,8 +218,19 @@ export function PhonePasswordStep({
         <Button
           type="button"
           variant="ghost"
-          onClick={onChangePhone}
+          onClick={() => {
+            if (submitting.current || pending) return
+            submitting.current = true
+            setLastAction('change')
+            onChangePhone()
+          }}
           disabled={pending}
+          aria-busy={(navigating && lastAction === 'change') || undefined}
+          className={cn(
+            navigating &&
+              lastAction === 'change' &&
+              'animate-pulse motion-reduce:animate-none'
+          )}
         >
           {t('password.changeNumber')}
         </Button>

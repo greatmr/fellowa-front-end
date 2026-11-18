@@ -8,13 +8,16 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useSetPageCategoryMutation } from '@/features/auth/api/auth-hooks'
 import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
+import {
   PAGE_ADDRESS_PATH,
   SIGN_UP_STEPS,
 } from '@/features/auth/lib/auth-steps'
 import { sessionLost } from '@/features/auth/lib/hook-feedback'
 import { authHref } from '@/features/auth/lib/return-to'
 import { useExploreCategoriesQuery } from '@/features/explore'
-import { useRouter } from '@/i18n/navigation'
 import { getDirection } from '@/i18n/routing'
 import { cn } from '@/lib/utils'
 
@@ -53,11 +56,13 @@ export function PageCategoryForm({
   const t = useTranslations('auth.pageCategory')
   const listT = useTranslations('auth.categoryList')
   const toastT = useTranslations('auth.phone.toast')
-  const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const direction = getDirection(useLocale())
   const categories = useExploreCategoriesQuery()
   const save = useSetPageCategoryMutation(viewerId)
   const submitting = useRef(false)
+  useReleaseWhenHidden(submitting)
+  const [skipped, setSkipped] = useState(false)
   const chips = useRef<Array<HTMLButtonElement | null>>([])
   // The account's pick here; until it makes one, the page's category.
   const [draft, setDraft] = useState<number | null>(null)
@@ -69,7 +74,9 @@ export function PageCategoryForm({
     null
   const listFailed =
     categories.isError || (categories.isSuccess && list.length === 0)
-  const pending = save.isPending
+  // Saving, then moving on: pending until the next page has rendered.
+  const pending = save.isPending || navigating
+  const saving = save.isPending || (navigating && !skipped)
   const handledElsewhere =
     sessionLost(save.error) || save.error?.code === NO_PAGE
 
@@ -108,7 +115,7 @@ export function PageCategoryForm({
     submitting.current = true
     // Back here with the category unchanged: nothing to save.
     if (picked.id === currentCategoryId) {
-      router.replace(destination)
+      replace(destination)
       return
     }
     save.mutate(
@@ -116,16 +123,16 @@ export function PageCategoryForm({
       {
         onSuccess: () => {
           toast.success(toastT('saved'))
-          router.replace(destination)
+          replace(destination)
         },
         onError: (error) => {
           if (sessionLost(error)) {
-            router.replace({ pathname: '/auth', query: { reason: 'expired' } })
+            replace({ pathname: '/auth', query: { reason: 'expired' } })
             return
           }
           // No page to file: the address step creates one.
           if (error.code === NO_PAGE) {
-            router.replace(authHref(PAGE_ADDRESS_PATH, returnTo))
+            replace(authHref(PAGE_ADDRESS_PATH, returnTo))
             return
           }
           submitting.current = false
@@ -138,7 +145,9 @@ export function PageCategoryForm({
 
   function skip() {
     if (submitting.current || pending) return
-    router.replace(destination)
+    submitting.current = true
+    setSkipped(true)
+    replace(destination)
   }
 
   return (
@@ -153,7 +162,7 @@ export function PageCategoryForm({
       <form
         onSubmit={submit}
         noValidate
-        aria-busy={pending}
+        aria-busy={saving}
         className="space-y-4"
       >
         {categories.isPending ? (
@@ -227,13 +236,13 @@ export function PageCategoryForm({
             className="h-12 w-full rounded-full"
             disabled={!picked || pending}
           >
-            {pending && (
+            {saving && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(pending ? 'pending' : 'submit')}
+            {t(saving ? 'pending' : 'submit')}
           </Button>
         </div>
 
@@ -242,7 +251,13 @@ export function PageCategoryForm({
             type="button"
             onClick={skip}
             disabled={pending}
-            className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+            aria-busy={(navigating && skipped) || undefined}
+            className={cn(
+              'rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50',
+              navigating &&
+                skipped &&
+                'animate-pulse motion-reduce:animate-none'
+            )}
           >
             {t('skip')}
           </button>

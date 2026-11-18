@@ -10,6 +10,10 @@ import {
   useInterestsQuery,
   useSaveInterestsMutation,
 } from '@/features/auth/api/auth-hooks'
+import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
 import { SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
 import { sessionLost } from '@/features/auth/lib/hook-feedback'
 import type { AuthHref } from '@/features/auth/lib/return-to'
@@ -49,11 +53,14 @@ export function InterestsForm({
   const listT = useTranslations('auth.categoryList')
   const toastT = useTranslations('auth.phone.toast')
   const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const { setPickedCategoryIds } = useAuthFlow()
   const categories = useExploreCategoriesQuery()
   const saved = useInterestsQuery(viewerId)
   const save = useSaveInterestsMutation(viewerId)
   const submitting = useRef(false)
+  useReleaseWhenHidden(submitting)
+  const [skipped, setSkipped] = useState(false)
   // What the account ticked here; until it touches a chip, its saved set.
   const [draft, setDraft] = useState<readonly number[] | null>(null)
   const picked = draft ?? saved.data ?? NO_PICKS
@@ -66,7 +73,9 @@ export function InterestsForm({
   const listFailed =
     categories.isError || (categories.isSuccess && list.length === 0)
   const loading = !listFailed && (categories.isPending || saved.isPending)
-  const pending = save.isPending
+  // Saving, then moving on: pending until the next step has rendered.
+  const pending = save.isPending || navigating
+  const saving = save.isPending || (navigating && !skipped)
   const lost = sessionLost(saved.error) || sessionLost(save.error)
 
   // The visual column re-orders its sample creators by these.
@@ -100,7 +109,7 @@ export function InterestsForm({
       {
         onSuccess: () => {
           toast.success(toastT('interestsSaved'))
-          router.replace(next)
+          replace(next)
         },
         onError: (error) => {
           submitting.current = false
@@ -113,7 +122,9 @@ export function InterestsForm({
 
   function skip() {
     if (submitting.current || pending) return
-    router.replace(next)
+    submitting.current = true
+    setSkipped(true)
+    replace(next)
   }
 
   return (
@@ -128,7 +139,7 @@ export function InterestsForm({
       <form
         onSubmit={submit}
         noValidate
-        aria-busy={pending}
+        aria-busy={saving}
         className="space-y-4"
       >
         {loading ? (
@@ -196,13 +207,13 @@ export function InterestsForm({
             className="h-12 w-full rounded-xl"
             disabled={pickedIds.length === 0 || pending}
           >
-            {pending && (
+            {saving && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(pending ? 'pending' : 'submit')}
+            {t(saving ? 'pending' : 'submit')}
           </Button>
         </div>
 
@@ -211,7 +222,13 @@ export function InterestsForm({
             type="button"
             onClick={skip}
             disabled={pending}
-            className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50"
+            aria-busy={(navigating && skipped) || undefined}
+            className={cn(
+              'rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50',
+              navigating &&
+                skipped &&
+                'animate-pulse motion-reduce:animate-none'
+            )}
           >
             {t('skip')}
           </button>

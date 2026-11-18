@@ -8,6 +8,8 @@ import { authBackHref } from '@/features/auth/lib/auth-steps'
 import { requestedReturnTo } from '@/features/auth/lib/return-to'
 import { Link, usePathname } from '@/i18n/navigation'
 
+import { LinkPending } from './link-pending'
+
 /** The header's spacer where a step has no way back. */
 export function AuthBackSpacer() {
   return <span aria-hidden className="size-10" />
@@ -33,7 +35,9 @@ export function AuthBackButton() {
       title={t('back')}
       className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 active:bg-ink-250 dark:active:bg-accent"
     >
-      <ArrowLeftIcon className="size-5 rtl:rotate-180" aria-hidden />
+      <LinkPending className="inline-flex">
+        <ArrowLeftIcon className="size-5 rtl:rotate-180" aria-hidden />
+      </LinkPending>
     </Link>
   )
 }
