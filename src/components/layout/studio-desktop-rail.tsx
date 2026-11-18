@@ -6,17 +6,19 @@ import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/utils'
 
-const StudioRailCollapsedContext = createContext(false)
+type RailState = { collapsed: boolean; toggle?: () => void }
+
+const StudioRailContext = createContext<RailState>({ collapsed: false })
 
 export function useStudioRailCollapsed() {
-  return useContext(StudioRailCollapsedContext)
+  return useContext(StudioRailContext).collapsed
 }
+
+const railBodyId = 'desktop-studio-navigation'
 
 /** Only the desktop rail's disclosure is client-owned; its body stays server-rendered. */
 export function StudioDesktopRail({ children }: { children: ReactNode }) {
-  const t = useTranslations('studio')
   const [collapsed, setCollapsed] = useState(false)
-  const Icon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon
 
   return (
     <aside
@@ -26,24 +28,40 @@ export function StudioDesktopRail({ children }: { children: ReactNode }) {
         collapsed ? 'w-sidebar-collapsed' : 'w-sidebar'
       )}
     >
-      <StudioRailCollapsedContext.Provider value={collapsed}>
-        <div id="desktop-studio-navigation" className="h-full pb-12">
+      <StudioRailContext.Provider
+        value={{ collapsed, toggle: () => setCollapsed((value) => !value) }}
+      >
+        <div id={railBodyId} className="h-full">
           {children}
         </div>
-      </StudioRailCollapsedContext.Provider>
-      <button
-        type="button"
-        aria-label={t(collapsed ? 'expandSidebar' : 'collapseSidebar')}
-        aria-expanded={!collapsed}
-        aria-controls="desktop-studio-navigation"
-        onClick={() => setCollapsed((value) => !value)}
-        className="absolute inset-x-0 bottom-0 flex h-12 items-center justify-center gap-2 border-t text-body text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
-      >
-        <Icon className="size-4.5 rtl:rotate-180" aria-hidden />
-        <span className={collapsed ? 'sr-only' : undefined}>
-          {t('collapseSidebar')}
-        </span>
-      </button>
+      </StudioRailContext.Provider>
     </aside>
+  )
+}
+
+/**
+ * Collapse / expand control beside the logo (presentation Sidebar
+ * `PanelRightClose` / `PanelRightOpen`, d843c3b). Renders only inside the
+ * desktop rail; the mobile drawer has no icon mode.
+ */
+export function StudioRailToggle() {
+  const t = useTranslations('studio')
+  const { collapsed, toggle } = useContext(StudioRailContext)
+  if (!toggle) return null
+  const Icon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon
+  const label = t(collapsed ? 'expandSidebar' : 'collapseSidebar')
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      aria-expanded={!collapsed}
+      aria-controls={railBodyId}
+      onClick={toggle}
+      className="flex size-8 items-center justify-center rounded-md text-ink-400 transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <Icon className="size-4 rtl:rotate-180" aria-hidden />
+    </button>
   )
 }

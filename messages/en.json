@@ -100,8 +100,7 @@
       "register": "Create account",
       "logout": "Sign out",
       "loggingOut": "Signing out…",
-      "sessionLoading": "Loading account…",
-      "signedInAs": "Signed in as {email}"
+      "sessionLoading": "Loading account…"
     },
     "sessionExpired": {
       "title": "Please sign in again",
@@ -523,14 +522,13 @@
       "dashboard": "Dashboard",
       "page": "View my page",
       "audience": "Audience",
-      "tiers": "Membership tiers",
+      "tiers": "Tiers",
       "posts": "Posts",
       "payouts": "Reports",
       "payments": "Payments",
-      "settings": "Settings",
       "explore": "Explore",
-      "feed": "Feed",
-      "chats": "Chats",
+      "feed": "What's new",
+      "chats": "Conversations",
       "notifications": "Notifications"
     },
     "pages": {
@@ -575,16 +573,16 @@
         "category": "Discover and connect"
       },
       "feed": {
-        "title": "Feed",
+        "title": "What's new",
         "category": "Discover and connect"
       },
       "chats": {
-        "title": "Chats",
-        "category": "Discover and connect"
+        "title": "Conversations",
+        "category": "Connect"
       },
       "notifications": {
         "title": "Notifications",
-        "category": "Discover and connect"
+        "category": "Connect"
       }
     },
     "placeholder": {
@@ -592,7 +590,6 @@
       "body": "This page will be built in a later step."
     },
     "label": "Creator studio",
-    "visitHome": "Visit home",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "dashboard": {
@@ -631,6 +628,16 @@
       "publishFailed": "The page could not be published. Try again.",
       "published": "Your page is now public.",
       "sessionExpired": "Your session has ended. Sign in again."
+    },
+    "notificationsLink": "View notifications",
+    "account": {
+      "trigger": "Account menu for {name}",
+      "unnamed": "Your account",
+      "viewPage": "View my page",
+      "memberships": "Payments and memberships",
+      "settings": "Account settings",
+      "logout": "Log out",
+      "loggingOut": "Logging out…"
     }
   },
   "explore": {

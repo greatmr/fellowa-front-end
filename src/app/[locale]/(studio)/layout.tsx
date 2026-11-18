@@ -4,14 +4,14 @@ import { hasLocale } from 'next-intl'
 import { Suspense } from 'react'
 
 import { AppLayout } from '@/components/layout/app-layout'
-import { AuthNavigation } from '@/features/auth/components/auth-navigation'
 import { SessionGate } from '@/features/auth/components/session-gate'
+import { StudioAccount } from '@/features/auth/components/studio-account'
 import { routing } from '@/i18n/routing'
 
 /**
- * Creator studio frame (FE-SHELL-01; presentation Sidebar/Header @fdb5f6c).
+ * Creator studio frame (FE-SHELL-01; presentation Sidebar/Header @d843c3b).
  * Desktop: a 264px rail on the start side. Below `lg`: a top bar whose menu
- * opens the same sidebar in a drawer. Session validation streams at request time.
+ * opens the same sidebar in a drawer. `template.tsx` animates each page in. Session validation streams at request time.
  */
 export default async function StudioLayout({
   children,
@@ -40,9 +40,7 @@ export default async function StudioLayout({
       }
     >
       <SessionGate locale={locale}>
-        <AppLayout authNavigation={<AuthNavigation studio />}>
-          {children}
-        </AppLayout>
+        <AppLayout account={<StudioAccount />}>{children}</AppLayout>
       </SessionGate>
     </Suspense>
   )

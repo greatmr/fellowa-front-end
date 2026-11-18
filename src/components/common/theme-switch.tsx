@@ -23,8 +23,17 @@ const noopSubscribe = () => () => {}
  * @fdb5f6c). next-themes only knows the stored theme in the browser, so the
  * selection renders after hydration; the server output shows no option
  * selected rather than a wrong one.
+ *
+ * `compact`: the studio header's icon-only form (presentation Header
+ * @ d843c3b); the group and each option keep their names for assistive tech.
  */
-export function ThemeSwitch({ className }: { className?: string }) {
+export function ThemeSwitch({
+  className,
+  compact = false,
+}: {
+  className?: string
+  compact?: boolean
+}) {
   const t = useTranslations('theme')
   const { theme, setTheme } = useTheme()
   const labelId = useId()
@@ -63,7 +72,10 @@ export function ThemeSwitch({ className }: { className?: string }) {
     <div className={cn('flex flex-col gap-1.5', className)}>
       <p
         id={labelId}
-        className="text-label font-semibold text-muted-foreground"
+        className={cn(
+          'text-label font-semibold text-muted-foreground',
+          compact && 'sr-only'
+        )}
       >
         {t('label')}
       </p>
@@ -71,7 +83,10 @@ export function ThemeSwitch({ className }: { className?: string }) {
         role="radiogroup"
         aria-labelledby={labelId}
         aria-orientation="horizontal"
-        className="grid grid-cols-3 gap-1 rounded-md bg-secondary p-1"
+        className={cn(
+          'grid grid-cols-3 gap-1 rounded-md bg-secondary p-1',
+          compact && 'gap-0 border border-border p-0.5 shadow-xs'
+        )}
       >
         {OPTIONS.map(({ value, icon: Icon }, index) => {
           const selected = current === value
@@ -87,15 +102,19 @@ export function ThemeSwitch({ className }: { className?: string }) {
               }}
               onKeyDown={(event) => moveSelection(event, index)}
               onClick={() => setTheme(value)}
+              aria-label={compact ? t(value) : undefined}
+              title={compact ? t(value) : undefined}
               className={cn(
                 'inline-flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-label font-semibold transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                compact &&
+                  'rounded-sm p-1.5 transition-[color,background-color,box-shadow,transform] active:scale-90',
                 selected
                   ? 'bg-card text-foreground shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <Icon className="size-3.5 shrink-0" aria-hidden />
-              <span className="truncate">{t(value)}</span>
+              {compact ? null : <span className="truncate">{t(value)}</span>}
             </button>
           )
         })}

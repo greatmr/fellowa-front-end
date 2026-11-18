@@ -100,8 +100,7 @@
       "register": "ساخت حساب",
       "logout": "خروج",
       "loggingOut": "در حال خروج…",
-      "sessionLoading": "در حال دریافت حساب…",
-      "signedInAs": "واردشده با {email}"
+      "sessionLoading": "در حال دریافت حساب…"
     },
     "sessionExpired": {
       "title": "دوباره وارد شو",
@@ -523,14 +522,13 @@
       "dashboard": "داشبورد",
       "page": "مشاهده صفحه من",
       "audience": "مخاطبان",
-      "tiers": "پلن‌های عضویت",
+      "tiers": "پلن‌ها",
       "posts": "پست‌ها",
       "payouts": "گزارش‌ها",
       "payments": "پرداخت‌ها",
-      "settings": "تنظیمات",
-      "explore": "اکسپلور",
-      "feed": "فید",
-      "chats": "چت‌ها",
+      "explore": "کاوش",
+      "feed": "تازه‌ها",
+      "chats": "گفتگوها",
       "notifications": "اعلان‌ها"
     },
     "pages": {
@@ -571,20 +569,20 @@
         "category": "مدیریت"
       },
       "explore": {
-        "title": "اکسپلور",
+        "title": "کاوش",
         "category": "کشف و ارتباط"
       },
       "feed": {
-        "title": "فید",
+        "title": "تازه‌ها",
         "category": "کشف و ارتباط"
       },
       "chats": {
-        "title": "چت‌ها",
-        "category": "کشف و ارتباط"
+        "title": "گفتگوها",
+        "category": "ارتباط"
       },
       "notifications": {
         "title": "اعلان‌ها",
-        "category": "کشف و ارتباط"
+        "category": "ارتباط"
       }
     },
     "placeholder": {
@@ -592,7 +590,6 @@
       "body": "این صفحه در مرحله‌های بعدی ساخته می‌شود."
     },
     "label": "استودیوی سازنده",
-    "visitHome": "صفحه اصلی",
     "collapseSidebar": "جمع کردن نوار کناری",
     "expandSidebar": "باز کردن نوار کناری",
     "dashboard": {
@@ -631,6 +628,16 @@
       "publishFailed": "انتشار صفحه انجام نشد. دوباره تلاش کنید.",
       "published": "صفحه‌تان اکنون عمومی است.",
       "sessionExpired": "نشست شما پایان یافته است. دوباره وارد شوید."
+    },
+    "notificationsLink": "مشاهده اعلان‌ها",
+    "account": {
+      "trigger": "منوی حساب کاربری {name}",
+      "unnamed": "حساب شما",
+      "viewPage": "مشاهده صفحه من",
+      "memberships": "پرداخت‌ها و عضویت‌ها",
+      "settings": "تنظیمات حساب",
+      "logout": "خروج از حساب",
+      "loggingOut": "در حال خروج…"
     }
   },
   "explore": {

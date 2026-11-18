@@ -88,4 +88,19 @@ describe('ThemeSwitch', () => {
       within(groups[1]).getByRole('radio', { name: fa.theme.dark })
     ).toHaveAttribute('aria-checked', 'true')
   })
+
+  it('compact: icon-only options keep their names and still switch', async () => {
+    const user = userEvent.setup()
+    renderWithIntl(
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeSwitch compact />
+      </ThemeProvider>
+    )
+    const group = screen.getByRole('radiogroup', { name: fa.theme.label })
+    const dark = within(group).getByRole('radio', { name: fa.theme.dark })
+    expect(dark).not.toHaveTextContent(fa.theme.dark)
+    await user.click(dark)
+    expect(document.documentElement).toHaveClass('dark')
+    expect(dark).toHaveAttribute('aria-checked', 'true')
+  })
 })

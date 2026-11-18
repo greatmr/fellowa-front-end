@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import en from '../../../messages/en.json'
 import fa from '../../../messages/fa.json'
-import { StudioDesktopRail } from './studio-desktop-rail'
+import { StudioDesktopRail, StudioRailToggle } from './studio-desktop-rail'
 import { StudioNavGroup } from './studio-nav-group'
 
 describe('StudioDesktopRail', () => {
@@ -19,6 +19,7 @@ describe('StudioDesktopRail', () => {
       render(
         <NextIntlClientProvider locale={locale} messages={messages}>
           <StudioDesktopRail>
+            <StudioRailToggle />
             <nav aria-label={messages.studio.mainNav}>
               <a href="#dashboard">{messages.studio.nav.dashboard}</a>
             </nav>
@@ -50,6 +51,7 @@ describe('StudioDesktopRail', () => {
     render(
       <NextIntlClientProvider locale="en" messages={en}>
         <StudioDesktopRail>
+          <StudioRailToggle />
           <StudioNavGroup label={en.studio.groups.monetization}>
             <a href="#tiers">{en.studio.nav.tiers}</a>
           </StudioNavGroup>
@@ -77,5 +79,16 @@ describe('StudioDesktopRail', () => {
       screen.getByRole('button', { name: en.studio.expandSidebar })
     )
     expect(content).toHaveAttribute('inert')
+  })
+
+  it('renders no collapse control outside the desktop rail (mobile drawer)', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <StudioRailToggle />
+      </NextIntlClientProvider>
+    )
+    expect(
+      screen.queryByRole('button', { name: en.studio.collapseSidebar })
+    ).not.toBeInTheDocument()
   })
 })
