@@ -317,6 +317,49 @@ html .toaster[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
   }
 }
 
+/* The studio "create post" button (presentation `.sidebar-create-btn` and
+ * `.btn-icon-anim`, d843c3b): a springy lift on hover, a press, and the icon
+ * tilting. Mark the icon with `cta-icon`. Reduced motion keeps the colours
+ * and shadows and drops every transform.
+ */
+@utility create-cta {
+  position: relative;
+  overflow: hidden;
+  transition-property: transform, box-shadow, background-color;
+  transition-duration: 280ms, 280ms, 200ms;
+  transition-timing-function: --theme(--ease-bounce), ease, ease;
+  & .cta-icon {
+    transition: transform 320ms --theme(--ease-bounce);
+    transform-origin: 70% 70%;
+  }
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(calc(--spacing(0.5) * -0.75));
+      @apply shadow-cta-lift;
+      @variant dark {
+        @apply shadow-cta-lift-dark;
+      }
+    }
+    &:hover .cta-icon {
+      transform: scale(1.15) rotate(-10deg);
+    }
+  }
+  &:active {
+    transform: translateY(calc(--spacing(0.5) * 0.25)) scale(0.98);
+    @apply shadow-cta-press;
+  }
+  &:active .cta-icon {
+    transform: scale(0.95);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    & .cta-icon {
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+}
+
 /* Hover lift for a clickable card (presentation `.card-tactile`). Pointer
  * devices only, so a tap on touch does not leave the card lifted. The shadow
  * goes through the shadow utilities so a caller's ring (a selected card, a

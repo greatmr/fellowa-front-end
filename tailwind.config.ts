@@ -192,6 +192,13 @@ export const boxShadow = {
   /** A glass feature block: soft drop plus a lit top edge (`.fw-block`). */
   block:
     '0 20px 50px -34px rgb(16 16 16 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.8)',
+  /*
+   * The studio "create post" button's hover lift and press (presentation
+   * `.sidebar-create-btn` @ d843c3b). Pure black/white shadows, as designed.
+   */
+  'cta-lift': '0 6px 16px -2px rgb(0 0 0 / 0.32)',
+  'cta-lift-dark': '0 6px 18px -2px rgb(255 255 255 / 0.22)',
+  'cta-press': '0 2px 6px -1px rgb(0 0 0 / 0.20)',
 } as const
 
 /** Overlay backdrop blur (presentation `Sheet`, efc3a57). */
@@ -218,6 +225,8 @@ export const animation = {
   'page-enter': `page-enter .24s ${ease.smooth} forwards`,
   'pulse-subtle': 'pulse-subtle 2.2s ease-in-out infinite',
   'badge-pop': `badge-pop .3s ${ease.spring}`,
+  /* Ambient sweep across the studio "create post" button (d843c3b). */
+  'cta-glint': 'cta-glint 5.5s cubic-bezier(.4, 0, .2, 1) infinite',
   /*
    * Landing ambience (presentation `LandingView` @ 798f660): the hero's
    * drifting colour fields and the mock-ups' floating chips. `float-*` share
@@ -338,6 +347,18 @@ const config = {
           '0%': { opacity: '0', transform: 'scale(.85)' },
           '60%': { opacity: '1', transform: 'scale(1.08)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        /* Physical X on purpose: a light sweep, not layout (same in both directions). */
+        'cta-glint': {
+          '0%, 75%': {
+            transform: 'translateX(-160%) skewX(-20deg)',
+            opacity: '0',
+          },
+          '78%, 90%': { opacity: '.9' },
+          '96%, 100%': {
+            transform: 'translateX(260%) skewX(-20deg)',
+            opacity: '0',
+          },
         },
         'check-draw': {
           from: { strokeDashoffset: '24' },
