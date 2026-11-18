@@ -25,8 +25,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useLogout } from '@/features/auth/components/logout-button'
-import { hookFeedback } from '@/features/auth/lib/hook-feedback'
-import { Link } from '@/i18n/navigation'
+import { hookFeedback, sessionLost } from '@/features/auth/lib/hook-feedback'
+import { Link, useRouter } from '@/i18n/navigation'
 import { getDirection } from '@/i18n/routing'
 
 const THEMES = ['light', 'dark', 'system'] as const
@@ -58,15 +58,18 @@ export function AccountMenu({ name, subtitle, initial }: AccountMenuProps) {
     () => false
   )
   const logout = useLogout()
+  const router = useRouter()
 
   function signOut() {
     logout.submit((error) => {
+      // Already signed out (expired or revoked): finish where logout would.
+      if (sessionLost(error)) {
+        router.replace('/auth')
+        return
+      }
       const feedback = hookFeedback(error)
-      toast.error(
-        tAuth(
-          `errors.${feedback.status === 'error' ? feedback.error : 'unexpected'}`
-        )
-      )
+      const key = `errors.${feedback.status === 'error' ? feedback.error : ''}`
+      toast.error(tAuth(tAuth.has(key) ? key : 'errors.unexpected'))
     })
   }
 

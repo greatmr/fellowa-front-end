@@ -131,4 +131,21 @@ describe('AccountMenu', () => {
       })
     ).toBeInTheDocument()
   })
+
+  it('treats an already-ended session as signed out', async () => {
+    const user = userEvent.setup()
+    mocked.actions.logoutForHook.mockResolvedValue({
+      ok: false,
+      status: 401,
+      code: 'UNAUTHORIZED',
+    })
+    renderMenu()
+    await user.click(
+      screen.getByRole('button', { name: 'Account menu for Aida Kiani' })
+    )
+    await user.click(
+      await screen.findByRole('menuitem', { name: en.studio.account.logout })
+    )
+    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/auth'))
+  })
 })
