@@ -6,57 +6,47 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   useInterestsQuery,
   useSaveInterestsMutation,
 } from '@/features/auth/api/auth-hooks'
 import { SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
+import { sessionLost } from '@/features/auth/lib/hook-feedback'
+import type { AuthHref } from '@/features/auth/lib/return-to'
 import { useExploreCategoriesQuery } from '@/features/explore'
 import { useRouter } from '@/i18n/navigation'
-import type { ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 
 import { AuthErrorLine } from './auth-error-line'
 import { useAuthFlow } from './auth-flow-context'
 import { AuthScreenHeading, AuthStepIndicator } from './auth-heading'
+import { CategoryListFailed, CategoryListLoading } from './category-list-states'
 import { PhoneFeedback } from './phone-ui'
 
 const NO_PICKS: readonly number[] = []
 const STALE_LIST = 'USER_CATEGORY_NOT_FOUND'
 
 /**
- * Signed out, signed in as someone else, or the account is gone (BE-USER-08
- * answers 404 `USER_NOT_FOUND` to a save): only signing in again helps.
- */
-function sessionLost(error: ApiError | null) {
-  return (
-    error?.status === 401 ||
-    (error?.status === 404 && error.code === 'USER_NOT_FOUND')
-  )
-}
-
-/**
- * Step 3 of 3 of sign-up (presentation `InterestsScreen` @ dc8467f,
+ * Step 3 of 4 of sign-up (presentation `InterestsScreen` @ dc8467f,
  * FE-AUTH-08): the categories the account likes. The chips are the public
  * category list (`GET /landing/categories`, in its order), ticked from what
  * the account saved before (`GET /user/interests`); Continue replaces that set
- * (`PUT /user/interests`, BE-USER-08) and skip leaves it alone. Sign-up never
- * stops here: skip stays available whatever fails. Not ported: the
- * prototype's page creation with these topics (FQ-23); the page was created
- * on the address step.
+ * (`PUT /user/interests`, BE-USER-08) and skip leaves it alone. Both go on to
+ * the page's category (FQ-23). Sign-up never stops here: skip stays available
+ * whatever fails. Not ported: the prototype's page creation with these topics;
+ * the page was created on the address step.
  */
 export function InterestsForm({
   viewerId,
-  destination,
+  next,
 }: {
   /** The signed-in account, for its per-account cache entry. */
   viewerId: number
-  /** Where the account goes after this step, saved or skipped. */
-  destination: string
+  /** The next step, saved or skipped. */
+  next: AuthHref
 }) {
   const t = useTranslations('auth.interests')
-  const commonT = useTranslations('common')
+  const listT = useTranslations('auth.categoryList')
   const toastT = useTranslations('auth.phone.toast')
   const router = useRouter()
   const { setPickedCategoryIds } = useAuthFlow()
@@ -110,7 +100,7 @@ export function InterestsForm({
       {
         onSuccess: () => {
           toast.success(toastT('interestsSaved'))
-          router.replace(destination)
+          router.replace(next)
         },
         onError: (error) => {
           submitting.current = false
@@ -123,7 +113,7 @@ export function InterestsForm({
 
   function skip() {
     if (submitting.current || pending) return
-    router.replace(destination)
+    router.replace(next)
   }
 
   return (
@@ -142,36 +132,12 @@ export function InterestsForm({
         className="space-y-4"
       >
         {loading ? (
-          <div
-            role="status"
-            aria-label={commonT('loading')}
-            className="flex flex-wrap justify-center gap-2.5"
-          >
-            {Array.from({ length: 6 }, (_, index) => (
-              <Skeleton key={index} className="h-10 w-24 rounded-full" />
-            ))}
-          </div>
+          <CategoryListLoading className="justify-center" />
         ) : listFailed ? (
-          <div className="flex flex-col items-center gap-3">
-            <AuthErrorLine role="alert" centered>
-              {t('loadFailed')}
-            </AuthErrorLine>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={categories.isFetching}
-              onClick={() => void categories.refetch()}
-            >
-              {categories.isFetching && (
-                <LoaderCircleIcon
-                  className="animate-spin motion-reduce:animate-none"
-                  aria-hidden
-                />
-              )}
-              {commonT('retry')}
-            </Button>
-          </div>
+          <CategoryListFailed
+            retrying={categories.isFetching}
+            onRetry={() => void categories.refetch()}
+          />
         ) : (
           <div
             role="group"
@@ -215,7 +181,7 @@ export function InterestsForm({
         {!pending && save.error && !lost ? (
           save.error.code === STALE_LIST ? (
             <AuthErrorLine role="alert" centered>
-              {t('stale')}
+              {listT('stale')}
             </AuthErrorLine>
           ) : (
             <PhoneFeedback error={save.error} centered />

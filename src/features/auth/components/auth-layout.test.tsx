@@ -95,10 +95,13 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
     expect(backLink(messages)).toHaveAttribute('href', href)
   })
 
-  it('on /auth/interests goes back to the address step (FE-AUTH-08)', () => {
-    route.pathname = '/auth/interests'
+  it.each([
+    ['/auth/interests', '/auth/url'],
+    ['/auth/category', '/auth/interests'],
+  ])('on %s goes back to %s (FE-AUTH-08)', (pathname, href) => {
+    route.pathname = pathname
     const messages = renderLayout()
-    expect(backLink(messages)).toHaveAttribute('href', '/auth/url')
+    expect(backLink(messages)).toHaveAttribute('href', href)
   })
 
   it('drops an unsafe returnTo from the back link', () => {
@@ -149,6 +152,18 @@ describe('AuthLayout visual column', () => {
       column.queryByText(messages.auth.interests.preview.badge)
     ).not.toBeInTheDocument()
     expect(explore.listExploreCategoriesForHook).not.toHaveBeenCalled()
+  })
+
+  it('keeps the sample cards on the page category step (the preview card has no category)', () => {
+    route.pathname = '/auth/category'
+    const messages = renderLayout()
+    const column = within(visual())
+    expect(
+      column.getByText(messages.auth.samples.podcaster.tag)
+    ).toBeInTheDocument()
+    expect(
+      column.queryByText(messages.auth.preview.badge)
+    ).not.toBeInTheDocument()
   })
 
   it('shows the live page preview on the address step', () => {

@@ -241,6 +241,10 @@
       "pending": "Creating your page…",
       "back": "Back"
     },
+    "categoryList": {
+      "loadFailed": "The topics could not be loaded.",
+      "stale": "The list of topics has changed. Check your picks again."
+    },
     "interests": {
       "pageTitle": "Interests",
       "title": "What are you into?",
@@ -250,8 +254,6 @@
       "submit": "Continue",
       "pending": "Saving…",
       "skip": "Skip for now",
-      "loadFailed": "The topics could not be loaded.",
-      "stale": "The list of topics has changed. Check your picks again.",
       "preview": {
         "badge": "Preview: how creators are ordered in Explore",
         "monthly": "Monthly membership",
@@ -264,6 +266,16 @@
           "mahsa": "Mahsa Karimi"
         }
       }
+    },
+    "pageCategory": {
+      "pageTitle": "Your page",
+      "title": "What do you mostly make?",
+      "description": "Pick one so the right fans can find you more easily.",
+      "options": "Page topic",
+      "helper": "Just one.",
+      "submit": "Continue",
+      "pending": "Saving…",
+      "skip": "Skip for now"
     }
   },
   "common": {

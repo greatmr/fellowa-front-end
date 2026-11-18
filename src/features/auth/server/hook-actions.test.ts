@@ -36,6 +36,7 @@ const {
   resendEmailForHook,
   saveInterestsForHook,
   setAliasForHook,
+  setPageCategoryForHook,
   verifyEmailForHook,
   verifyAuthTokenForHook,
 } = await import('./hook-actions')
@@ -731,6 +732,94 @@ describe('interests against the backend contract (BE-USER-08)', () => {
       ok: false,
       status: 400,
       code: 'USER_CATEGORY_NOT_FOUND',
+      isNetworkError: false,
+    })
+  })
+})
+
+describe('page category against the backend contract', () => {
+  let sent: unknown = null
+
+  beforeEach(() => {
+    sent = null
+    server.use(
+      http.put(`${apiOrigin}/user/category`, async ({ request: upstream }) => {
+        upstreamCalls++
+        expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
+        sent = await upstream.json()
+        return HttpResponse.json({
+          data: { message: 'Category updated' },
+          errors: null,
+        })
+      })
+    )
+  })
+
+  it('sets the category of the signed-in account', async () => {
+    request.cookies.set(sessionCookieName, token())
+    expect(await setPageCategoryForHook(42, { categoryId: 7 })).toEqual({
+      ok: true,
+      data: null,
+    })
+    expect(sent).toEqual({ categoryId: 7 })
+  })
+
+  it('refuses a cookie that now belongs to another account', async () => {
+    request.cookies.set(sessionCookieName, token())
+    expect(await setPageCategoryForHook(7, { categoryId: 7 })).toMatchObject({
+      ok: false,
+      status: 401,
+      code: 'SESSION_CHANGED',
+    })
+    expect(sent).toBeNull()
+  })
+
+  it.each([[0], [-1], [1.5], [32768]])(
+    'refuses the id %j before it reaches the API',
+    async (categoryId) => {
+      request.cookies.set(sessionCookieName, token())
+      expect(await setPageCategoryForHook(42, { categoryId })).toEqual({
+        ok: false,
+        status: 400,
+        code: 'INVALID_REQUEST',
+      })
+      expect(upstreamCalls).toBe(0)
+    }
+  )
+
+  it('refuses a save from another origin', async () => {
+    request.cookies.set(sessionCookieName, token())
+    request.origin = 'https://evil.example'
+    expect(await setPageCategoryForHook(42, { categoryId: 7 })).toEqual({
+      ok: false,
+      status: 403,
+      code: 'INVALID_REQUEST',
+    })
+    expect(upstreamCalls).toBe(0)
+  })
+
+  it('passes on 400 USER_ALIAS_REQUIRED with its code', async () => {
+    request.cookies.set(sessionCookieName, token())
+    server.use(
+      http.put(`${apiOrigin}/user/category`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Set an alias before setting up your page',
+                code: 'USER_ALIAS_REQUIRED',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      )
+    )
+    expect(await setPageCategoryForHook(42, { categoryId: 7 })).toEqual({
+      ok: false,
+      status: 400,
+      code: 'USER_ALIAS_REQUIRED',
       isNetworkError: false,
     })
   })

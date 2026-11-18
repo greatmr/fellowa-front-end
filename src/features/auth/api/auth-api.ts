@@ -11,6 +11,7 @@ import type {
   GoogleAuthPayload,
   GoogleSignIn,
   InterestsPayload,
+  PageCategoryPayload,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -45,6 +46,8 @@ const userSchema = z.object({
   displayName: z.string().nullable(),
   // BE-AUTH-10: always present for the owner.
   hasPassword: z.boolean(),
+  // `toSelfProfile`: the page's category, `null` with no page or none chosen.
+  categoryId: z.number().int().positive().safe().nullable().optional(),
 })
 const tokenSchema = z.object({ token: z.string().min(1) })
 const messageSchema = z.object({ message: z.string() })
@@ -263,6 +266,20 @@ export async function completeAccount(
     withBearer(token)
   )
   return parseEnvelope(completedAccountSchema, response, invalid)
+}
+
+/**
+ * `PUT /user/category`: the caller's page's one category. 400
+ * `USER_ALIAS_REQUIRED` with no page; 400 `USER_CATEGORY_NOT_FOUND` for an
+ * unknown id.
+ */
+export async function setPageCategory(token: string, categoryId: number) {
+  const response = await apiPut<unknown, PageCategoryPayload>(
+    '/user/category',
+    { categoryId },
+    withBearer(token)
+  )
+  parseEnvelope(messageSchema, response, invalid)
 }
 
 /** `GET /user/interests` (BE-USER-08): the caller's liked category ids. */

@@ -26,6 +26,7 @@ import {
   resendEmailForHook,
   saveInterestsForHook,
   setAliasForHook,
+  setPageCategoryForHook,
   verifyAuthTokenForHook,
   verifyEmailForHook,
   verifyPhoneCodeForHook,
@@ -38,6 +39,7 @@ import type {
   CredentialsPayload,
   GoogleAuthPayload,
   InterestsPayload,
+  PageCategoryPayload,
   PhoneCodeRequestPayload,
   PhoneCodeSent,
   PhoneLoginPayload,
@@ -187,6 +189,22 @@ export function useSaveInterestsMutation(
     'save-interests',
     (input: InterestsPayload) => saveInterestsForHook(viewerId, input),
     'interests',
+    options
+  )
+}
+
+/**
+ * The page's category (`PUT /user/category`). It is part of the owner
+ * profile (`categoryId`), so the profile is invalidated.
+ */
+export function useSetPageCategoryMutation(
+  viewerId: number,
+  options?: MutationOptions<null, PageCategoryPayload>
+) {
+  return useAuthMutation(
+    'set-page-category',
+    (input: PageCategoryPayload) => setPageCategoryForHook(viewerId, input),
+    'profile',
     options
   )
 }

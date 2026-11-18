@@ -18,6 +18,7 @@ import {
   resendEmailCode,
   saveInterests,
   setCreatorAlias,
+  setPageCategory,
   submitCredentials,
   verifyAuthToken,
   verifyEmailCode,
@@ -43,6 +44,7 @@ import {
   createResetPasswordSchema,
   createVerificationSchema,
   interestsPayloadSchema,
+  pageCategoryPayloadSchema,
 } from '@/features/auth/schemas'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import type {
@@ -52,6 +54,7 @@ import type {
   CredentialsPayload,
   GoogleAuthPayload,
   InterestsPayload,
+  PageCategoryPayload,
   PhoneCodeRequestPayload,
   PhoneLoginPayload,
   PhoneLookupPayload,
@@ -223,6 +226,20 @@ export async function saveInterestsForHook(
   return mutate(interestsPayloadSchema, input, async ({ categoryIds }) =>
     saveInterests((await viewerSession(viewerId)).token, categoryIds)
   )
+}
+
+/** The page's one category (`PUT /user/category`), sign-up's last step. */
+export async function setPageCategoryForHook(
+  viewerId: number,
+  input: PageCategoryPayload
+): Promise<ApiActionResult<null>> {
+  if (!viewerIdSchema.safeParse(viewerId).success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return mutate(pageCategoryPayloadSchema, input, async ({ categoryId }) => {
+    await setPageCategory((await viewerSession(viewerId)).token, categoryId)
+    return null
+  })
 }
 
 /** A read, but behind the same origin check as the auth mutations. */

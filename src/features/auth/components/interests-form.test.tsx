@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
@@ -33,6 +34,7 @@ vi.mock('@/i18n/navigation', async (importOriginal) => ({
 }))
 
 const t = en.auth.interests
+const listT = en.auth.categoryList
 const viewerId = 42
 
 /**
@@ -67,13 +69,17 @@ beforeEach(() => {
   )
 })
 
+/** `next`: the page category step, as the route passes it. */
 function renderStep({
-  destination = '/studio',
+  next = '/auth/category',
   locale = 'en',
-}: { destination?: string; locale?: 'en' | 'fa' } = {}) {
+}: {
+  next?: ComponentProps<typeof InterestsForm>['next']
+  locale?: 'en' | 'fa'
+} = {}) {
   return renderAuth(
     <AuthFlowProvider>
-      <InterestsForm viewerId={viewerId} destination={destination} />
+      <InterestsForm viewerId={viewerId} next={next} />
       <aside>
         <AuthVisual samples={<p>default samples</p>} />
       </aside>
@@ -89,7 +95,7 @@ const submit = () => screen.getByRole('button', { name: t.submit })
 const skip = () => screen.getByRole('button', { name: t.skip })
 
 describe('interests (InterestsScreen, FE-AUTH-08)', () => {
-  it('is step 3 of 3, with the chips in the order the API lists them', async () => {
+  it('is step 3 of 4, with the chips in the order the API lists them', async () => {
     renderStep()
     expect(await screen.findByRole('heading', { name: t.title })).toBeVisible()
     expect(screen.getByText(t.description)).toBeInTheDocument()
@@ -99,7 +105,7 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     )
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuemax',
-      '3'
+      '4'
     )
     await waitFor(() =>
       expect(chips().map((button) => button.textContent)).toEqual(
@@ -147,7 +153,7 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     expect(mocked.auth.interestsForHook).toHaveBeenCalledWith(viewerId)
   })
 
-  it('saves the ticked set in list order, then goes on with a toast', async () => {
+  it('saves the ticked set in list order, then goes on to the page category with a toast', async () => {
     const user = userEvent.setup()
     renderStep()
     await user.click(await screen.findByRole('button', { name: 'موسیقی' }))
@@ -156,7 +162,9 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     await user.click(chip('پادکست'))
     expect(chip('پادکست')).toHaveAttribute('aria-pressed', 'false')
     await user.click(submit())
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/category')
+    )
     expect(mocked.auth.saveInterestsForHook).toHaveBeenCalledWith(viewerId, {
       categoryIds: [4, 7],
     })
@@ -181,16 +189,22 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     expect(mocked.auth.saveInterestsForHook).toHaveBeenCalledTimes(1)
     expect(mocked.replace).not.toHaveBeenCalled()
     save.resolve(ok([7]))
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/category')
+    )
     expect(mocked.replace).toHaveBeenCalledTimes(1)
   })
 
-  it('skips without a request', async () => {
+  it('skips to the next step without a request, keeping returnTo', async () => {
     const user = userEvent.setup()
-    renderStep({ destination: '/creators/5' })
+    const next = {
+      pathname: '/auth/category',
+      query: { returnTo: '/settings' },
+    }
+    renderStep({ next })
     await user.click(await screen.findByRole('button', { name: 'موسیقی' }))
     await user.click(skip())
-    expect(mocked.replace).toHaveBeenCalledWith('/creators/5')
+    expect(mocked.replace).toHaveBeenCalledWith(next)
     expect(mocked.auth.saveInterestsForHook).not.toHaveBeenCalled()
     expect(mocked.toast.success).not.toHaveBeenCalled()
   })
@@ -206,7 +220,9 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
         answer()
       )
       renderStep()
-      expect(await screen.findByRole('alert')).toHaveTextContent(t.loadFailed)
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        listT.loadFailed
+      )
       expect(submit()).toBeDisabled()
       expect(skip()).toBeEnabled()
 
@@ -232,7 +248,7 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
       ok(categories.slice(0, 6))
     )
     await user.click(submit())
-    expect(await screen.findByRole('alert')).toHaveTextContent(t.stale)
+    expect(await screen.findByRole('alert')).toHaveTextContent(listT.stale)
     await waitFor(() =>
       expect(
         screen.queryByRole('button', { name: 'عکاسی' })
@@ -258,7 +274,9 @@ describe('interests (InterestsScreen, FE-AUTH-08)', () => {
     )
     expect(mocked.replace).not.toHaveBeenCalled()
     await user.click(submit())
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/auth/category')
+    )
   })
 
   it.each([

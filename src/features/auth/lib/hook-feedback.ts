@@ -1,6 +1,18 @@
 import type { AuthActionState, AuthErrorCode } from '@/features/auth/types'
 import type { ApiError } from '@/lib/api/errors'
 
+/**
+ * Signed out, signed in as someone else, or the account is gone (404
+ * `USER_NOT_FOUND`): only signing in again helps. For the sign-up steps that
+ * send the account back to `/auth` themselves.
+ */
+export function sessionLost(error: ApiError | null): boolean {
+  return (
+    error?.status === 401 ||
+    (error?.status === 404 && error.code === 'USER_NOT_FOUND')
+  )
+}
+
 export function hookFeedback(
   error: ApiError | null,
   guarded = false

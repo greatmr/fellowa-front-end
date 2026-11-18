@@ -7,10 +7,15 @@ import { CredentialsForm } from '@/features/auth/components/credentials-form'
 import { ForgotPasswordForm } from '@/features/auth/components/forgot-password-form'
 import { InterestsForm } from '@/features/auth/components/interests-form'
 import { PageAddressForm } from '@/features/auth/components/page-address-form'
+import { PageCategoryForm } from '@/features/auth/components/page-category-form'
 import { PhoneAuthFlow } from '@/features/auth/components/phone-auth-flow'
 import { ResetPasswordForm } from '@/features/auth/components/reset-password-form'
 import { VerificationForm } from '@/features/auth/components/verification-form'
-import { INTERESTS_PATH } from '@/features/auth/lib/auth-steps'
+import {
+  INTERESTS_PATH,
+  PAGE_ADDRESS_PATH,
+  PAGE_CATEGORY_PATH,
+} from '@/features/auth/lib/auth-steps'
 import { googleErrorFrom } from '@/features/auth/lib/google-error'
 import {
   addressStepStandsAlone,
@@ -148,7 +153,7 @@ export async function AccountScreen({ locale, searchParams }: StepProps) {
 }
 
 /**
- * `/auth/url` (FE-AUTH-04): the page address, step 2 of 3 of sign-up, then on
+ * `/auth/url` (FE-AUTH-04): the page address, step 2 of 4 of sign-up, then on
  * to the interests (FE-AUTH-08); or on its own when opened from settings or
  * the studio (FE-ONB-02), where an account that already has a page has
  * nothing to choose and goes on. In sign-up, an account with a page is back
@@ -180,8 +185,8 @@ export async function PageAddressScreen({ locale, searchParams }: StepProps) {
 
 /**
  * `/auth/interests` (FE-AUTH-08): the categories the account likes, step 3 of
- * 3 of sign-up. Any signed-in account may open it, page or not: the set is
- * its own, and skipping changes nothing.
+ * 4 of sign-up, then the page's category. Any signed-in account may open it,
+ * page or not: the set is its own, and skipping changes nothing.
  */
 export async function InterestsScreen({ locale, searchParams }: StepProps) {
   const query = await searchParams
@@ -196,7 +201,36 @@ export async function InterestsScreen({ locale, searchParams }: StepProps) {
   return (
     <InterestsForm
       viewerId={session.user.id}
+      next={authHref(PAGE_CATEGORY_PATH, returnTo)}
+    />
+  )
+}
+
+/**
+ * `/auth/category` (FE-AUTH-08, FQ-23): the page's one category, step 4 of 4
+ * of sign-up. It starts from the owner profile the session has just read
+ * (`categoryId`), so no other request is made for it. An account with no page
+ * has no category to choose and goes to the address step first.
+ */
+export async function PageCategoryScreen({ locale, searchParams }: StepProps) {
+  const query = await searchParams
+  const returnTo = requestedReturnTo(query.returnTo)
+  const session = await getSession()
+  if (!session) {
+    return redirect({ href: authHref('/auth', returnTo), locale })
+  }
+  if (!session.user.isVerified) {
+    return redirect({ href: '/auth/verify-email', locale })
+  }
+  if (session.user.alias === null) {
+    return redirect({ href: authHref(PAGE_ADDRESS_PATH, returnTo), locale })
+  }
+  return (
+    <PageCategoryForm
+      viewerId={session.user.id}
+      currentCategoryId={session.user.categoryId ?? null}
       destination={safeReturnTo(returnTo)}
+      returnTo={returnTo}
     />
   )
 }

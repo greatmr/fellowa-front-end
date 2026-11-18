@@ -200,6 +200,11 @@ export const interestsPayloadSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length),
 })
 
+/** `UpdateCategoryDto`: one positive integer, a `smallint` id. */
+export const pageCategoryPayloadSchema = z.object({
+  categoryId: z.number().int().min(1).max(32767),
+})
+
 /** What the backend stores for a valid alias: `Studio` reads back `studio`. */
 export function normalizeAlias(alias: string): string {
   return alias.trim().toLowerCase()

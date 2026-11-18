@@ -15,6 +15,7 @@ const {
   resendEmailCode,
   saveInterests,
   setCreatorAlias,
+  setPageCategory,
   submitCredentials,
   verifyAuthToken,
   verifyEmailCode,
@@ -189,6 +190,70 @@ describe('server authentication API', () => {
         newPassword: 'new-password',
       })
     ).resolves.toBeUndefined()
+  })
+
+  it("keeps the owner profile's page category (toSelfProfile categoryId)", async () => {
+    const profile = {
+      id: 4,
+      email: null,
+      alias: 'sara_art',
+      isVerified: true,
+      displayName: 'Sara',
+      hasPassword: false,
+    }
+    server.use(
+      http.get(`${origin}/api/user/4/profile`, () =>
+        HttpResponse.json({ data: { ...profile, categoryId: 7 }, errors: null })
+      ),
+      http.get(`${origin}/api/user/5/profile`, () =>
+        HttpResponse.json({
+          data: { ...profile, id: 5, alias: null, categoryId: null },
+          errors: null,
+        })
+      )
+    )
+    expect(await fetchOwnProfile('token', 4)).toEqual({
+      ...profile,
+      categoryId: 7,
+    })
+    expect(await fetchOwnProfile('token', 5)).toMatchObject({
+      alias: null,
+      categoryId: null,
+    })
+  })
+
+  it('sets the page category with the bearer token, and keeps a refusal code', async () => {
+    server.use(
+      http.put(`${origin}/api/user/category`, async ({ request }) => {
+        expect(request.headers.get('authorization')).toBe('Bearer token')
+        const { categoryId } = (await request.json()) as {
+          categoryId: number
+        }
+        if (categoryId === 2) {
+          return HttpResponse.json({
+            data: { message: 'Category updated' },
+            errors: null,
+          })
+        }
+        return HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Set an alias before setting up your page',
+                code: 'USER_ALIAS_REQUIRED',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      })
+    )
+    await expect(setPageCategory('token', 2)).resolves.toBeUndefined()
+    await expect(setPageCategory('token', 3)).rejects.toMatchObject({
+      status: 400,
+      code: 'USER_ALIAS_REQUIRED',
+    })
   })
 
   it('reads and replaces the account interests with its bearer token (BE-USER-08)', async () => {

@@ -346,6 +346,8 @@ describe('verify', () => {
           isVerified: true,
           displayName: null,
           hasPassword: false,
+          // The page's category (FE-AUTH-08): none with no page.
+          categoryId: null,
         },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',
@@ -429,6 +431,8 @@ describe('login with password', () => {
           isVerified: true,
           displayName: null,
           hasPassword: false,
+          // The page's category (FE-AUTH-08): none with no page.
+          categoryId: null,
         },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',

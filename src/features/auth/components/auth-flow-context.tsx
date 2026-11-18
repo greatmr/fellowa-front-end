@@ -48,8 +48,8 @@ const AuthFlowContext = createContext<AuthFlow | null>(null)
 
 /**
  * What the per-step auth routes share (`/auth` → `/auth/otp` →
- * `/auth/account` → `/auth/url` → `/auth/interests`). It lives in the auth
- * layout, in memory only:
+ * `/auth/account` → `/auth/url` → `/auth/interests` → `/auth/category`). It
+ * lives in the auth layout, in memory only:
  * the number and the name never reach storage, the token stays in the
  * httpOnly cookie, and a reload starts the flow again.
  */

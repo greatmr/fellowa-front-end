@@ -108,7 +108,7 @@ const submit = () => screen.getByRole('button', { name: t.submit })
 const settle = () => act(() => vi.advanceTimersByTimeAsync(400))
 
 describe('page address (OnboardingUrlScreen)', () => {
-  it('is step 2 of 3 and prefills from a Latin page name', async () => {
+  it('is step 2 of 4 and prefills from a Latin page name', async () => {
     setup()
     renderStep('Studio Sara')
     expect(await field()).toHaveValue('studiosara')
@@ -118,7 +118,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     )
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuemax',
-      '3'
+      '4'
     )
     expect(screen.getAllByText(t.prefix)).toHaveLength(2)
   })

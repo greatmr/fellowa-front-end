@@ -27,3 +27,6 @@ export type CompleteAccountPayload = { displayName: string; password?: string }
  * categories, ids from `GET /landing/categories`; `[]` clears it.
  */
 export type InterestsPayload = { categoryIds: number[] }
+
+/** `update-category.dto.ts`: the page's one category (`PUT /user/category`). */
+export type PageCategoryPayload = { categoryId: number }
