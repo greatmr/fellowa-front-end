@@ -10,9 +10,9 @@ import {
  * step of a flow, and routes that are not steps, have none. `/auth/account`
  * has none either: the account is signed in by then, and `/auth` would send
  * it on to its destination, out of sign-up. `/auth/interests` goes back to
- * the address step, which in sign-up keeps an account whose page it has just
- * created, so the address can still be changed (FE-AUTH-08); the category
- * step goes back to the interests.
+ * the address step in its return mode (`BACK_FROM_INTERESTS`), which keeps the
+ * page it has just created, so the address can still be changed (FE-AUTH-08);
+ * the category step goes back to the interests.
  */
 const BACK: Readonly<Record<string, string>> = {
   '/auth/otp': '/auth',
@@ -27,16 +27,40 @@ const BACK: Readonly<Record<string, string>> = {
 }
 
 /**
+ * The query that opens the address step as a return from the interests step
+ * (FE-AUTH-08): the account's page exists, and its address may still change.
+ * Harmless if typed by hand: it only ever shows the account its own page.
+ */
+export const BACK_FROM_INTERESTS: Readonly<Record<string, string>> = {
+  from: 'interests',
+}
+
+/** Whether the address step's `from` query is {@link BACK_FROM_INTERESTS}. */
+export function returnsFromInterests(from: unknown): boolean {
+  return from === BACK_FROM_INTERESTS.from
+}
+
+/**
  * The back target for `pathname` (locale-free), keeping the destination. The
  * address step opened from a page rather than sign-up (settings, the studio
- * checklist; FE-ONB-02) goes back to that page, not to the account step.
+ * checklist; FE-ONB-02) goes back to that page, not to the account step. In
+ * its return mode (`from`) it goes back to the interests: the account step
+ * would end sign-up there, skipping the interests and the category.
  */
-export function authBackHref(pathname: string, returnTo?: string) {
-  if (pathname === PAGE_ADDRESS_PATH && addressStepStandsAlone(returnTo)) {
-    return safeReturnTo(returnTo)
+export function authBackHref(
+  pathname: string,
+  returnTo?: string,
+  from?: string | null
+) {
+  if (pathname === PAGE_ADDRESS_PATH) {
+    if (addressStepStandsAlone(returnTo)) return safeReturnTo(returnTo)
+    if (returnsFromInterests(from)) return INTERESTS_PATH
   }
   const target = BACK[pathname]
-  return target ? authHref(target, returnTo) : null
+  if (!target) return null
+  return pathname === INTERESTS_PATH
+    ? authHref(target, returnTo, { ...BACK_FROM_INTERESTS })
+    : authHref(target, returnTo)
 }
 
 /**

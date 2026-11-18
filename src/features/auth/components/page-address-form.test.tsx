@@ -7,7 +7,7 @@ import en from '../../../../messages/en.json'
 import { AuthFlowProvider, useAuthFlow } from './auth-flow-context'
 import { AuthVisual } from './auth-visual'
 import { PageAddressForm } from './page-address-form'
-import { renderAuth } from './test-utils'
+import { deferred, renderAuth } from './test-utils'
 
 const mocked = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -91,6 +91,7 @@ function renderStep(
           returnTo={returnTo}
           profileName={profileName}
           currentAddress={currentAddress}
+          backFromInterests={currentAddress !== null}
         />
         <AuthVisual samples={null} />
       </>
@@ -335,18 +336,47 @@ describe('page address (OnboardingUrlScreen)', () => {
     )
   })
 
-  it('back from the interests step, starts from the page address and saves nothing unchanged', async () => {
+  it('back from the interests step, starts from the page address and goes on at once, asking and saving nothing', async () => {
     const user = setup()
     renderStep('Sara', 'Sara', undefined, 'sara_art')
     expect(await field()).toHaveValue('sara_art')
-    await settle()
-    expect(await screen.findByText(t.available)).toBeInTheDocument()
+    // No debounce to wait for, no availability check for the page's own name.
+    expect(submit()).toBeEnabled()
     await user.click(submit())
+    expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
+    expect(mocked.actions.aliasAvailabilityForHook).not.toHaveBeenCalled()
+    expect(mocked.actions.setAliasForHook).not.toHaveBeenCalled()
+    expect(mocked.toast.success).not.toHaveBeenCalled()
+  })
+
+  it('back from the interests step, links back there, not to the account step', async () => {
+    setup()
+    renderStep('Sara', 'Sara', undefined, 'sara_art')
+    await field()
+    expect(screen.getByRole('link', { name: t.back })).toHaveAttribute(
+      'href',
+      '/auth/interests'
+    )
+  })
+
+  it('says it is saving the username, not creating a page, while it renames', async () => {
+    const user = setup()
+    const save = deferred<{ ok: true; data: null }>()
+    mocked.actions.setAliasForHook.mockReturnValue(save.promise)
+    renderStep('Sara', 'Sara', undefined, 'sara_art')
+    await user.clear(await field())
+    await user.type(await field(), 'sara_studio')
+    await settle()
+    await waitFor(() => expect(submit()).toBeEnabled())
+    await user.click(submit())
+    expect(
+      await screen.findByRole('button', { name: t.renaming })
+    ).toBeDisabled()
+    expect(screen.queryByText(t.pending)).not.toBeInTheDocument()
+    save.resolve({ ok: true, data: null })
     await waitFor(() =>
       expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
     )
-    expect(mocked.actions.setAliasForHook).not.toHaveBeenCalled()
-    expect(mocked.toast.success).not.toHaveBeenCalled()
   })
 
   it('back from the interests step, renames the page with a plain "saved"', async () => {

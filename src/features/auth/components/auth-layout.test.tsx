@@ -96,10 +96,16 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
   })
 
   it.each([
-    ['/auth/interests', '/auth/url'],
-    ['/auth/category', '/auth/interests'],
-  ])('on %s goes back to %s (FE-AUTH-08)', (pathname, href) => {
+    // The address step in its return mode: it keeps the page just created.
+    ['/auth/interests', '', '/auth/url?from=interests'],
+    ['/auth/category', '', '/auth/interests'],
+    // Back in that mode, the account step would end sign-up: to the interests.
+    ['/auth/url', 'from=interests', '/auth/interests'],
+    // Opened from a page, the address step goes back there, marker or not.
+    ['/auth/url', 'from=interests&returnTo=/settings', '/settings'],
+  ])('on %s?%s goes back to %s (FE-AUTH-08)', (pathname, search, href) => {
     route.pathname = pathname
+    route.search = search
     const messages = renderLayout()
     expect(backLink(messages)).toHaveAttribute('href', href)
   })

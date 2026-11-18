@@ -17,7 +17,7 @@ import {
   useAliasAvailabilityQuery,
   useSetAliasMutation,
 } from '@/features/auth/api/auth-hooks'
-import { SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
+import { INTERESTS_PATH, SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
 import {
   addressFormatStatus,
   addressFromName,
@@ -59,11 +59,12 @@ const BAD: readonly AddressStatus[] = [
 ]
 
 /**
- * Step 2 of 3 of sign-up, or on its own from settings or the studio checklist
+ * Step 2 of 4 of sign-up, or on its own from settings or the studio checklist
  * (presentation `OnboardingUrlScreen` @ fdb5f6c; FE-ONB-02): the page's
  * address, checked as it is typed (`GET /auth/alias/availability`, BE-AUTH-09)
  * and saved with `PUT /auth/alias`, which creates the page, or renames it when
- * the account is back from the interests step (FE-AUTH-08). The live preview
+ * the account is back from the interests step (FE-AUTH-08; an unchanged
+ * address then saves nothing and asks nothing). The live preview
  * in the visual column follows the field. The name comes from the owner
  * profile, so a Google sign-up or a reload still shows it (FE-AUTH-06); the
  * in-memory name from the account step covers a profile read without one.
@@ -75,14 +76,17 @@ export function PageAddressForm({
   returnTo,
   profileName,
   currentAddress = null,
+  backFromInterests = false,
 }: {
   /** Where the account goes once the page has its address. */
   destination: string
   returnTo?: string
   /** The owner profile's `displayName`; `null` while it is the placeholder. */
   profileName: string | null
-  /** The page's address when it already has one (`alias`), else `null`. */
+  /** The page's address, back from the interests step; else `null`. */
   currentAddress?: string | null
+  /** Back from the interests step: "back" returns there (FE-AUTH-08). */
+  backFromInterests?: boolean
 }) {
   const t = useTranslations('auth.url')
   const toastT = useTranslations('auth.phone.toast')
@@ -105,10 +109,13 @@ export function PageAddressForm({
   const queryClient = useQueryClient()
 
   const settledValue = useSettled(value)
-  // No request for an address the format already rules out.
+  // The page's own address needs no saving, so no wait and no check.
+  const unchanged = currentAddress !== null && value === currentAddress
+  // No request for an address the format already rules out, or the page's own.
   const check = useAliasAvailabilityQuery(
     settledValue,
-    addressFormatStatus(settledValue) === 'unchecked'
+    addressFormatStatus(settledValue) === 'unchecked' &&
+      settledValue !== currentAddress
   )
   const status = addressStatus({
     value,
@@ -139,13 +146,15 @@ export function PageAddressForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (submitting.current || save.isPending || !canSaveAddress(status)) return
-    submitting.current = true
+    if (submitting.current || save.isPending) return
     // Back from the interests step with the address unchanged: nothing to save.
-    if (value === currentAddress) {
+    if (unchanged) {
+      submitting.current = true
       router.replace(destination)
       return
     }
+    if (!canSaveAddress(status)) return
+    submitting.current = true
     save.mutate(
       { alias: value },
       {
@@ -307,21 +316,33 @@ export function PageAddressForm({
             variant="inverse"
             size="lg"
             className="h-12 w-full rounded-xl"
-            disabled={!canSaveAddress(status) || pending}
+            disabled={!(unchanged || canSaveAddress(status)) || pending}
           >
-            {(pending || status === 'checking') && (
+            {(pending || (status === 'checking' && !unchanged)) && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(pending ? 'pending' : 'submit')}
+            {t(
+              !pending
+                ? 'submit'
+                : currentAddress === null
+                  ? 'pending'
+                  : 'renaming'
+            )}
           </Button>
         </div>
 
         <div className="text-center">
           <Link
-            href={inSignUp ? '/auth/account' : safeReturnTo(returnTo)}
+            href={
+              !inSignUp
+                ? safeReturnTo(returnTo)
+                : backFromInterests
+                  ? INTERESTS_PATH
+                  : '/auth/account'
+            }
             className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             {t('back')}

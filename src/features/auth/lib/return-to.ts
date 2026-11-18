@@ -20,11 +20,19 @@ const privatePaths = new Set([
 const creatorPagePath = /^\/creators\/[1-9][0-9]{0,9}$/
 
 export type AuthHref =
-  string | { pathname: string; query: { returnTo: string } }
+  string | { pathname: string; query: Record<string, string> }
 
-/** An auth route link that keeps the post-authentication destination. */
-export function authHref(pathname: string, returnTo?: string): AuthHref {
-  return returnTo ? { pathname, query: { returnTo } } : pathname
+/**
+ * An auth route link that keeps the post-authentication destination, with
+ * any step `query` of its own (the address step's return mode, FE-AUTH-08).
+ */
+export function authHref(
+  pathname: string,
+  returnTo?: string,
+  query: Record<string, string> = {}
+): AuthHref {
+  const merged = returnTo ? { ...query, returnTo } : query
+  return Object.keys(merged).length > 0 ? { pathname, query: merged } : pathname
 }
 
 /**

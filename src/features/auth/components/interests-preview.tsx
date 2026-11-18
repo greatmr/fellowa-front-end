@@ -11,9 +11,9 @@ import { useAuthFlow } from './auth-flow-context'
 
 /**
  * Illustrative creators: static copy and sample prices, never real accounts.
- * Each takes a category from the list the interests step loaded, in its
- * order — the API sends `{id, title}` only (no slug to pair a sample with a
- * category), and pairing by position keeps the ids and titles the API's own.
+ * Each takes a category from the list the interests step loaded — the API
+ * sends `{id, title}` only (no slug to pair a sample with a category), so the
+ * ids and titles stay the API's own.
  * The prototype's six, in its order and prices; its two samples named after a
  * topic (a podcast, a gamer) are people here, since the topic is not fixed.
  */
@@ -40,11 +40,22 @@ export function InterestsPreview({ fallback }: { fallback: ReactNode }) {
   const { data: categories } = useExploreCategoriesQuery({ enabled: false })
   if (!categories?.length) return fallback
 
+  const isMatch = (categoryId: number) => pickedCategoryIds.includes(categoryId)
+  // There are more categories than cards: the picked ones get a card first,
+  // then the rest fill up. Paired in list order, so a card keeps its category
+  // while the picks leave room for it.
+  const shown = new Set(
+    [
+      ...categories.filter((category) => isMatch(category.id)),
+      ...categories.filter((category) => !isMatch(category.id)),
+    ]
+      .slice(0, SAMPLES.length)
+      .map((category) => category.id)
+  )
   const cards = categories
-    .slice(0, SAMPLES.length)
+    .filter((category) => shown.has(category.id))
     .map((category, index) => ({ ...SAMPLES[index], category }))
   const hasPicks = pickedCategoryIds.length > 0
-  const isMatch = (categoryId: number) => pickedCategoryIds.includes(categoryId)
   // Array sort is stable: matches first, each group in list order.
   const ordered = hasPicks
     ? [...cards].sort(
