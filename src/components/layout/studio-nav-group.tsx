@@ -6,7 +6,10 @@ import { ChevronDownIcon } from 'lucide-react'
 import { useStudioRailCollapsed } from '@/components/layout/studio-desktop-rail'
 import { cn } from '@/lib/utils'
 
-/** Animated category disclosure; the desktop icon rail always shows its icons. */
+/**
+ * Animated category disclosure (300ms on the smooth curve, presentation
+ * Sidebar @ d843c3b); the desktop icon rail always shows its icons.
+ */
 export function StudioNavGroup({
   label,
   children,
@@ -30,12 +33,12 @@ export function StudioNavGroup({
         aria-expanded={expanded}
         aria-controls={contentId}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between gap-1 rounded-md px-3 py-2 text-label font-semibold text-muted-foreground transition-colors outline-none group-data-[collapsed=true]/sidebar:hidden hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="group/disclosure flex w-full items-center justify-between gap-1 rounded-sm px-3 py-1.5 text-start text-label font-semibold text-muted-foreground transition-[color,transform] outline-none group-data-[collapsed=true]/sidebar:hidden hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.99]"
       >
         <span className="truncate">{label}</span>
         <ChevronDownIcon
           className={cn(
-            'size-3.5 shrink-0 transition-transform duration-300 motion-reduce:transition-none',
+            'size-4 shrink-0 text-ink-400 transition-transform duration-300 ease-smooth group-hover/disclosure:text-foreground motion-reduce:transition-none',
             expanded && 'rotate-180'
           )}
           aria-hidden
@@ -45,11 +48,14 @@ export function StudioNavGroup({
         id={contentId}
         inert={!expanded}
         className={cn(
-          'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none',
-          expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          'grid transition-[grid-template-rows,opacity,translate] duration-300 ease-smooth motion-reduce:transition-none',
+          expanded
+            ? 'translate-y-0 grid-rows-[1fr] opacity-100'
+            : '-translate-y-1 grid-rows-[0fr] opacity-0'
         )}
       >
-        <div className="min-h-0 overflow-hidden">{children}</div>
+        {/* Widened onto the rail padding so the start-edge active bar is not clipped. */}
+        <div className="-mx-3 min-h-0 overflow-hidden px-3">{children}</div>
       </div>
     </div>
   )

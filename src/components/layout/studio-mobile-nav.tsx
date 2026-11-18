@@ -23,7 +23,7 @@ export function StudioMobileNav({ children }: { children: ReactNode }) {
       openLabel={t('openMenu')}
       closeLabel={tCommon('close')}
       desktopQuery="(min-width: 64rem)"
-      triggerClassName="lg:hidden"
+      triggerClassName="transition-transform active:scale-95 lg:hidden"
     >
       {children}
     </NavigationDrawer>

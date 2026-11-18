@@ -1,22 +1,28 @@
 import type { ReactNode } from 'react'
-import { ArrowUpRightIcon } from 'lucide-react'
+import { BellIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { ThemeSwitch } from '@/components/common/theme-switch'
 import { Logo } from '@/components/layout/logo'
 import { SkipLink } from '@/components/layout/skip-link'
 import { StudioDesktopRail } from '@/components/layout/studio-desktop-rail'
+import { StudioHeaderTitle } from '@/components/layout/studio-header-title'
 import { StudioMobileNav } from '@/components/layout/studio-mobile-nav'
 import { StudioSidebar } from '@/components/layout/studio-sidebar'
-import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 
-/** Creator frame; protected product data is authorized by its owning feature. */
+/**
+ * Creator frame (presentation `App.tsx` shell, Sidebar and Header @ d843c3b).
+ * `account` is the signed-in account row for the sidebar; protected product
+ * data is authorized by its owning feature. The notification dot stays
+ * absent until there is notification data.
+ */
 export function AppLayout({
   children,
-  authNavigation,
+  account,
 }: {
   children: ReactNode
-  authNavigation?: ReactNode
+  account?: ReactNode
 }) {
   const t = useTranslations('studio')
 
@@ -24,35 +30,32 @@ export function AppLayout({
     <div className="flex min-h-full flex-1">
       <SkipLink />
       <StudioDesktopRail>
-        <StudioSidebar />
+        <StudioSidebar account={account} />
       </StudioDesktopRail>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-card/90 px-3 backdrop-blur sm:px-4 lg:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <StudioMobileNav>
-              <StudioSidebar />
+              <StudioSidebar account={account} />
             </StudioMobileNav>
             <Link
               href="/studio"
-              className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50 lg:hidden"
+              className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-95 lg:hidden"
             >
               <Logo />
             </Link>
-            <span className="hidden text-body font-semibold text-muted-foreground lg:block">
-              {t('label')}
-            </span>
+            <StudioHeaderTitle />
           </div>
-          <div className="flex min-w-0 items-center gap-2">
-            {authNavigation}
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/">
-                {t('visitHome')}
-                <ArrowUpRightIcon
-                  className="size-4 rtl:-rotate-90"
-                  aria-hidden
-                />
-              </Link>
-            </Button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeSwitch compact />
+            <Link
+              href="/notifications"
+              aria-label={t('notificationsLink')}
+              title={t('nav.notifications')}
+              className="flex size-9 items-center justify-center rounded-md text-ink-600 transition-[color,background-color,transform] outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-95 dark:text-ink-300"
+            >
+              <BellIcon className="size-4.5" strokeWidth={1.8} aria-hidden />
+            </Link>
           </div>
         </header>
         <main
