@@ -18,6 +18,7 @@ import {
   usePhoneLookupMutation,
   useRequestPhoneCodeMutation,
 } from '@/features/auth/api/auth-hooks'
+import { useReleaseWhenHidden } from '@/features/auth/hooks/use-step-navigation'
 import {
   formatPhoneInput,
   normalizeIranianMobile,
@@ -35,6 +36,7 @@ import { AuthErrorLine, AuthFieldMessage } from './auth-error-line'
 import { AuthFormControl } from './auth-form-control'
 import { AuthScreenHeading } from './auth-heading'
 import { GoogleSignInButton } from './google-sign-in-button'
+import { LinkPending } from './link-pending'
 import { PhoneFeedback, useLocaleDigits } from './phone-ui'
 
 /**
@@ -51,6 +53,7 @@ export function PhoneEntryStep({
   initialPhone = '',
   returnTo,
   google,
+  navigating = false,
   onResume,
   onPasswordFound,
   onCodeSent,
@@ -58,6 +61,8 @@ export function PhoneEntryStep({
   initialPhone?: string
   returnTo?: string
   google?: { enabled: boolean; locale: string; error: GoogleErrorKind | null }
+  /** The flow is moving to the next step: stay pending until it renders. */
+  navigating?: boolean
   /** `true` when the flow can continue with `phone` without a new code. */
   onResume?: (phone: string) => boolean
   /** The account has a password: no code was sent. */
@@ -68,7 +73,8 @@ export function PhoneEntryStep({
   const submitting = useRef(false)
   const lookup = usePhoneLookupMutation()
   const request = useRequestPhoneCodeMutation()
-  const pending = lookup.isPending || request.isPending
+  const pending = lookup.isPending || request.isPending || navigating
+  useReleaseWhenHidden(submitting)
   // One chain, one line: a lookup failure stops it before request-code.
   const error = lookup.error ?? request.error
   const localeDigits = useLocaleDigits()
@@ -137,10 +143,8 @@ export function PhoneEntryStep({
     submitting.current = true
     void form.handleSubmit(
       ({ phone }) => {
-        if (onResume?.(phone)) {
-          submitting.current = false
-          return
-        }
+        // Moving on keeps the guard held until the next step has rendered.
+        if (onResume?.(phone)) return
         const done = () => {
           submitting.current = false
         }
@@ -151,7 +155,6 @@ export function PhoneEntryStep({
             onSuccess: (found) => {
               lookup.reset()
               if (found.hasPassword) {
-                done()
                 onPasswordFound(found)
                 return
               }
@@ -162,7 +165,7 @@ export function PhoneEntryStep({
                     request.reset()
                     onCodeSent(sent)
                   },
-                  onSettled: done,
+                  onError: done,
                 }
               )
             },
@@ -271,7 +274,7 @@ export function PhoneEntryStep({
             href={authHref('/auth/login/email', returnTo)}
             className="rounded-sm font-semibold text-link underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           >
-            {t('entry.emailLink')}
+            <LinkPending>{t('entry.emailLink')}</LinkPending>
           </Link>
         </p>
         <p className="pt-4 text-center text-label leading-relaxed text-muted-foreground">

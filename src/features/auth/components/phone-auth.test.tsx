@@ -1,6 +1,13 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useEffect, useState, type ComponentProps } from 'react'
+import {
+  Suspense,
+  use,
+  useEffect,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../../../../messages/en.json'
@@ -8,7 +15,7 @@ import fa from '../../../../messages/fa.json'
 import { AuthFlowProvider, useAuthFlow } from './auth-flow-context'
 import { CompleteAccountForm } from './complete-account-form'
 import { PhoneAuthFlow, type PhoneStep } from './phone-auth-flow'
-import { renderAuth } from './test-utils'
+import { deferred, renderAuth } from './test-utils'
 
 const mocked = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -931,5 +938,145 @@ describe('complete account (CompleteAccountScreen)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       en.auth.sessionExpired.title
     )
+  })
+})
+
+/**
+ * A step route that is still rendering on the server. The App Router moves
+ * between steps in a transition below the auth layout's Suspense boundary,
+ * which is already on screen, so React keeps the current step until the next
+ * one is ready. `gate.promise` holds every route but the one it was armed on.
+ */
+const gate: { from: string; promise: Promise<void> | null } = {
+  from: '',
+  promise: null,
+}
+function arm(from: string) {
+  const next = deferred<void>()
+  gate.from = from
+  gate.promise = next.promise
+  return next
+}
+
+function Held({ path, children }: { path: string; children: ReactNode }) {
+  if (gate.promise && path !== gate.from) use(gate.promise)
+  return children
+}
+
+/** The per-step routes, under the auth layout's one Suspense boundary. */
+function SlowRoutes(props: Omit<ComponentProps<typeof PhoneAuthFlow>, 'step'>) {
+  const [path, setPath] = useState('/auth')
+  useEffect(() => {
+    mocked.go = (href) => setPath(pathOf(href))
+    return () => {
+      mocked.go = null
+    }
+  }, [])
+  const step = STEP_PATHS[path]
+  return (
+    <Suspense fallback={<p data-testid="step-fallback" />}>
+      <Held path={path}>
+        {step ? (
+          <PhoneAuthFlow key={path} step={step} {...props} />
+        ) : (
+          <p data-testid="left">{path}</p>
+        )}
+      </Held>
+    </Suspense>
+  )
+}
+
+describe('moving between steps: no skeleton, the button stays pending', () => {
+  beforeEach(() => {
+    gate.from = ''
+    gate.promise = null
+  })
+
+  function renderSlowFlow() {
+    return renderAuth(
+      <AuthFlowProvider>
+        <SlowRoutes />
+      </AuthFlowProvider>
+    )
+  }
+
+  it('keeps the entry step and its loading button until the code step has rendered', async () => {
+    const user = setup()
+    const next = arm('/auth')
+    renderSlowFlow()
+    await user.type(screen.getByLabelText(t.entry.label), '09121234567')
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await waitFor(() => expect(mocked.push).toHaveBeenCalledWith('/auth/otp'))
+
+    const button = screen.getByRole('button', { name: t.entry.pending })
+    expect(button).toBeDisabled()
+    expect(button.closest('form')).toHaveAttribute('aria-busy', 'true')
+    expect(
+      screen.getByRole('heading', { name: t.entry.title })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+
+    // Enter again while the next step loads: no second lookup or SMS.
+    const form = button.closest('form')
+    if (form) fireEvent.submit(form)
+    expect(mocked.actions.phoneLookupForHook).toHaveBeenCalledTimes(1)
+    expect(mocked.actions.requestPhoneCodeForHook).toHaveBeenCalledTimes(1)
+    expect(mocked.push).toHaveBeenCalledTimes(1)
+
+    await act(async () => next.resolve())
+    expect(
+      await screen.findByRole('heading', { name: t.code.title })
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+  })
+
+  it('keeps the code step and its verify spinner until the next page has rendered', async () => {
+    const user = setup()
+    renderSlowFlow()
+    await user.type(screen.getByLabelText(t.entry.label), '09121234567')
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.code.title })
+
+    const next = arm('/auth/otp')
+    await user.type(digitBoxes()[0]!, '12345')
+    await waitFor(() => expect(mocked.replace).toHaveBeenCalledTimes(1))
+
+    const verify = screen.getByRole('button', { name: t.code.pending })
+    expect(verify).toBeDisabled()
+    expect(verify.closest('form')).toHaveAttribute('aria-busy', 'true')
+    expect(
+      screen.getByRole('button', { name: t.code.editNumber })
+    ).toBeDisabled()
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+    expect(mocked.actions.verifyPhoneCodeForHook).toHaveBeenCalledTimes(1)
+
+    await act(async () => next.resolve())
+    expect(await screen.findByTestId('left')).toBeInTheDocument()
+  })
+
+  it('marks "edit number" busy, not verify, while going back to the entry step', async () => {
+    const user = setup()
+    renderSlowFlow()
+    await user.type(screen.getByLabelText(t.entry.label), '09121234567')
+    await user.click(screen.getByRole('button', { name: t.entry.submit }))
+    await screen.findByRole('heading', { name: t.code.title })
+
+    const next = arm('/auth/otp')
+    const edit = screen.getByRole('button', { name: t.code.editNumber })
+    // An awaited act: the click starts a transition that suspends.
+    await act(async () => edit.click())
+    await waitFor(() => expect(edit).toHaveAttribute('aria-busy', 'true'))
+    expect(edit).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: t.code.submit })
+    ).not.toHaveAttribute('aria-busy')
+    expect(screen.queryByTestId('step-fallback')).not.toBeInTheDocument()
+    await user.click(edit)
+    expect(mocked.push).toHaveBeenCalledTimes(2)
+
+    await act(async () => next.resolve())
+    expect(
+      await screen.findByRole('heading', { name: t.entry.title })
+    ).toBeInTheDocument()
   })
 })

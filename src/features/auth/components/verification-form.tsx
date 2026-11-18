@@ -21,10 +21,13 @@ import {
   useResendEmailMutation,
   useVerifyEmailMutation,
 } from '@/features/auth/api/auth-hooks'
+import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
 import { hookFeedback } from '@/features/auth/lib/hook-feedback'
 import { safeReturnTo } from '@/features/auth/lib/return-to'
 import { createVerificationSchema } from '@/features/auth/schemas'
-import { useRouter } from '@/i18n/navigation'
 import { toLatinDigits } from '@/lib/digits'
 
 import { AuthFeedback } from './auth-feedback'
@@ -39,8 +42,9 @@ export function VerificationForm({
   returnTo?: string
 }) {
   const t = useTranslations('auth')
-  const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const submitting = useRef(false)
+  useReleaseWhenHidden(submitting)
   const [lastAction, setLastAction] = useState<
     'verify' | 'resend' | 'change-account' | null
   >(null)
@@ -48,7 +52,14 @@ export function VerificationForm({
   const resend = useResendEmailMutation()
   const changeAccount = useLogoutMutation()
   const pending =
-    verify.isPending || resend.isPending || changeAccount.isPending
+    verify.isPending ||
+    resend.isPending ||
+    changeAccount.isPending ||
+    navigating
+  // The button used keeps its loading state until the next page renders.
+  const verifying = verify.isPending || (navigating && lastAction === 'verify')
+  const leaving =
+    changeAccount.isPending || (navigating && lastAction === 'change-account')
   const verifyState = hookFeedback(verify.error, true)
   const state =
     lastAction === 'verify'
@@ -86,7 +97,7 @@ export function VerificationForm({
         verify.mutate(values, {
           onSuccess: () => {
             verify.reset()
-            router.replace(safeReturnTo(returnTo))
+            replace(safeReturnTo(returnTo))
           },
           onError: () => {
             submitting.current = false
@@ -116,7 +127,7 @@ export function VerificationForm({
         if (error.code === 'AUTH_ALREADY_VERIFIED') {
           // Verified elsewhere, for instance in another tab: nothing to resend.
           resend.reset()
-          router.replace(safeReturnTo(returnTo))
+          replace(safeReturnTo(returnTo))
           return
         }
         submitting.current = false
@@ -134,7 +145,7 @@ export function VerificationForm({
     changeAccount.mutate(undefined, {
       onSuccess: () => {
         changeAccount.reset()
-        router.replace({
+        replace({
           pathname: '/auth',
           query: { returnTo: safeReturnTo(returnTo) },
         })
@@ -162,7 +173,7 @@ export function VerificationForm({
         <form
           onSubmit={submit}
           noValidate
-          aria-busy={verify.isPending}
+          aria-busy={verifying}
           className="space-y-5"
         >
           <fieldset disabled={disabled || locked} className="min-w-0">
@@ -213,13 +224,13 @@ export function VerificationForm({
             className="w-full"
             disabled={disabled || locked}
           >
-            {verify.isPending && (
+            {verifying && (
               <LoaderCircleIcon
                 className="animate-spin motion-reduce:animate-none"
                 aria-hidden
               />
             )}
-            {t(verify.isPending ? 'verify.pending' : 'verify.submit')}
+            {t(verifying ? 'verify.pending' : 'verify.submit')}
           </Button>
         </form>
       </Form>
@@ -250,16 +261,14 @@ export function VerificationForm({
       </form>
       <form
         onSubmit={submitChangeAccount}
-        aria-busy={changeAccount.isPending}
+        aria-busy={leaving}
         className="space-y-3 text-center"
       >
         {lastAction === 'change-account' && !pending && (
           <AuthFeedback state={state} returnTo={returnTo} />
         )}
         <Button type="submit" variant="link" disabled={pending}>
-          {t(
-            changeAccount.isPending ? 'nav.loggingOut' : 'verify.changeAccount'
-          )}
+          {t(leaving ? 'nav.loggingOut' : 'verify.changeAccount')}
         </Button>
       </form>
     </div>

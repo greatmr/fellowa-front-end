@@ -17,6 +17,7 @@ import {
   useRequestPhoneCodeMutation,
   useVerifyPhoneCodeMutation,
 } from '@/features/auth/api/auth-hooks'
+import { useReleaseWhenHidden } from '@/features/auth/hooks/use-step-navigation'
 import { PHONE_CODE_LENGTH } from '@/features/auth/schemas'
 import { deadlineIn, type Deadline } from '@/features/auth/lib/phone'
 import type { PhoneSignIn } from '@/features/auth/types'
@@ -57,6 +58,7 @@ export function PhoneCodeStep({
   phone,
   hasPassword,
   wait,
+  navigating = false,
   onResent,
   onSignedIn,
   onEditPhone,
@@ -66,6 +68,8 @@ export function PhoneCodeStep({
   hasPassword: boolean
   /** Until a new code may be asked for. */
   wait: Deadline
+  /** The flow is moving to another step: stay pending until it renders. */
+  navigating?: boolean
   onResent: (wait: Deadline) => void
   onSignedIn: (result: PhoneSignIn) => void
   onEditPhone: () => void
@@ -81,11 +85,16 @@ export function PhoneCodeStep({
   const [shake, setShake] = useState(false)
   // Locked out by the server: entry closes until a new code is sent.
   const [locked, setLocked] = useState(false)
-  const [lastAction, setLastAction] = useState<'verify' | 'resend' | null>(null)
+  const [lastAction, setLastAction] = useState<
+    'verify' | 'resend' | 'edit' | 'password' | null
+  >(null)
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const submitting = useRef(false)
   const secondsLeft = useSecondsLeft(wait)
-  const pending = verify.isPending || resend.isPending
+  const pending = verify.isPending || resend.isPending || navigating
+  // The verify button keeps its spinner until the next route has rendered.
+  const verifying = verify.isPending || (navigating && lastAction === 'verify')
+  useReleaseWhenHidden(submitting)
   const code = digits.join('')
   const complete = /^\d+$/.test(code) && code.length === PHONE_CODE_LENGTH
 
@@ -177,6 +186,14 @@ export function PhoneCodeStep({
     if (pasted) fill(0, pasted)
   }
 
+  /** "Edit number" and "use password": pending on the one that was used. */
+  function leave(action: 'edit' | 'password', go: () => void) {
+    if (submitting.current || pending) return
+    submitting.current = true
+    setLastAction(action)
+    go()
+  }
+
   function requestNewCode() {
     if (pending || secondsLeft > 0) return
     setLastAction('resend')
@@ -217,9 +234,15 @@ export function PhoneCodeStep({
             <Button
               type="button"
               variant="link"
-              className="h-auto p-0 font-bold"
-              onClick={onEditPhone}
+              onClick={() => leave('edit', onEditPhone)}
               disabled={pending}
+              aria-busy={(navigating && lastAction === 'edit') || undefined}
+              className={cn(
+                'h-auto p-0 font-bold',
+                navigating &&
+                  lastAction === 'edit' &&
+                  'animate-pulse motion-reduce:animate-none'
+              )}
             >
               {t('code.editNumber')}
             </Button>
@@ -229,7 +252,7 @@ export function PhoneCodeStep({
 
       <form
         noValidate
-        aria-busy={verify.isPending}
+        aria-busy={verifying}
         className="space-y-4"
         onSubmit={(event) => {
           event.preventDefault()
@@ -296,13 +319,13 @@ export function PhoneCodeStep({
           className="h-12 w-full"
           disabled={!complete || entryClosed}
         >
-          {verify.isPending && (
+          {verifying && (
             <LoaderCircleIcon
               className="animate-spin motion-reduce:animate-none"
               aria-hidden
             />
           )}
-          {t(verify.isPending ? 'code.pending' : 'code.submit')}
+          {t(verifying ? 'code.pending' : 'code.submit')}
         </Button>
       </form>
 
@@ -311,10 +334,18 @@ export function PhoneCodeStep({
           type="button"
           variant="outline"
           className="h-11 w-full"
-          onClick={onUsePassword}
+          onClick={() => leave('password', onUsePassword)}
           disabled={pending}
+          aria-busy={(navigating && lastAction === 'password') || undefined}
         >
-          <KeyRoundIcon className="text-link" aria-hidden />
+          {navigating && lastAction === 'password' ? (
+            <LoaderCircleIcon
+              className="animate-spin text-link motion-reduce:animate-none"
+              aria-hidden
+            />
+          ) : (
+            <KeyRoundIcon className="text-link" aria-hidden />
+          )}
           {t('code.usePassword')}
         </Button>
       )}

@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl'
 
 import { Logo } from '@/components/layout/logo'
 import { SkipLink } from '@/components/layout/skip-link'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Link } from '@/i18n/navigation'
 
 import { AuthBackButton, AuthBackSpacer } from './auth-back-button'
@@ -42,7 +43,14 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="mx-auto flex w-full max-w-100 flex-1 flex-col justify-center py-8 outline-none lg:py-12"
           >
-            {children}
+            {/*
+              One boundary for every step, in the layout the steps share: on
+              a page load it shows the placeholder below; a move between
+              steps renders below it, so it never falls back again — the
+              current step stays until the next has rendered, while its
+              button shows the loading state (useStepNavigation).
+            */}
+            <Suspense fallback={<AuthStepFallback />}>{children}</Suspense>
           </main>
           <div aria-hidden className="hidden h-4 lg:block" />
         </div>
@@ -61,5 +69,21 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         </aside>
       </div>
     </AuthFlowProvider>
+  )
+}
+
+/**
+ * A step's placeholder on a page load or on entering the flow (the static
+ * shell); never shown between steps.
+ */
+function AuthStepFallback() {
+  const t = useTranslations('common')
+  return (
+    <div role="status" aria-label={t('loading')} className="space-y-5">
+      <Skeleton className="h-8 w-3/4" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+    </div>
   )
 }

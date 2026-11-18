@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 
+import { useStepNavigation } from '@/features/auth/hooks/use-step-navigation'
 import type { GoogleErrorKind } from '@/features/auth/lib/google-error'
 import { deadlineIn, type Deadline } from '@/features/auth/lib/phone'
 import { authHref, phoneSignInDestination } from '@/features/auth/lib/return-to'
@@ -45,6 +46,8 @@ export function PhoneAuthFlow({
 }) {
   const t = useTranslations('auth.phone.toast')
   const router = useRouter()
+  // Each step's buttons stay pending until the next route has rendered.
+  const { navigating, push, replace } = useStepNavigation()
   const { target, setTarget, setSignedInPhone } = useAuthFlow()
   const missingTarget = step !== 'entry' && !target
   // The code step for a number that was only looked up (back/forward, a
@@ -57,7 +60,7 @@ export function PhoneAuthFlow({
   }, [missingTarget, noCode, returnTo, router])
 
   function go(next: PhoneStep) {
-    router.push(authHref(PATHS[next], returnTo))
+    push(authHref(PATHS[next], returnTo))
   }
 
   function codeSent(sent: PhoneCodeSent) {
@@ -89,7 +92,7 @@ export function PhoneAuthFlow({
     const completing = result.isNewUser || result.needsProfile
     setSignedInPhone(completing ? result.phone : null)
     toast.success(t(result.isNewUser ? 'verified' : 'welcomeBack'))
-    router.replace(phoneSignInDestination(result, returnTo))
+    replace(phoneSignInDestination(result, returnTo))
   }
 
   function waitUntil(wait: Deadline) {
@@ -110,6 +113,7 @@ export function PhoneAuthFlow({
         }}
         returnTo={returnTo}
         google={google}
+        navigating={navigating}
         onPasswordFound={passwordFound}
         onCodeSent={codeSent}
       />
@@ -123,6 +127,7 @@ export function PhoneAuthFlow({
       <PhonePasswordStep
         phone={target.phone}
         wait={target.wait}
+        navigating={navigating}
         onSignedIn={signedIn}
         onUseCode={(sent) => {
           if (sent) waitUntil(deadlineIn(sent.resendAfterSeconds))
@@ -138,6 +143,7 @@ export function PhoneAuthFlow({
       phone={target.phone}
       hasPassword={target.hasPassword}
       wait={target.wait}
+      navigating={navigating}
       onResent={waitUntil}
       onSignedIn={signedIn}
       onEditPhone={() => go('entry')}

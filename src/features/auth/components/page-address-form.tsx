@@ -17,6 +17,10 @@ import {
   useAliasAvailabilityQuery,
   useSetAliasMutation,
 } from '@/features/auth/api/auth-hooks'
+import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
 import { INTERESTS_PATH, SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
 import {
   addressFormatStatus,
@@ -31,12 +35,13 @@ import {
   safeReturnTo,
 } from '@/features/auth/lib/return-to'
 import { ALIAS_MIN_LENGTH } from '@/features/auth/schemas'
-import { Link, useRouter } from '@/i18n/navigation'
+import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
 import { AuthErrorLine } from './auth-error-line'
 import { useAuthFlow } from './auth-flow-context'
 import { AuthScreenHeading, AuthStepIndicator } from './auth-heading'
+import { LinkPending } from './link-pending'
 import { PhoneFeedback } from './phone-ui'
 
 /** The prototype checks 400 ms after typing stops. */
@@ -90,7 +95,7 @@ export function PageAddressForm({
 }) {
   const t = useTranslations('auth.url')
   const toastT = useTranslations('auth.phone.toast')
-  const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const statusId = useId()
   const { pageName, setPageName, setPageAddress } = useAuthFlow()
   const name = profileName ?? pageName
@@ -105,6 +110,7 @@ export function PageAddressForm({
   const [dropped, setDropped] = useState(false)
   const [takenOnSave, setTakenOnSave] = useState<string | null>(null)
   const submitting = useRef(false)
+  useReleaseWhenHidden(submitting)
   const save = useSetAliasMutation()
   const queryClient = useQueryClient()
 
@@ -150,7 +156,7 @@ export function PageAddressForm({
     // Back from the interests step with the address unchanged: nothing to save.
     if (unchanged) {
       submitting.current = true
-      router.replace(destination)
+      replace(destination)
       return
     }
     if (!canSaveAddress(status)) return
@@ -162,7 +168,7 @@ export function PageAddressForm({
           toast.success(
             toastT(currentAddress === null ? 'pageCreated' : 'saved')
           )
-          router.replace(destination)
+          replace(destination)
         },
         onError: (error) => {
           submitting.current = false
@@ -178,7 +184,9 @@ export function PageAddressForm({
     )
   }
 
-  const pending = save.isPending
+  // Saving, then moving on: pending until the next step has rendered.
+  const pending = save.isPending || navigating
+  const saving = save.isPending || (navigating && save.isSuccess)
   const rejected = save.error?.status === 400
   const handledInField = save.error?.code === 'AUTH_ALIAS_TAKEN' || rejected
   const bad = BAD.includes(status) || rejected
@@ -325,7 +333,7 @@ export function PageAddressForm({
               />
             )}
             {t(
-              !pending
+              !saving
                 ? 'submit'
                 : currentAddress === null
                   ? 'pending'
@@ -345,7 +353,7 @@ export function PageAddressForm({
             }
             className="rounded-sm text-body font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
-            {t('back')}
+            <LinkPending>{t('back')}</LinkPending>
           </Link>
         </div>
       </form>

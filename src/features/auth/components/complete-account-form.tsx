@@ -12,6 +12,10 @@ import { Form, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useCompleteAccountMutation } from '@/features/auth/api/auth-hooks'
 import {
+  useReleaseWhenHidden,
+  useStepNavigation,
+} from '@/features/auth/hooks/use-step-navigation'
+import {
   createCompleteAccountSchema,
   DISPLAY_NAME_MAX,
   DISPLAY_NAME_MIN,
@@ -20,7 +24,6 @@ import {
 import { SIGN_UP_STEPS } from '@/features/auth/lib/auth-steps'
 import type { AuthHref } from '@/features/auth/lib/return-to'
 import type { CompleteAccountPayload } from '@/features/auth/types'
-import { useRouter } from '@/i18n/navigation'
 
 import { AuthFieldHint } from './auth-error-line'
 import { AuthFormControl } from './auth-form-control'
@@ -49,11 +52,13 @@ export function CompleteAccountForm({
   firstOfSteps: boolean
 }) {
   const t = useTranslations('auth.phone')
-  const router = useRouter()
+  const { navigating, replace } = useStepNavigation()
   const { signedInPhone, setPageName } = useAuthFlow()
   const submitting = useRef(false)
   const mutation = useCompleteAccountMutation()
-  const pending = mutation.isPending
+  // Saving, then moving on: pending until the next step has rendered.
+  const pending = mutation.isPending || navigating
+  useReleaseWhenHidden(submitting)
   const form = useForm({
     resolver: zodResolver(
       createCompleteAccountSchema({
@@ -74,7 +79,7 @@ export function CompleteAccountForm({
       onSuccess: () => {
         setPageName(payload.displayName)
         toast.success(t(payload.password ? 'toast.saved' : 'toast.skipped'))
-        router.replace(next)
+        replace(next)
       },
       onError: () => {
         submitting.current = false
