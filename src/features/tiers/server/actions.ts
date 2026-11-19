@@ -3,13 +3,17 @@
 import {
   createTier,
   deleteTier,
+  getTierCover,
   listOwnTiers,
   listTierRoles,
   updateTier,
+  uploadTierCover,
 } from '@/features/tiers/api/tier-api'
 import { readSession, validAuthRequestOrigin } from '@/features/auth/server'
 import {
   InvalidTierResponseError,
+  MAX_TIER_COVER_BYTES,
+  TIER_COVER_TYPES,
   tierIdSchema,
   tierInputSchema,
   tierUpdateInputSchema,
@@ -17,7 +21,9 @@ import {
 import type {
   CreateTierPayload,
   Tier,
+  TierCover,
   TierRole,
+  UpdateTierPayload,
 } from '@/features/tiers/types/tier'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import { ApiError } from '@/lib/api/errors'
@@ -70,6 +76,39 @@ export async function listTierRolesForHook(
   return execute(async () => listTierRoles(await authorizedToken(viewerId)))
 }
 
+export async function getTierCoverForHook(
+  viewerId: number,
+  tierId: number
+): Promise<ApiActionResult<TierCover | null>> {
+  if (
+    !tierIdSchema.safeParse(viewerId).success ||
+    !tierIdSchema.safeParse(tierId).success
+  ) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return execute(async () =>
+    getTierCover(await authorizedToken(viewerId), tierId)
+  )
+}
+
+export async function uploadTierCoverForHook(
+  viewerId: number,
+  form: FormData
+): Promise<ApiActionResult<TierCover>> {
+  return mutation(async () => {
+    const image = form.get('image')
+    if (
+      !(image instanceof File) ||
+      image.size === 0 ||
+      image.size > MAX_TIER_COVER_BYTES ||
+      !TIER_COVER_TYPES.some((type) => type === image.type)
+    ) {
+      invalidTier()
+    }
+    return uploadTierCover(await authorizedToken(viewerId), image)
+  })
+}
+
 export async function createTierForHook(
   viewerId: number,
   input: CreateTierPayload
@@ -83,7 +122,7 @@ export async function createTierForHook(
 
 export async function updateTierForHook(
   viewerId: number,
-  input: CreateTierPayload & { id: number }
+  input: UpdateTierPayload
 ): Promise<ApiActionResult<number>> {
   return mutation(async () => {
     const parsed = tierUpdateInputSchema.safeParse(input)

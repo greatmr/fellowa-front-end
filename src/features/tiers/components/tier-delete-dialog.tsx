@@ -11,43 +11,44 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { Tier } from '@/features/tiers/types/tier'
 
 type Props = {
-  target: Tier | null
+  /** The tier's title while the dialog is open; `null` closes it. */
+  title: string | null
   pending: boolean
   failed: boolean
-  onConfirm: (tier: Tier) => void
+  onConfirm: () => void
   onClose: () => void
 }
 
+/** `DELETE /tire/:id` archives the tier; the copy is Q-22's (owner 2026-11-19). */
 export function TierDeleteDialog({
-  target,
+  title,
   pending,
   failed,
   onConfirm,
   onClose,
 }: Props) {
-  const t = useTranslations('tiers')
+  const t = useTranslations('tiers.delete')
   const tCommon = useTranslations('common')
 
   return (
     <Dialog
-      open={target !== null}
+      open={title !== null}
       onOpenChange={(open) => {
         if (!open && !pending) onClose()
       }}
     >
       <DialogContent closeLabel={tCommon('close')}>
         <DialogHeader>
-          <DialogTitle>{t('deleteTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('deleteBody', { title: target?.title ?? '' })}
+          <DialogTitle>{t('title', { title: title ?? '' })}</DialogTitle>
+          <DialogDescription className="leading-6">
+            {t('body')}
           </DialogDescription>
         </DialogHeader>
         {failed ? (
           <p role="alert" className="text-body-sm text-destructive">
-            {t('deleteError')}
+            {t('error')}
           </p>
         ) : null}
         <DialogFooter>
@@ -63,11 +64,9 @@ export function TierDeleteDialog({
             type="button"
             variant="destructive"
             disabled={pending}
-            onClick={() => {
-              if (target) onConfirm(target)
-            }}
+            onClick={onConfirm}
           >
-            {pending ? t('deleting') : t('delete')}
+            {pending ? t('deleting') : t('confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

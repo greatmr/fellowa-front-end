@@ -5,40 +5,67 @@ import { server } from '../../../../test/msw/server'
 
 const origin = 'https://api.fellowa.test'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', `${origin}/api`)
-const { createTier, deleteTier, listOwnTiers, listTierRoles, updateTier } =
-  await import('./tier-api')
+const {
+  createTier,
+  deleteTier,
+  getTierCover,
+  listOwnTiers,
+  listTierRoles,
+  updateTier,
+  uploadTierCover,
+} = await import('./tier-api')
 afterAll(() => vi.unstubAllEnvs())
 
+const coverId = '1712345678-abcdef012345.webp'
+
+/** `TierService.listTires` on back-end develop (b56f6a1). */
+function listRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 7,
+    creatorId: 4,
+    title: 'Supporter',
+    description: null,
+    price: 150000,
+    hasStop: false,
+    chatEnabled: true,
+    cover: {
+      id: coverId,
+      tireId: 7,
+      image: `patreon/file/tires/cover/3/${coverId}`,
+    },
+    advanced: [{ tireId: 7, limitedUser: true, limitNumberUser: 25 }],
+    benefits: [
+      {
+        id: 2,
+        title: 'Special posts',
+        roleId: 1,
+        role: { id: 1, title: 'Post', persianTitle: 'پست', description: null },
+        tireId: 7,
+      },
+    ],
+    createdAt: '2026-11-19T08:00:00.000Z',
+    updatedAt: '2026-11-19T08:00:00.000Z',
+    ...overrides,
+  }
+}
+
 describe('tier API contract', () => {
-  it('reads creator tiers and roles from guarded GET routes, normalizing decimal prices', async () => {
+  it('reads creator tiers and roles from guarded GET routes', async () => {
     server.use(
       http.get(`${origin}/api/tire`, ({ request }) => {
         expect(request.headers.get('authorization')).toBe(
           'Bearer creator-token'
         )
-        return HttpResponse.json({
-          data: [
-            {
-              id: 7,
-              creatorId: 4,
-              title: 'Supporter',
-              description: null,
-              price: '50000.00',
-              benefits: [
-                { id: 2, title: 'Special posts', roleId: 1, role: { id: 1 } },
-              ],
-              privateField: 'do not expose',
-            },
-          ],
-          errors: null,
-        })
+        return HttpResponse.json({ data: [listRow()], errors: null })
       }),
       http.get(`${origin}/api/tire/role`, ({ request }) => {
         expect(request.headers.get('authorization')).toBe(
           'Bearer creator-token'
         )
         return HttpResponse.json({
-          data: [{ id: 1, title: 'Post', persianTitle: 'پست', extra: true }],
+          data: [
+            { id: 1, title: 'Post', persianTitle: 'پست', description: null },
+          ],
           errors: null,
         })
       })
@@ -48,7 +75,10 @@ describe('tier API contract', () => {
         id: 7,
         title: 'Supporter',
         description: '',
-        priceToman: 50000,
+        priceToman: 150000,
+        chatEnabled: true,
+        capacity: 25,
+        coverId,
         benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
       },
     ])
@@ -57,41 +87,137 @@ describe('tier API contract', () => {
     ])
   })
 
-  it('uses backend DTO bodies for create and update, and soft-delete endpoint', async () => {
-    const payload = {
-      title: 'Gold',
-      description: 'Good',
-      price: 50000,
-      benefits: [{ title: 'Posts', roleId: 1 }],
-    }
+  it('keeps the list when a benefit has no template or no custom title', async () => {
     server.use(
-      http.post(`${origin}/api/tire`, async ({ request }) => {
+      http.get(`${origin}/api/tire`, () =>
+        HttpResponse.json({
+          data: [
+            listRow({
+              cover: null,
+              advanced: [],
+              chatEnabled: false,
+              benefits: [
+                { id: 3, title: 'Custom', roleId: null, role: null, tireId: 7 },
+                { id: 4, title: null, roleId: 2, role: null, tireId: 7 },
+              ],
+            }),
+          ],
+          errors: null,
+        })
+      )
+    )
+    const [tier] = await listOwnTiers('creator-token')
+    expect(tier).toMatchObject({ coverId: null, capacity: null })
+    expect(tier?.benefits).toEqual([
+      { id: 3, title: 'Custom', roleId: null },
+      { id: 4, title: '', roleId: 2 },
+    ])
+  })
+
+  it('reads the saved cover URL from the tier detail', async () => {
+    server.use(
+      http.get(`${origin}/api/tire/7`, () =>
+        HttpResponse.json({
+          data: {
+            id: 7,
+            title: 'Supporter',
+            description: null,
+            price: 150000,
+            hasStop: false,
+            chatEnabled: true,
+            cover: { id: coverId, url: `https://cdn.example/${coverId}` },
+            advanced: { limitedUser: true, limitNumberUser: 25 },
+            benefits: [],
+          },
+          errors: null,
+        })
+      )
+    )
+    await expect(getTierCover('creator-token', 7)).resolves.toEqual({
+      id: coverId,
+      url: `https://cdn.example/${coverId}`,
+    })
+  })
+
+  it('uploads a cover as multipart field `image`', async () => {
+    server.use(
+      http.post(`${origin}/api/tire/cover`, async ({ request }) => {
         expect(request.headers.get('authorization')).toBe(
           'Bearer creator-token'
         )
-        expect(await request.json()).toEqual(payload)
-        return HttpResponse.json({ data: { id: 12 }, errors: null })
-      }),
-      http.put(`${origin}/api/tire/12`, async ({ request }) => {
-        expect(request.headers.get('authorization')).toBe(
-          'Bearer creator-token'
-        )
-        expect(await request.json()).toEqual(payload)
-        return HttpResponse.json({ data: { id: 12 }, errors: null })
-      }),
-      http.delete(`${origin}/api/tire/12`, ({ request }) => {
-        expect(request.headers.get('authorization')).toBe(
-          'Bearer creator-token'
-        )
+        const form = await request.formData()
+        const image = form.get('image')
+        // jsdom and undici each have a File class: compare the shape.
+        expect(image).toMatchObject({ type: 'image/png', size: 3 })
         return HttpResponse.json({
-          data: { message: 'Tier deleted' },
+          data: { id: coverId, url: `https://cdn.example/${coverId}` },
           errors: null,
         })
       })
     )
-    await expect(createTier('creator-token', payload)).resolves.toBe(12)
-    await expect(updateTier('creator-token', 12, payload)).resolves.toBe(12)
+    const file = new File([new Uint8Array([1, 2, 3])], 'cover.png', {
+      type: 'image/png',
+    })
+    await expect(uploadTierCover('creator-token', file)).resolves.toEqual({
+      id: coverId,
+      url: `https://cdn.example/${coverId}`,
+    })
+  })
+
+  it('sends DTO bodies for create and update, and deletes by archiving', async () => {
+    const payload = {
+      title: 'Gold',
+      description: 'Good',
+      price: 150000,
+      chatEnabled: true,
+      tireAdvanced: { limitedUser: true, limitNumberUser: 10 },
+      benefits: [{ title: 'Posts', roleId: 1 }],
+    }
+    server.use(
+      http.post(`${origin}/api/tire`, async ({ request }) => {
+        expect(await request.json()).toEqual({
+          ...payload,
+          coverTireId: coverId,
+        })
+        return HttpResponse.json({ data: { id: 12 }, errors: null })
+      }),
+      http.put(`${origin}/api/tire/12`, async ({ request }) => {
+        expect(await request.json()).toEqual({ ...payload, coverTireId: null })
+        return HttpResponse.json({ data: { id: 12 }, errors: null })
+      }),
+      http.delete(`${origin}/api/tire/12`, () =>
+        HttpResponse.json({ data: { message: 'Tier deleted' }, errors: null })
+      )
+    )
+    await expect(
+      createTier('creator-token', { ...payload, coverTireId: coverId })
+    ).resolves.toBe(12)
+    await expect(
+      updateTier('creator-token', 12, { ...payload, coverTireId: null })
+    ).resolves.toBe(12)
     await expect(deleteTier('creator-token', 12)).resolves.toBeUndefined()
+  })
+
+  it('surfaces 400 USER_ALIAS_REQUIRED with its code', async () => {
+    server.use(
+      http.post(`${origin}/api/tire`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Set an alias before setting up your page',
+                code: 'USER_ALIAS_REQUIRED',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      )
+    )
+    await expect(
+      createTier('creator-token', { title: 'Gold', price: 150000 })
+    ).rejects.toMatchObject({ status: 400, code: 'USER_ALIAS_REQUIRED' })
   })
 
   it.each(['50000.50', '9007199254740992', '-1', 'NaN'])(
@@ -99,10 +225,7 @@ describe('tier API contract', () => {
     async (price) => {
       server.use(
         http.get(`${origin}/api/tire`, () =>
-          HttpResponse.json({
-            data: [{ id: 1, title: 'Bad', price }],
-            errors: null,
-          })
+          HttpResponse.json({ data: [listRow({ price })], errors: null })
         )
       )
       await expect(listOwnTiers('creator-token')).rejects.toMatchObject({
@@ -112,12 +235,11 @@ describe('tier API contract', () => {
   )
 
   it('rejects a tier list that omits its benefits relation before an edit could erase it', async () => {
+    const row: Record<string, unknown> = listRow()
+    delete row.benefits
     server.use(
       http.get(`${origin}/api/tire`, () =>
-        HttpResponse.json({
-          data: [{ id: 1, title: 'Bad', price: 50000 }],
-          errors: null,
-        })
+        HttpResponse.json({ data: [row], errors: null })
       )
     )
     await expect(listOwnTiers('creator-token')).rejects.toMatchObject({

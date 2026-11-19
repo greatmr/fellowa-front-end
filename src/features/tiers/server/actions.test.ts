@@ -21,7 +21,8 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { createTierForHook, listTiersForHook } = await import('./actions')
+const { createTierForHook, listTiersForHook, uploadTierCoverForHook } =
+  await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -58,7 +59,22 @@ beforeEach(() => {
       tierCalls++
       expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
       return HttpResponse.json({
-        data: [{ id: 7, title: 'Supporter', price: '50000', benefits: [] }],
+        data: [
+          {
+            id: 7,
+            creatorId: 42,
+            title: 'Supporter',
+            description: null,
+            price: 150000,
+            hasStop: false,
+            chatEnabled: false,
+            cover: null,
+            advanced: [],
+            benefits: [],
+            createdAt: '2026-11-19T08:00:00.000Z',
+            updatedAt: '2026-11-19T08:00:00.000Z',
+          },
+        ],
         errors: null,
       })
     }),
@@ -84,7 +100,10 @@ describe('tier hook server boundary', () => {
           id: 7,
           title: 'Supporter',
           description: '',
-          priceToman: 50000,
+          priceToman: 150000,
+          chatEnabled: false,
+          capacity: null,
+          coverId: null,
           benefits: [],
         },
       ],
@@ -112,5 +131,66 @@ describe('tier hook server boundary', () => {
     expect(tierCalls).toBe(0)
     expect(await createTierForHook(42, payload)).toEqual({ ok: true, data: 8 })
     expect(tierCalls).toBe(1)
+  })
+
+  it('rejects titles over the backend limits before writing', async () => {
+    const long = { title: 'x'.repeat(121), price: 150000 }
+    expect(await createTierForHook(42, long)).toMatchObject({
+      ok: false,
+      status: 400,
+    })
+    const benefit = {
+      title: 'Gold',
+      price: 150000,
+      benefits: [{ title: 'y'.repeat(161), roleId: 1 }],
+    }
+    expect(await createTierForHook(42, benefit)).toMatchObject({
+      ok: false,
+      status: 400,
+    })
+    expect(tierCalls).toBe(0)
+  })
+
+  it("checks a cover's type and size before uploading it", async () => {
+    let uploads = 0
+    server.use(
+      http.post(`${apiOrigin}/tire/cover`, () => {
+        uploads++
+        return HttpResponse.json({
+          data: {
+            id: '1712345678-abcdef012345.png',
+            url: 'https://cdn.example/c.png',
+          },
+          errors: null,
+        })
+      })
+    )
+    const form = (file: File) => {
+      const body = new FormData()
+      body.append('image', file)
+      return body
+    }
+    const svg = new File(['<svg/>'], 'a.svg', { type: 'image/svg+xml' })
+    const huge = new File([new Uint8Array(1024 * 1024)], 'a.png', {
+      type: 'image/png',
+    })
+    const png = new File([new Uint8Array([1])], 'a.png', { type: 'image/png' })
+    expect(await uploadTierCoverForHook(42, form(svg))).toMatchObject({
+      ok: false,
+      status: 400,
+    })
+    expect(await uploadTierCoverForHook(42, form(huge))).toMatchObject({
+      ok: false,
+      status: 400,
+    })
+    expect(uploads).toBe(0)
+    expect(await uploadTierCoverForHook(42, form(png))).toEqual({
+      ok: true,
+      data: {
+        id: '1712345678-abcdef012345.png',
+        url: 'https://cdn.example/c.png',
+      },
+    })
+    expect(uploads).toBe(1)
   })
 })

@@ -34,8 +34,11 @@ describe('tier response parsers', () => {
           id: 1,
           title: 'Gold',
           description: null,
-          price: '75000',
-          benefits: [{ id: 2, title: 'Chat', roleId: 3 }],
+          price: 175000,
+          chatEnabled: false,
+          cover: null,
+          advanced: [],
+          benefits: [{ id: 2, title: 'Chat', roleId: 3, role: null }],
           secret: 'x',
         },
       ])
@@ -44,7 +47,10 @@ describe('tier response parsers', () => {
       id: 1,
       title: 'Gold',
       description: '',
-      priceToman: 75000,
+      priceToman: 175000,
+      chatEnabled: false,
+      capacity: null,
+      coverId: null,
       benefits: [{ id: 2, title: 'Chat', roleId: 3 }],
     })
   })
@@ -67,7 +73,7 @@ describe('tier response parsers', () => {
 
 describe('tierInputSchema', () => {
   it('rejects fractional, zero and oversized prices', () => {
-    for (const price of [0, 1.5, 10_000_000_000]) {
+    for (const price of [0, 1.5, 1_000_000_000_000]) {
       expect(tierInputSchema.safeParse({ title: 'A', price }).success).toBe(
         false
       )
@@ -75,5 +81,38 @@ describe('tierInputSchema', () => {
     expect(tierInputSchema.safeParse({ title: 'A', price: 1 }).success).toBe(
       true
     )
+  })
+})
+
+describe('tier input limits (backend DTOs)', () => {
+  it('caps the tier title at 120 and a benefit title at 160', () => {
+    const base = { price: 150000 }
+    expect(
+      tierInputSchema.safeParse({ ...base, title: 'x'.repeat(120) }).success
+    ).toBe(true)
+    expect(
+      tierInputSchema.safeParse({ ...base, title: 'x'.repeat(121) }).success
+    ).toBe(false)
+    const benefit = (title: string) =>
+      tierInputSchema.safeParse({
+        ...base,
+        title: 'A',
+        benefits: [{ title, roleId: 1 }],
+      }).success
+    expect(benefit('y'.repeat(160))).toBe(true)
+    expect(benefit('y'.repeat(161))).toBe(false)
+  })
+
+  it('accepts only a cover id shaped like the server key segment', () => {
+    const body = { title: 'A', price: 150000 }
+    expect(
+      tierInputSchema.safeParse({
+        ...body,
+        coverTireId: '1712345678-abcdef012345.webp',
+      }).success
+    ).toBe(true)
+    expect(
+      tierInputSchema.safeParse({ ...body, coverTireId: '../x.png' }).success
+    ).toBe(false)
   })
 })

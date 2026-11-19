@@ -1,88 +1,144 @@
 'use client'
 
 import { useState } from 'react'
-import { Layers3, Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 
-import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { Button } from '@/components/ui/button'
 import {
-  useCreateTierMutation,
   useDeleteTierMutation,
   useTierRolesQuery,
   useTiersQuery,
-  useUpdateTierMutation,
 } from '@/features/tiers/api/tier-hooks'
+import { TierBuilder } from '@/features/tiers/components/tier-builder'
 import { TierCard } from '@/features/tiers/components/tier-card'
 import { TierDeleteDialog } from '@/features/tiers/components/tier-delete-dialog'
+import { TierEmptyState } from '@/features/tiers/components/tier-empty-state'
 import {
-  TierFormSheet,
-  type TierEditor,
-} from '@/features/tiers/components/tier-form-sheet'
+  TierGuideDialog,
+  type GuideResult,
+} from '@/features/tiers/components/tier-guide-dialog'
 import {
   draftFromTier,
   emptyTierDraft,
-  payloadFromDraft,
   type TierDraft,
 } from '@/features/tiers/lib/tier-draft'
 import type { Tier } from '@/features/tiers/types/tier'
 
+type Builder = { key: number; saved: Tier | null; draft: TierDraft }
+
+/**
+ * The tiers studio page (presentation `TiersView` @ d843c3b): the list or its
+ * empty state, the full-page builder in place of the list while open, the
+ * setup guide and the delete dialog.
+ */
 export function TierManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('tiers')
   const tCommon = useTranslations('common')
   const tStudio = useTranslations('studio')
   const tiers = useTiersQuery(viewerId)
   const roles = useTierRolesQuery(viewerId)
-  const create = useCreateTierMutation(viewerId)
-  const update = useUpdateTierMutation(viewerId)
   const remove = useDeleteTierMutation(viewerId)
-  const [editor, setEditor] = useState<TierEditor | null>(null)
+  const [builder, setBuilder] = useState<Builder | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Tier | null>(null)
-  const [formError, setFormError] = useState(false)
-  const pending = create.isPending || update.isPending
+  // Remounts the builder and the guide so each opening starts fresh.
+  const [openings, setOpenings] = useState(0)
 
-  function openEditor(tier?: Tier) {
-    create.reset()
-    update.reset()
-    setFormError(false)
-    setEditor({
-      id: tier?.id,
-      draft: tier ? draftFromTier(tier) : emptyTierDraft(),
+  function openBuilder(saved: Tier | null, draft: TierDraft) {
+    setOpenings((count) => count + 1)
+    setBuilder({ key: openings + 1, saved, draft })
+  }
+
+  function openGuide() {
+    setOpenings((count) => count + 1)
+    setGuideOpen(true)
+  }
+
+  function finishGuide(result: GuideResult) {
+    setGuideOpen(false)
+    openBuilder(null, {
+      ...emptyTierDraft(),
+      title: result.title,
+      description: result.description,
+      price: String(result.price),
+      benefits: result.benefits.map((benefit, index) => ({
+        key: `guide-${index}`,
+        ...benefit,
+      })),
     })
   }
 
-  function setDraft(patch: Partial<TierDraft>) {
-    setEditor((current) =>
-      current ? { ...current, draft: { ...current.draft, ...patch } } : current
-    )
-    setFormError(false)
+  function confirmDelete() {
+    if (!deleteTarget) return
+    const title = deleteTarget.title
+    remove.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null)
+        setBuilder(null)
+        toast.success(t('deletedToast', { title }))
+      },
+    })
   }
 
-  function submit() {
-    if (!editor || pending) return
-    const payload = payloadFromDraft(editor.draft)
-    if (!payload) {
-      setFormError(true)
-      return
-    }
-    const onSuccess = () => setEditor(null)
-    if (editor.id) update.mutate({ id: editor.id, ...payload }, { onSuccess })
-    else create.mutate(payload, { onSuccess })
+  const deleteDialog = (
+    <TierDeleteDialog
+      title={deleteTarget?.title ?? null}
+      pending={remove.isPending}
+      failed={remove.isError}
+      onConfirm={confirmDelete}
+      onClose={() => setDeleteTarget(null)}
+    />
+  )
+
+  if (builder) {
+    return (
+      <>
+        <TierBuilder
+          key={builder.key}
+          viewerId={viewerId}
+          saved={builder.saved}
+          initialDraft={builder.draft}
+          roles={roles}
+          onClose={() => setBuilder(null)}
+          onDelete={(tier) => {
+            remove.reset()
+            setDeleteTarget(tier)
+          }}
+        />
+        {deleteDialog}
+      </>
+    )
   }
 
   return (
-    <>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <StudioPageHeader
-          title={tStudio('pages.tiers.title')}
-          category={tStudio('pages.tiers.category')}
-        />
-        <Button type="button" onClick={() => openEditor()}>
-          <Plus aria-hidden />
-          {t('create')}
-        </Button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <StudioPageHeader
+            title={tStudio('pages.tiers.title')}
+            category={tStudio('pages.tiers.category')}
+          />
+          <p className="-mt-4 text-label text-muted-foreground">
+            {t('overviewHint')}
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Button type="button" variant="outline" size="sm" onClick={openGuide}>
+            <Sparkles aria-hidden />
+            {t('guide')}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => openBuilder(null, emptyTierDraft())}
+          >
+            <Plus aria-hidden strokeWidth={2.5} />
+            {t('create')}
+          </Button>
+        </div>
       </div>
 
       {tiers.isPending ? (
@@ -99,52 +155,37 @@ export function TierManager({ viewerId }: { viewerId: number }) {
           }
         />
       ) : tiers.data.length === 0 ? (
-        <EmptyState
-          icon={<Layers3 />}
-          title={t('emptyTitle')}
-          description={t('emptyBody')}
-          action={
-            <Button type="button" onClick={() => openEditor()}>
-              {t('create')}
-            </Button>
-          }
+        <TierEmptyState
+          onStartGuide={openGuide}
+          onCreate={() => openBuilder(null, emptyTierDraft())}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {tiers.data.map((tier) => (
             <TierCard
               key={tier.id}
               tier={tier}
-              onEdit={openEditor}
-              onDelete={(target) => {
-                remove.reset()
-                setDeleteTarget(target)
-              }}
+              onEdit={(target) => openBuilder(target, draftFromTier(target))}
             />
           ))}
         </div>
       )}
 
-      <TierFormSheet
-        editor={editor}
-        roles={roles}
-        pending={pending}
-        saveFailed={create.isError || update.isError}
-        validationFailed={formError}
-        onChange={setDraft}
-        onSubmit={submit}
-        onClose={() => setEditor(null)}
-      />
+      <p className="rounded-md border bg-muted/60 p-4 text-label leading-6 text-muted-foreground">
+        <strong className="font-semibold text-foreground">
+          {t('priceNote.label')}
+        </strong>{' '}
+        {t('priceNote.body')}
+      </p>
 
-      <TierDeleteDialog
-        target={deleteTarget}
-        pending={remove.isPending}
-        failed={remove.isError}
-        onConfirm={(target) =>
-          remove.mutate(target.id, { onSuccess: () => setDeleteTarget(null) })
-        }
-        onClose={() => setDeleteTarget(null)}
+      <TierGuideDialog
+        key={openings}
+        open={guideOpen}
+        roles={roles}
+        onFinish={finishGuide}
+        onClose={() => setGuideOpen(false)}
       />
-    </>
+      {deleteDialog}
+    </div>
   )
 }
