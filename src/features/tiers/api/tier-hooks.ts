@@ -11,14 +11,18 @@ import {
 import {
   createTierForHook,
   deleteTierForHook,
+  getTierCoverForHook,
   listTierRolesForHook,
   listTiersForHook,
   updateTierForHook,
+  uploadTierCoverForHook,
 } from '@/features/tiers/server/actions'
 import type {
   CreateTierPayload,
   Tier,
+  TierCover,
   TierRole,
+  UpdateTierPayload,
 } from '@/features/tiers/types/tier'
 import {
   unwrapApiActionResult,
@@ -30,6 +34,9 @@ export const tierKeys = {
   all: ['tiers'] as const,
   list: (viewerId: number) => ['tiers', 'list', viewerId] as const,
   roles: (viewerId: number) => ['tiers', 'roles', viewerId] as const,
+  details: (viewerId: number) => ['tiers', 'detail', viewerId] as const,
+  cover: (viewerId: number, tierId: number) =>
+    ['tiers', 'detail', viewerId, tierId, 'cover'] as const,
   mutation: (name: string, viewerId: number) =>
     ['tiers', name, viewerId] as const,
 }
@@ -43,6 +50,8 @@ type MutationOptions<TData, TVariables> = Omit<
   'mutationFn' | 'mutationKey'
 >
 
+const validId = (value: number) => Number.isSafeInteger(value) && value > 0
+
 export function useTiersQuery(
   viewerId: number,
   options?: QueryOptions<Tier[]>
@@ -52,7 +61,7 @@ export function useTiersQuery(
     queryKey: tierKeys.list(viewerId),
     queryFn: async () =>
       unwrapApiActionResult(await listTiersForHook(viewerId)),
-    enabled: Number.isSafeInteger(viewerId) && viewerId > 0,
+    enabled: validId(viewerId),
   })
 }
 
@@ -65,7 +74,29 @@ export function useTierRolesQuery(
     queryKey: tierKeys.roles(viewerId),
     queryFn: async () =>
       unwrapApiActionResult(await listTierRolesForHook(viewerId)),
-    enabled: Number.isSafeInteger(viewerId) && viewerId > 0,
+    enabled: validId(viewerId),
+  })
+}
+
+/** The saved cover's URL, which `GET /tire` does not give. */
+export function useTierCoverQuery(viewerId: number, tierId: number | null) {
+  return useQuery<TierCover | null, ApiError>({
+    queryKey: tierKeys.cover(viewerId, tierId ?? 0),
+    queryFn: async () =>
+      unwrapApiActionResult(await getTierCoverForHook(viewerId, tierId ?? 0)),
+    enabled: validId(viewerId) && tierId !== null && validId(tierId),
+  })
+}
+
+/** Uploads only; the cover joins a tier when the tier is saved. */
+export function useUploadTierCoverMutation(viewerId: number) {
+  return useMutation<TierCover, ApiError, File>({
+    mutationKey: tierKeys.mutation('cover', viewerId),
+    mutationFn: async (image) => {
+      const form = new FormData()
+      form.append('image', image)
+      return unwrapApiActionResult(await uploadTierCoverForHook(viewerId, form))
+    },
   })
 }
 
@@ -85,7 +116,12 @@ function useTierMutation<TData, TVariables>(
     mutationFn: async (variables) =>
       unwrapApiActionResult(await action(viewerId, variables)),
     onSuccess: async (data, variables, onMutateResult, context) => {
-      await queryClient.invalidateQueries({ queryKey: tierKeys.list(viewerId) })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: tierKeys.list(viewerId) }),
+        queryClient.invalidateQueries({
+          queryKey: tierKeys.details(viewerId),
+        }),
+      ])
       await options?.onSuccess?.(data, variables, onMutateResult, context)
     },
   })
@@ -100,7 +136,7 @@ export function useCreateTierMutation(
 
 export function useUpdateTierMutation(
   viewerId: number,
-  options?: MutationOptions<number, CreateTierPayload & { id: number }>
+  options?: MutationOptions<number, UpdateTierPayload>
 ) {
   return useTierMutation('update', viewerId, updateTierForHook, options)
 }
