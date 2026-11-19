@@ -10,7 +10,9 @@ import {
 } from 'react'
 import Image from 'next/image'
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   Check,
   Edit3,
   ImageIcon,
@@ -45,7 +47,9 @@ import {
   draftCapacity,
   draftErrors,
   draftPrice,
+  moveBenefit,
   payloadFromDraft,
+  priceChange,
   type TierDraft,
   type TierDraftError,
 } from '@/features/tiers/lib/tier-draft'
@@ -81,6 +85,7 @@ type Props = {
 type CoverProblem = 'type' | 'size' | 'failed' | null
 
 const NO_PAGE = 'USER_ALIAS_REQUIRED'
+const PRICE_BELOW_MINIMUM = 'TIER_PRICE_BELOW_MINIMUM'
 
 /**
  * The full-page tier builder (presentation `TiersView` @ d843c3b): the form,
@@ -112,6 +117,8 @@ export function TierBuilder({
   const [pickerKey, setPickerKey] = useState(0)
   const [coverProblem, setCoverProblem] = useState<CoverProblem>(null)
   const [noPage, setNoPage] = useState(false)
+  // 400 TIER_PRICE_BELOW_MINIMUM, shown on the price until it is edited.
+  const [serverPriceMinimum, setServerPriceMinimum] = useState(false)
 
   const create = useCreateTierMutation(viewerId)
   const update = useUpdateTierMutation(viewerId)
@@ -123,11 +130,16 @@ export function TierBuilder({
   const save = saved ? update : create
   const pending = save.isPending
 
-  const errors = draftErrors(draft)
+  const errors = draftErrors(draft, saved?.priceToman)
   const visibleErrors = showErrors ? errors : []
-  const has = (error: TierDraftError) => visibleErrors.includes(error)
+  const has = (error: TierDraftError) =>
+    visibleErrors.includes(error) ||
+    (error === 'priceMinimum' && serverPriceMinimum)
   const price = draftPrice(draft.price)
-  const belowMinimum = price !== null && price < MIN_TIER_PRICE_TOMAN
+  const belowMinimum =
+    price !== null &&
+    price < MIN_TIER_PRICE_TOMAN &&
+    price !== saved?.priceToman
   const coverUrl =
     draft.uploadedCoverUrl ??
     (draft.coverId !== null && draft.coverId === saved?.coverId
@@ -143,15 +155,21 @@ export function TierBuilder({
     setDraftState((current) => ({ ...current, ...patch }))
   }
 
+  function changePrice(value: string) {
+    setServerPriceMinimum(false)
+    setDraft({ price: value })
+  }
+
   function failed(error: ApiError) {
     if (error.code === NO_PAGE) setNoPage(true)
+    else if (error.code === PRICE_BELOW_MINIMUM) setServerPriceMinimum(true)
     else if (error.status === 401) toast.error(t('sessionExpired'))
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending || upload.isPending) return
-    const payload = payloadFromDraft(draft)
+    const payload = payloadFromDraft(draft, saved?.priceToman)
     if (!payload) {
       setShowErrors(true)
       return
@@ -166,8 +184,14 @@ export function TierBuilder({
       onClose()
     }
     if (saved) {
+      const { price: nextPrice, ...rest } = payload
       update.mutate(
-        { id: saved.id, ...payload, ...coverChange(draft, saved) },
+        {
+          id: saved.id,
+          ...rest,
+          ...priceChange(nextPrice, saved),
+          ...coverChange(draft, saved),
+        },
         { onSuccess: done, onError: failed }
       )
     } else {
@@ -294,7 +318,7 @@ export function TierBuilder({
                     error={
                       has('price')
                         ? t('errors.price')
-                        : belowMinimum
+                        : belowMinimum || has('priceMinimum')
                           ? t('errors.priceMinimum', {
                               amount: formatMoney(MIN_TIER_PRICE_TOMAN),
                             })
@@ -313,9 +337,7 @@ export function TierBuilder({
                         placeholder={format.number(MIN_TIER_PRICE_TOMAN)}
                         aria-invalid={has('price') || has('priceMinimum')}
                         className="numeric pe-28 font-semibold"
-                        onChange={(event) =>
-                          setDraft({ price: event.target.value })
-                        }
+                        onChange={(event) => changePrice(event.target.value)}
                       />
                       <span
                         aria-hidden
@@ -337,7 +359,7 @@ export function TierBuilder({
                           type="button"
                           aria-pressed={selected}
                           aria-label={formatMoney(amount)}
-                          onClick={() => setDraft({ price: String(amount) })}
+                          onClick={() => changePrice(String(amount))}
                           className={cn(
                             'btn-tactile rounded-sm border px-2.5 py-1 text-caption font-semibold',
                             selected
@@ -480,6 +502,38 @@ export function TierBuilder({
                           type="button"
                           variant="ghost"
                           size="icon-sm"
+                          disabled={index === 0}
+                          aria-label={t('moveBenefitUp', {
+                            title: benefit.title,
+                          })}
+                          onClick={() =>
+                            setDraft({
+                              benefits: moveBenefit(draft.benefits, index, -1),
+                            })
+                          }
+                        >
+                          <ArrowUp aria-hidden />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled={index === draft.benefits.length - 1}
+                          aria-label={t('moveBenefitDown', {
+                            title: benefit.title,
+                          })}
+                          onClick={() =>
+                            setDraft({
+                              benefits: moveBenefit(draft.benefits, index, 1),
+                            })
+                          }
+                        >
+                          <ArrowDown aria-hidden />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           aria-label={t('editBenefit', {
                             title: benefit.title,
                           })}
@@ -520,11 +574,6 @@ export function TierBuilder({
               {has('benefits') ? (
                 <p role="alert" className="mt-2 text-caption text-destructive">
                   {t('errors.benefits', { max: MAX_BENEFIT_TITLE })}
-                </p>
-              ) : null}
-              {has('customBenefit') ? (
-                <p role="alert" className="mt-2 text-caption text-destructive">
-                  {t('errors.customBenefit')}
                 </p>
               ) : null}
               <div className="mt-4">
@@ -604,7 +653,10 @@ export function TierBuilder({
           </fieldset>
 
           {noPage ? <AliasRequiredNotice /> : null}
-          {save.isError && !noPage && save.error.status !== 401 ? (
+          {save.isError &&
+          !noPage &&
+          save.error.status !== 401 &&
+          save.error.code !== PRICE_BELOW_MINIMUM ? (
             <p
               role="alert"
               className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-label font-semibold text-destructive"

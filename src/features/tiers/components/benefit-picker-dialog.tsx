@@ -30,24 +30,27 @@ type RolesState = {
 type Props = {
   request: BenefitPickerRequest | null
   roles: RolesState
-  onAdd: (title: string, roleId: number) => void
+  /** `roleId` `null` is a custom benefit (BE-TIER-06). */
+  onAdd: (title: string, roleId: number | null) => void
   onSave: (index: number, title: string) => void
   onClose: () => void
 }
 
+/** `source`: a preset, a custom benefit, or the row being edited. */
+type Source = TierRole | 'custom' | 'existing'
 type Step =
-  { name: 'catalog' } | { name: 'title'; role: TierRole | null; title: string }
+  { name: 'catalog' } | { name: 'title'; source: Source; title: string }
 
 function initialStep(request: BenefitPickerRequest | null): Step {
   return request?.kind === 'edit'
-    ? { name: 'title', role: null, title: request.title }
+    ? { name: 'title', source: 'existing', title: request.title }
     : { name: 'catalog' }
 }
 
 /**
  * The prototype's two-step benefit flow (`TiersView` @ d843c3b): pick a preset
- * from `GET /tire/role`, then adjust its title. Template benefits only until
- * BE-TIER-06 makes `roleId` optional; the presets carry no description.
+ * from `GET /tire/role` or a custom one (no `roleId`, BE-TIER-06), then
+ * adjust its title. The presets carry no description.
  * Mount with a `key` per request so each opening starts fresh.
  */
 export function BenefitPickerDialog({
@@ -62,7 +65,6 @@ export function BenefitPickerDialog({
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const [step, setStep] = useState<Step>(() => initialStep(request))
-  const editing = request?.kind === 'edit'
   const catalog = roles.data ?? []
 
   function confirm(event: FormEvent<HTMLFormElement>) {
@@ -71,7 +73,8 @@ export function BenefitPickerDialog({
     const title = step.title.trim()
     if (!title) return
     if (request?.kind === 'edit') onSave(request.index, title)
-    else if (step.role) onAdd(title, step.role.id)
+    else if (step.source === 'custom') onAdd(title, null)
+    else if (step.source !== 'existing') onAdd(title, step.source.id)
   }
 
   return (
@@ -102,8 +105,6 @@ export function BenefitPickerDialog({
                   {tCommon('retry')}
                 </button>
               </p>
-            ) : catalog.length === 0 ? (
-              <p className="text-body-sm text-muted-foreground">{t('empty')}</p>
             ) : (
               <ul className="-mx-6 max-h-[60vh] scrollbar-thin divide-y overflow-y-auto px-6">
                 {catalog.map((role) => {
@@ -122,7 +123,7 @@ export function BenefitPickerDialog({
                         size="sm"
                         aria-label={t('addTitle', { title: name })}
                         onClick={() =>
-                          setStep({ name: 'title', role, title: name })
+                          setStep({ name: 'title', source: role, title: name })
                         }
                       >
                         {t('add')}
@@ -130,6 +131,32 @@ export function BenefitPickerDialog({
                     </li>
                   )
                 })}
+                {catalog.length === 0 ? (
+                  <li className="py-3.5 text-body-sm text-muted-foreground">
+                    {t('empty')}
+                  </li>
+                ) : null}
+                <li className="flex items-center justify-between gap-4 py-3.5">
+                  <span className="min-w-0">
+                    <span className="block text-label font-semibold text-foreground">
+                      {t('customTitle')}
+                    </span>
+                    <span className="mt-1 block text-caption leading-5 text-muted-foreground">
+                      {t('customHint')}
+                    </span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label={t('customTitle')}
+                    onClick={() =>
+                      setStep({ name: 'title', source: 'custom', title: '' })
+                    }
+                  >
+                    {t('add')}
+                  </Button>
+                </li>
               </ul>
             )}
           </>
@@ -137,12 +164,18 @@ export function BenefitPickerDialog({
           <form onSubmit={confirm} className="grid gap-6" noValidate>
             <DialogHeader>
               <DialogTitle>
-                {editing || !step.role
+                {step.source === 'existing'
                   ? t('editTitle')
-                  : t('addTitle', { title: roleTitle(step.role, locale) })}
+                  : step.source === 'custom'
+                    ? t('customTitle')
+                    : t('addTitle', { title: roleTitle(step.source, locale) })}
               </DialogTitle>
               <DialogDescription className="leading-6">
-                {editing ? t('editHint') : t('addHint')}
+                {step.source === 'existing'
+                  ? t('editHint')
+                  : step.source === 'custom'
+                    ? t('customDetail')
+                    : t('addHint')}
               </DialogDescription>
             </DialogHeader>
             <label className="grid gap-2 text-label font-semibold text-foreground">
@@ -159,7 +192,7 @@ export function BenefitPickerDialog({
               />
             </label>
             <DialogFooter>
-              {editing ? null : (
+              {step.source === 'existing' ? null : (
                 <Button
                   type="button"
                   variant="secondary"
@@ -173,7 +206,9 @@ export function BenefitPickerDialog({
                 variant="inverse"
                 disabled={!step.title.trim()}
               >
-                {editing ? t('confirmSave') : t('confirmAdd')}
+                {step.source === 'existing'
+                  ? t('confirmSave')
+                  : t('confirmAdd')}
               </Button>
             </DialogFooter>
           </form>

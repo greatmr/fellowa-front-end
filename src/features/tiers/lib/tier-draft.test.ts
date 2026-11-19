@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   coverChange,
   coverForCreate,
+  moveBenefit,
+  priceChange,
   draftErrors,
   draftFromTier,
   draftPrice,
@@ -23,6 +25,7 @@ const tier: Tier = {
   capacity: 25,
   coverId,
   benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
+  seatsTaken: 3,
 }
 
 function draft(patch: Partial<TierDraft> = {}): TierDraft {
@@ -74,12 +77,11 @@ describe('draftErrors', () => {
     expect(draftErrors(draft({ price: '' }))).toEqual(['price'])
   })
 
-  it('refuses to write back a custom-only benefit before BE-TIER-06', () => {
-    expect(
-      draftErrors(
-        draft({ benefits: [{ key: 'b', title: 'Custom', roleId: null }] })
-      )
-    ).toEqual(['customBenefit'])
+  it('applies the minimum only to a price that changed (BE-TIER-06 checks a sent price)', () => {
+    expect(draftErrors(draft({ price: '50000' }), 50000)).toEqual([])
+    expect(draftErrors(draft({ price: '60000' }), 50000)).toEqual([
+      'priceMinimum',
+    ])
   })
 })
 
@@ -140,6 +142,42 @@ describe('draftFromTier', () => {
       capacityEnabled: true,
       capacity: '25',
       benefits: [{ key: 'existing-2', title: 'Special posts', roleId: 1 }],
+    })
+  })
+
+  describe('part B: custom benefits, order and price', () => {
+    it('sends a custom benefit without roleId, in array order', () => {
+      expect(
+        payloadFromDraft(
+          draft({
+            benefits: [
+              { key: 'a', title: ' My own ', roleId: null },
+              { key: 'b', title: 'Posts', roleId: 1 },
+            ],
+          })
+        )?.benefits
+      ).toEqual([{ title: 'My own' }, { title: 'Posts', roleId: 1 }])
+    })
+
+    it('moves a benefit up or down and stops at the ends', () => {
+      const list = [
+        { key: 'a', title: 'A', roleId: 1 },
+        { key: 'b', title: 'B', roleId: 2 },
+        { key: 'c', title: 'C', roleId: null },
+      ]
+      expect(moveBenefit(list, 2, -1).map((b) => b.key)).toEqual([
+        'a',
+        'c',
+        'b',
+      ])
+      expect(moveBenefit(list, 0, 1).map((b) => b.key)).toEqual(['b', 'a', 'c'])
+      expect(moveBenefit(list, 0, -1)).toBe(list)
+      expect(moveBenefit(list, 2, 1)).toBe(list)
+    })
+
+    it('sends a price on update only when it changed', () => {
+      expect(priceChange(150000, tier)).toEqual({})
+      expect(priceChange(200000, tier)).toEqual({ price: 200000 })
     })
   })
 })
