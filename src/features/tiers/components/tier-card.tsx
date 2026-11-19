@@ -17,8 +17,7 @@ type Props = {
 
 /**
  * A tier in the owner's list (presentation `TiersView` grid @ d843c3b). No
- * cover image: `GET /tire` gives the cover's storage key, not a URL. The
- * seat count arrives with BE-TIER-06 (part B).
+ * cover image: `GET /tire` gives the cover's storage key, not a URL.
  */
 export function TierCard({ tier, onEdit }: Props) {
   const t = useTranslations('tiers')
@@ -69,15 +68,19 @@ export function TierCard({ tier, onEdit }: Props) {
           </ul>
         ) : null}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-          <div className="flex flex-wrap gap-1.5">
-            {tier.capacity !== null ? (
-              <Badge variant="amber" className="rounded-sm px-2 text-micro">
-                <Users aria-hidden />
-                {t('preview.capacity', {
-                  count: format.number(tier.capacity),
-                })}
-              </Badge>
-            ) : null}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            {/* Owner-only (BE-TIER-06): pending and active seats, not members. */}
+            <p className="numeric flex items-center gap-1.5 text-label text-muted-foreground">
+              <Users aria-hidden className="size-3.5" />
+              {tier.capacity === null
+                ? t('card.seatsTaken', {
+                    count: format.number(tier.seatsTaken),
+                  })
+                : t('card.seatsOfCapacity', {
+                    count: format.number(tier.seatsTaken),
+                    capacity: format.number(tier.capacity),
+                  })}
+            </p>
             {tier.chatEnabled ? (
               <Badge variant="neutral" className="rounded-sm px-2 text-micro">
                 <MessageCircle aria-hidden />

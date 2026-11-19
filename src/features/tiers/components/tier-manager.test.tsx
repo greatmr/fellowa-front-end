@@ -16,7 +16,11 @@ const saved: Tier = {
   chatEnabled: false,
   capacity: null,
   coverId: null,
-  benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
+  benefits: [
+    { id: 2, title: 'Special posts', roleId: 1 },
+    { id: 3, title: 'My own thanks', roleId: null },
+  ],
+  seatsTaken: 4,
 }
 
 const mocks = vi.hoisted(() => ({
@@ -111,7 +115,10 @@ describe('TierManager', () => {
         price: 200000,
         chatEnabled: false,
         tireAdvanced: { limitedUser: false },
-        benefits: [{ title: 'Special posts', roleId: 1 }],
+        benefits: [
+          { title: 'Special posts', roleId: 1 },
+          { title: 'My own thanks' },
+        ],
       },
       expect.any(Object)
     )
@@ -252,5 +259,91 @@ describe('TierManager', () => {
       expect(card.getByText(name)).toBeInTheDocument()
     }
     expect(card.queryByText('Merch')).not.toBeInTheDocument()
+  })
+
+  it('labels the owner seat count as seats taken, against the capacity when set', () => {
+    mocks.tiers = [saved, { ...saved, id: 8, title: 'Gold', capacity: 10 }]
+    renderManager()
+    expect(screen.getByText('4 seats taken')).toBeInTheDocument()
+    expect(screen.getByText('4 / 10 seats taken')).toBeInTheDocument()
+    expect(screen.queryByText(/active members/)).not.toBeInTheDocument()
+  })
+
+  it('reorders benefits, and the preview and payload follow that order', async () => {
+    const user = userEvent.setup()
+    renderManager()
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    await user.click(
+      screen.getByRole('button', { name: 'Move “My own thanks” up' })
+    )
+    const items = within(preview()).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual([
+      'My own thanks',
+      'Special posts',
+    ])
+    await user.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]!
+    )
+    const [body] = mocks.update.mock.calls[0]!
+    expect(body).toMatchObject({
+      benefits: [
+        { title: 'My own thanks' },
+        { title: 'Special posts', roleId: 1 },
+      ],
+    })
+    // The price was not touched, so it is not sent (BE-TIER-06 checks a sent price).
+    expect(body).not.toHaveProperty('price')
+  })
+
+  it('adds a custom benefit with no role', async () => {
+    const user = userEvent.setup()
+    renderManager()
+    await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+    await user.click(screen.getByRole('button', { name: 'Add benefit' }))
+    await user.click(screen.getByRole('button', { name: 'Custom benefit' }))
+    const step = screen.getByRole('dialog', { name: 'Custom benefit' })
+    const title = within(step).getByLabelText('Benefit title')
+    expect(title).toHaveValue('')
+    await user.type(title, 'Handwritten postcard')
+    await user.click(within(step).getByRole('button', { name: 'Add benefit' }))
+    await user.type(screen.getByLabelText(/^Tier name/), 'Gold')
+    await user.type(screen.getByLabelText(/^Monthly price/), '150000')
+    await user.click(
+      screen.getAllByRole('button', { name: 'Publish tier' })[0]!
+    )
+    expect(mocks.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        benefits: [{ title: 'Handwritten postcard' }],
+      }),
+      expect.any(Object)
+    )
+  })
+
+  it('shows the server minimum (TIER_PRICE_BELOW_MINIMUM) on the price field', async () => {
+    mocks.update.mockImplementation((_payload, options) =>
+      (options as { onError: (error: ApiError) => void }).onError(
+        new ApiError({
+          message: 'Tier price must be at least 100000 Toman',
+          status: 400,
+          code: 'TIER_PRICE_BELOW_MINIMUM',
+        })
+      )
+    )
+    const user = userEvent.setup()
+    renderManager()
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    const price = screen.getByLabelText(/^Monthly price/)
+    await user.clear(price)
+    await user.type(price, '120000')
+    await user.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]!
+    )
+    expect(price).toHaveAttribute('aria-invalid', 'true')
+    expect(
+      screen.getByText('The lowest monthly price is 100,000 Toman.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Could not save this tier. Try again.')
+    ).toBeNull()
   })
 })

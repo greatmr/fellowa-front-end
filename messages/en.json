@@ -535,7 +535,9 @@
     },
     "card": {
       "moreBenefits": "+ {count} more benefits",
-      "coverAlt": "Cover of {title}"
+      "coverAlt": "Cover of {title}",
+      "seatsTaken": "{count} seats taken",
+      "seatsOfCapacity": "{count} / {capacity} seats taken"
     },
     "builder": {
       "back": "Back to tiers",
@@ -587,13 +589,14 @@
         "price": "Enter the monthly price as a whole number of Toman.",
         "priceMinimum": "The lowest monthly price is {amount}.",
         "capacity": "Enter the member limit as a whole number above zero.",
-        "benefits": "Every benefit needs a title of up to {max} characters.",
-        "customBenefit": "This tier has a custom benefit that can't be saved from here yet. Remove it to save."
+        "benefits": "Every benefit needs a title of up to {max} characters."
       },
       "saveError": "Could not save this tier. Try again.",
       "sessionExpired": "Your session has ended. Sign in again.",
       "createdToast": "Tier “{title}” created",
-      "savedToast": "Changes to “{title}” saved"
+      "savedToast": "Changes to “{title}” saved",
+      "moveBenefitUp": "Move “{title}” up",
+      "moveBenefitDown": "Move “{title}” down"
     },
     "preview": {
       "title": "Tier card preview",
@@ -618,7 +621,10 @@
       "back": "Back to benefits",
       "confirmAdd": "Add benefit",
       "confirmSave": "Save benefit",
-      "empty": "No preset benefits are available right now."
+      "empty": "No preset benefits are available right now.",
+      "customTitle": "Custom benefit",
+      "customHint": "Write a benefit of your own that fits how you work",
+      "customDetail": "Write the title of your own benefit. It appears on the tier card and on your public page."
     },
     "delete": {
       "title": "Delete “{title}”?",

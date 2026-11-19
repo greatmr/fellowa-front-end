@@ -43,6 +43,7 @@ function listRow(overrides: Record<string, unknown> = {}) {
         tireId: 7,
       },
     ],
+    seatsTaken: 4,
     createdAt: '2026-11-19T08:00:00.000Z',
     updatedAt: '2026-11-19T08:00:00.000Z',
     ...overrides,
@@ -80,6 +81,7 @@ describe('tier API contract', () => {
         capacity: 25,
         coverId,
         benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
+        seatsTaken: 4,
       },
     ])
     await expect(listTierRoles('creator-token')).resolves.toEqual([
@@ -87,7 +89,7 @@ describe('tier API contract', () => {
     ])
   })
 
-  it('keeps the list when a benefit has no template or no custom title', async () => {
+  it('reads custom benefits (roleId and role null) and rows without a custom title', async () => {
     server.use(
       http.get(`${origin}/api/tire`, () =>
         HttpResponse.json({
@@ -237,6 +239,41 @@ describe('tier API contract', () => {
   it('rejects a tier list that omits its benefits relation before an edit could erase it', async () => {
     const row: Record<string, unknown> = listRow()
     delete row.benefits
+    server.use(
+      http.get(`${origin}/api/tire`, () =>
+        HttpResponse.json({ data: [row], errors: null })
+      )
+    )
+    await expect(listOwnTiers('creator-token')).rejects.toMatchObject({
+      name: 'InvalidTierResponseError',
+    })
+  })
+
+  it('surfaces 400 TIER_PRICE_BELOW_MINIMUM with its code', async () => {
+    server.use(
+      http.put(`${origin}/api/tire/12`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              {
+                message: 'Tier price must be at least 100000 Toman',
+                code: 'TIER_PRICE_BELOW_MINIMUM',
+              },
+            ],
+          },
+          { status: 400 }
+        )
+      )
+    )
+    await expect(
+      updateTier('creator-token', 12, { title: 'Gold', price: 99999 })
+    ).rejects.toMatchObject({ status: 400, code: 'TIER_PRICE_BELOW_MINIMUM' })
+  })
+
+  it('rejects a list item without seatsTaken (owner contract, BE-TIER-06)', async () => {
+    const row: Record<string, unknown> = listRow()
+    delete row.seatsTaken
     server.use(
       http.get(`${origin}/api/tire`, () =>
         HttpResponse.json({ data: [row], errors: null })

@@ -17,9 +17,9 @@ const MAX_ROLE_ID = 32_767
 export const MAX_TIER_CAPACITY = 2_147_483_647
 
 /**
- * The lowest monthly price, 100,000 Toman (FQ-12, owner 2026-11-19). The rule
- * belongs to the server (BE-TIER-06); until it ships the builder hints and
- * checks it as UX only. Part B maps the server's 400 onto the same message.
+ * The lowest monthly price: `MIN_TIER_PRICE` in the backend's
+ * `create-tire.dto.ts` (BE-TIER-06, FQ-12). The server enforces it with 400
+ * `TIER_PRICE_BELOW_MINIMUM`; the builder hints it and checks it first as UX.
  */
 export const MIN_TIER_PRICE_TOMAN = 100_000
 
@@ -59,8 +59,8 @@ const id = z.number().int().positive().safe()
 // ---- Raw responses (what the backend sends) --------------------------------
 
 /**
- * `roleId` (template) and `title` (custom title) are each nullable in
- * `tier_benefit`; one such row must not throw away the whole list.
+ * `roleId` is `null` for a custom benefit (BE-TIER-06); `title` is nullable in
+ * the column. One such row must not throw away the whole list.
  */
 const rawBenefitSchema = z.object({
   id,
@@ -78,6 +78,8 @@ const rawTierSchema = z.object({
   // `GET /tire`: `[]` for no limit, one row otherwise.
   advanced: z.array(z.object({ limitNumberUser: id })),
   benefits: z.array(rawBenefitSchema),
+  // Owner-only, on `GET /tire` (BE-TIER-06).
+  seatsTaken: z.number().int().nonnegative().safe(),
 })
 const roleSchema = z.object({
   id,
@@ -112,6 +114,7 @@ export function parseTierList(value: unknown): Tier[] {
       title: benefit.title ?? '',
       roleId: benefit.roleId,
     })),
+    seatsTaken: row.seatsTaken,
   }))
 }
 
@@ -145,9 +148,10 @@ export function parseTierDelete(value: unknown): void {
 
 export const tierIdSchema = id
 
+/** A preset (`roleId`) or a custom benefit (no `roleId`, BE-TIER-06). */
 const benefitInputSchema = z.object({
   title: z.string().trim().min(1).max(MAX_BENEFIT_TITLE),
-  roleId: id.max(MAX_ROLE_ID),
+  roleId: id.max(MAX_ROLE_ID).optional(),
 })
 
 const advancedInputSchema = z.object({
@@ -169,5 +173,6 @@ export const tierInputSchema = z.object({
 
 export const tierUpdateInputSchema = tierInputSchema.extend({
   id,
+  price: tierInputSchema.shape.price.optional(),
   coverTireId: coverIdSchema.nullable().optional(),
 })

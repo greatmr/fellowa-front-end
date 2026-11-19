@@ -39,6 +39,7 @@ describe('tier response parsers', () => {
           cover: null,
           advanced: [],
           benefits: [{ id: 2, title: 'Chat', roleId: 3, role: null }],
+          seatsTaken: 0,
           secret: 'x',
         },
       ])
@@ -52,6 +53,7 @@ describe('tier response parsers', () => {
       capacity: null,
       coverId: null,
       benefits: [{ id: 2, title: 'Chat', roleId: 3 }],
+      seatsTaken: 0,
     })
   })
 
@@ -114,5 +116,19 @@ describe('tier input limits (backend DTOs)', () => {
     expect(
       tierInputSchema.safeParse({ ...body, coverTireId: '../x.png' }).success
     ).toBe(false)
+  })
+
+  describe('custom benefit input (BE-TIER-06)', () => {
+    it('accepts a benefit without roleId only with a non-blank title', () => {
+      const body = { title: 'A', price: 150000 }
+      expect(
+        tierInputSchema.safeParse({ ...body, benefits: [{ title: 'Mine' }] })
+          .success
+      ).toBe(true)
+      expect(
+        tierInputSchema.safeParse({ ...body, benefits: [{ title: '  ' }] })
+          .success
+      ).toBe(false)
+    })
   })
 })

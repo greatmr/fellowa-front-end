@@ -31,7 +31,7 @@ export type TierDraft = {
 }
 
 export type TierDraftError =
-  'title' | 'price' | 'priceMinimum' | 'capacity' | 'benefits' | 'customBenefit'
+  'title' | 'price' | 'priceMinimum' | 'capacity' | 'benefits'
 
 export function emptyTierDraft(): TierDraft {
   return {
@@ -85,14 +85,23 @@ export function draftCapacity(value: string): number | null {
   return wholeNumber(value, MAX_TIER_CAPACITY)
 }
 
-/** Every reason the draft cannot be saved, in form order. */
-export function draftErrors(draft: TierDraft): TierDraftError[] {
+/**
+ * Every reason the draft cannot be saved, in form order. `savedPrice` is the
+ * edited tier's stored price: the server checks the minimum only on a price
+ * that is sent, and an unchanged price is not sent (`priceChange`).
+ */
+export function draftErrors(
+  draft: TierDraft,
+  savedPrice?: number
+): TierDraftError[] {
   const errors: TierDraftError[] = []
   const title = draft.title.trim()
   if (!title || title.length > MAX_TIER_TITLE) errors.push('title')
   const price = draftPrice(draft.price)
   if (price === null) errors.push('price')
-  else if (price < MIN_TIER_PRICE_TOMAN) errors.push('priceMinimum')
+  else if (price < MIN_TIER_PRICE_TOMAN && price !== savedPrice) {
+    errors.push('priceMinimum')
+  }
   if (draft.capacityEnabled && draftCapacity(draft.capacity) === null) {
     errors.push('capacity')
   }
@@ -104,10 +113,6 @@ export function draftErrors(draft: TierDraft): TierDraftError[] {
   ) {
     errors.push('benefits')
   }
-  // A custom-only row (no template) cannot be written back until BE-TIER-06.
-  if (draft.benefits.some(({ roleId }) => roleId === null)) {
-    errors.push('customBenefit')
-  }
   return errors
 }
 
@@ -116,16 +121,19 @@ export function draftErrors(draft: TierDraft): TierDraftError[] {
  * The cover is added by `coverForCreate` or `coverChange`.
  */
 export function payloadFromDraft(
-  draft: TierDraft
+  draft: TierDraft,
+  savedPrice?: number
 ): Omit<CreateTierPayload, 'coverTireId'> | null {
-  if (draftErrors(draft).length > 0) return null
+  if (draftErrors(draft, savedPrice).length > 0) return null
   const price = draftPrice(draft.price)
   if (price === null) return null
-  const benefits: TierBenefitPayload[] = []
-  for (const { title, roleId } of draft.benefits) {
-    if (roleId === null) return null
-    benefits.push({ title: title.trim(), roleId })
-  }
+  // Array order is the saved order (`sort_order`); no `roleId` is custom.
+  const benefits: TierBenefitPayload[] = draft.benefits.map(
+    ({ title, roleId }) =>
+      roleId === null
+        ? { title: title.trim() }
+        : { title: title.trim(), roleId }
+  )
   const capacity = draft.capacityEnabled ? draftCapacity(draft.capacity) : null
   return {
     title: draft.title.trim(),
@@ -138,6 +146,25 @@ export function payloadFromDraft(
         : { limitedUser: true, limitNumberUser: capacity },
     benefits,
   }
+}
+
+/** For `PUT`: the price only when it changed, so an untouched one is not re-checked. */
+export function priceChange(price: number, saved: Tier): { price?: number } {
+  return price === saved.priceToman ? {} : { price }
+}
+
+/** Moves one benefit by `offset` places; the array order is what is saved. */
+export function moveBenefit(
+  benefits: DraftBenefit[],
+  index: number,
+  offset: -1 | 1
+): DraftBenefit[] {
+  const target = index + offset
+  if (target < 0 || target >= benefits.length) return benefits
+  const next = [...benefits]
+  const [item] = next.splice(index, 1)
+  if (item) next.splice(target, 0, item)
+  return next
 }
 
 /** For `POST`: the uploaded cover's id, or nothing. */
