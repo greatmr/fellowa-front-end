@@ -15,7 +15,7 @@ const saved: Tier = {
   priceToman: 150000,
   chatEnabled: false,
   capacity: null,
-  coverId: null,
+  cover: null,
   benefits: [
     { id: 2, title: 'Special posts', roleId: 1 },
     { id: 3, title: 'My own thanks', roleId: null },
@@ -58,7 +58,6 @@ vi.mock('@/features/tiers/api/tier-hooks', () => ({
     ],
     refetch: vi.fn(),
   }),
-  useTierCoverQuery: () => ({ data: undefined }),
   useCreateTierMutation: () => mutation(mocks.create),
   useUpdateTierMutation: () => mutation(mocks.update),
   useDeleteTierMutation: () => mutation(mocks.remove),
@@ -345,5 +344,66 @@ describe('TierManager', () => {
     expect(
       screen.queryByText('Could not save this tier. Try again.')
     ).toBeNull()
+  })
+
+  it('shows a list cover from cover.url, and no image without one (BE-TIER-07)', () => {
+    mocks.tiers = [
+      saved,
+      {
+        ...saved,
+        id: 8,
+        title: 'Gold',
+        cover: {
+          id: '1712345678-abcdef012345.webp',
+          url: 'https://cdn.example/gold.webp',
+        },
+      },
+    ]
+    renderManager()
+    expect(screen.getByRole('img', { name: 'Cover of Gold' })).toHaveAttribute(
+      'src',
+      'https://cdn.example/gold.webp'
+    )
+    expect(
+      screen.queryByRole('img', { name: 'Cover of Supporter' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('previews the saved cover in the builder from the list url', async () => {
+    mocks.tiers = [
+      {
+        ...saved,
+        cover: {
+          id: '1712345678-abcdef012345.webp',
+          url: 'https://cdn.example/gold.webp',
+        },
+      },
+    ]
+    const user = userEvent.setup()
+    renderManager()
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByRole('img', { name: 'Cover preview' })).toHaveAttribute(
+      'src',
+      'https://cdn.example/gold.webp'
+    )
+  })
+
+  it('refuses a cover over 10 MB with the size stated, without uploading', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    renderManager()
+    await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]')!
+    const big = new File(['x'], 'big.png', { type: 'image/png' })
+    Object.defineProperty(big, 'size', { value: 10 * 1024 * 1024 + 1 })
+    await user.upload(input, big)
+    expect(
+      screen.getByText('The image is too large. Choose one up to 10 MB.')
+    ).toBeInTheDocument()
+    expect(mocks.upload).not.toHaveBeenCalled()
+    const ok = new File(['x'], 'ok.png', { type: 'image/png' })
+    Object.defineProperty(ok, 'size', { value: 5 * 1024 * 1024 })
+    await user.upload(input, ok)
+    expect(mocks.upload).toHaveBeenCalledWith(ok, expect.any(Object))
   })
 })

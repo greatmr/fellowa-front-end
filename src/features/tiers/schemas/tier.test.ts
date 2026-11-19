@@ -51,7 +51,7 @@ describe('tier response parsers', () => {
       priceToman: 175000,
       chatEnabled: false,
       capacity: null,
-      coverId: null,
+      cover: null,
       benefits: [{ id: 2, title: 'Chat', roleId: 3 }],
       seatsTaken: 0,
     })

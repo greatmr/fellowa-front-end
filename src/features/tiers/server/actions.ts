@@ -3,16 +3,15 @@
 import {
   createTier,
   deleteTier,
-  getTierCover,
   listOwnTiers,
   listTierRoles,
   updateTier,
   uploadTierCover,
 } from '@/features/tiers/api/tier-api'
 import { readSession, validAuthRequestOrigin } from '@/features/auth/server'
+import { MAX_TIER_COVER_BYTES } from '@/features/tiers/lib/cover-limits'
 import {
   InvalidTierResponseError,
-  MAX_TIER_COVER_BYTES,
   TIER_COVER_TYPES,
   tierIdSchema,
   tierInputSchema,
@@ -74,21 +73,6 @@ export async function listTierRolesForHook(
     return { ok: false, status: 400, code: 'INVALID_REQUEST' }
   }
   return execute(async () => listTierRoles(await authorizedToken(viewerId)))
-}
-
-export async function getTierCoverForHook(
-  viewerId: number,
-  tierId: number
-): Promise<ApiActionResult<TierCover | null>> {
-  if (
-    !tierIdSchema.safeParse(viewerId).success ||
-    !tierIdSchema.safeParse(tierId).success
-  ) {
-    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
-  }
-  return execute(async () =>
-    getTierCover(await authorizedToken(viewerId), tierId)
-  )
 }
 
 export async function uploadTierCoverForHook(

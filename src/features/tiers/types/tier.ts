@@ -15,11 +15,8 @@ export type Tier = {
   chatEnabled: boolean
   /** `tier.capacity_limit`; `null` is unlimited (O-19). */
   capacity: number | null
-  /**
-   * `GET /tire` gives the cover's id only as a usable value: its `image` is
-   * the storage key, not a URL. The URL comes from `GET /tire/:id`.
-   */
-  coverId: string | null
+  /** `GET /tire` `cover` `{id, url}` (`url` since BE-TIER-07); `null` for none. */
+  cover: TierCover | null
   /** Benefits in their saved order (`sort_order`, BE-TIER-06). */
   benefits: TierBenefit[]
   /**
@@ -29,7 +26,7 @@ export type Tier = {
   seatsTaken: number
 }
 
-/** A cover as `POST /tire/cover` and `GET /tire/:id` give it. */
+/** A cover as `POST /tire/cover` and the `GET /tire` list give it. */
 export type TierCover = { id: string; url: string }
 
 export type TierRole = {

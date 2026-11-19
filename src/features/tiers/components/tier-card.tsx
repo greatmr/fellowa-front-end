@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Check, Edit3, MessageCircle, Users } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 
@@ -16,8 +17,8 @@ type Props = {
 }
 
 /**
- * A tier in the owner's list (presentation `TiersView` grid @ d843c3b). No
- * cover image: `GET /tire` gives the cover's storage key, not a URL.
+ * A tier in the owner's list (presentation `TiersView` grid @ d843c3b). The
+ * cover is `GET /tire`'s `cover.url` (BE-TIER-07); no image when there is none.
  */
 export function TierCard({ tier, onEdit }: Props) {
   const t = useTranslations('tiers')
@@ -25,7 +26,19 @@ export function TierCard({ tier, onEdit }: Props) {
   const hidden = tier.benefits.length - VISIBLE_BENEFITS
 
   return (
-    <article className="flex min-w-0 flex-col overflow-hidden rounded-md border bg-card shadow-xs">
+    <article className="group flex min-w-0 flex-col overflow-hidden rounded-md border bg-card shadow-xs">
+      {tier.cover ? (
+        <div className="relative h-32 w-full overflow-hidden bg-muted">
+          {/* The bucket host is not in `images.remotePatterns`; served as is. */}
+          <Image
+            src={tier.cover.url}
+            alt={t('card.coverAlt', { title: tier.title })}
+            fill
+            unoptimized
+            className="object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+          />
+        </div>
+      ) : null}
       <div className="flex flex-1 flex-col p-5">
         <h2 dir="auto" className="text-subtitle font-semibold text-foreground">
           {tier.title}

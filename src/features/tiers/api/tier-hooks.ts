@@ -11,7 +11,6 @@ import {
 import {
   createTierForHook,
   deleteTierForHook,
-  getTierCoverForHook,
   listTierRolesForHook,
   listTiersForHook,
   updateTierForHook,
@@ -34,9 +33,6 @@ export const tierKeys = {
   all: ['tiers'] as const,
   list: (viewerId: number) => ['tiers', 'list', viewerId] as const,
   roles: (viewerId: number) => ['tiers', 'roles', viewerId] as const,
-  details: (viewerId: number) => ['tiers', 'detail', viewerId] as const,
-  cover: (viewerId: number, tierId: number) =>
-    ['tiers', 'detail', viewerId, tierId, 'cover'] as const,
   mutation: (name: string, viewerId: number) =>
     ['tiers', name, viewerId] as const,
 }
@@ -78,16 +74,6 @@ export function useTierRolesQuery(
   })
 }
 
-/** The saved cover's URL, which `GET /tire` does not give. */
-export function useTierCoverQuery(viewerId: number, tierId: number | null) {
-  return useQuery<TierCover | null, ApiError>({
-    queryKey: tierKeys.cover(viewerId, tierId ?? 0),
-    queryFn: async () =>
-      unwrapApiActionResult(await getTierCoverForHook(viewerId, tierId ?? 0)),
-    enabled: validId(viewerId) && tierId !== null && validId(tierId),
-  })
-}
-
 /** Uploads only; the cover joins a tier when the tier is saved. */
 export function useUploadTierCoverMutation(viewerId: number) {
   return useMutation<TierCover, ApiError, File>({
@@ -116,12 +102,7 @@ function useTierMutation<TData, TVariables>(
     mutationFn: async (variables) =>
       unwrapApiActionResult(await action(viewerId, variables)),
     onSuccess: async (data, variables, onMutateResult, context) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: tierKeys.list(viewerId) }),
-        queryClient.invalidateQueries({
-          queryKey: tierKeys.details(viewerId),
-        }),
-      ])
+      await queryClient.invalidateQueries({ queryKey: tierKeys.list(viewerId) })
       await options?.onSuccess?.(data, variables, onMutateResult, context)
     },
   })

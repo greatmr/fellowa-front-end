@@ -39,14 +39,6 @@ export const TIER_COVER_TYPES = [
   'image/gif',
 ] as const
 
-/**
- * The cover travels through a server action, whose body Next caps at 1 MB by
- * default (`serverActions.bodySizeLimit`). The backend accepts up to its own
- * provisional 10 MB; this is the smaller of the two, with room for the
- * multipart envelope.
- */
-export const MAX_TIER_COVER_BYTES = 900 * 1024
-
 export class InvalidTierResponseError extends Error {
   constructor() {
     super('Invalid tier response')
@@ -73,8 +65,9 @@ const rawTierSchema = z.object({
   description: z.string().nullish(),
   price: z.union([z.number(), z.string()]),
   chatEnabled: z.boolean(),
-  // `GET /tire`: `{id, tireId, image}` where `image` is the storage key.
-  cover: z.object({ id: z.string() }).nullable(),
+  // `GET /tire`: `{id, tireId, image, url}`; `image` is the storage key and
+  // `url` (BE-TIER-07) is a string whenever `cover` is an object.
+  cover: z.object({ id: z.string().min(1), url: z.string().min(1) }).nullable(),
   // `GET /tire`: `[]` for no limit, one row otherwise.
   advanced: z.array(z.object({ limitNumberUser: id })),
   benefits: z.array(rawBenefitSchema),
@@ -108,7 +101,7 @@ export function parseTierList(value: unknown): Tier[] {
     priceToman: parseTierPrice(row.price),
     chatEnabled: row.chatEnabled,
     capacity: row.advanced[0]?.limitNumberUser ?? null,
-    coverId: row.cover?.id ?? null,
+    cover: row.cover ? { id: row.cover.id, url: row.cover.url } : null,
     benefits: row.benefits.map((benefit) => ({
       id: benefit.id,
       title: benefit.title ?? '',
@@ -120,15 +113,6 @@ export function parseTierList(value: unknown): Tier[] {
 
 export function parseTierRoles(value: unknown): TierRole[] {
   return parseEnvelope(z.array(roleSchema), value, invalid)
-}
-
-/** `GET /tire/:id`: only the cover is read, for its URL. */
-export function parseTierDetailCover(value: unknown): TierCover | null {
-  return parseEnvelope(
-    z.object({ cover: coverSchema.nullable() }),
-    value,
-    invalid
-  ).cover
 }
 
 /** `POST /tire/cover`. */

@@ -104,7 +104,7 @@ describe('tier hook server boundary', () => {
           priceToman: 150000,
           chatEnabled: false,
           capacity: null,
-          coverId: null,
+          cover: null,
           benefits: [],
           seatsTaken: 0,
         },
@@ -173,7 +173,8 @@ describe('tier hook server boundary', () => {
       return body
     }
     const svg = new File(['<svg/>'], 'a.svg', { type: 'image/svg+xml' })
-    const huge = new File([new Uint8Array(1024 * 1024)], 'a.png', {
+    // One byte over the 10 MB cover limit (FE-TIER-02).
+    const huge = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'a.png', {
       type: 'image/png',
     })
     const png = new File([new Uint8Array([1])], 'a.png', { type: 'image/png' })
