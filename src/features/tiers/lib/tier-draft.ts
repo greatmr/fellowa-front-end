@@ -22,8 +22,8 @@ export type TierDraft = {
   price: string
   /** The cover the tier will have, by `POST /tire/cover` id. */
   coverId: string | null
-  /** The URL of a cover uploaded in this session; a saved one is read live. */
-  uploadedCoverUrl: string | null
+  /** That cover's URL, saved or uploaded in this session. */
+  coverUrl: string | null
   chatEnabled: boolean
   capacityEnabled: boolean
   capacity: string
@@ -39,7 +39,7 @@ export function emptyTierDraft(): TierDraft {
     description: '',
     price: '',
     coverId: null,
-    uploadedCoverUrl: null,
+    coverUrl: null,
     chatEnabled: false,
     capacityEnabled: false,
     capacity: '',
@@ -52,8 +52,8 @@ export function draftFromTier(tier: Tier): TierDraft {
     title: tier.title,
     description: tier.description,
     price: String(tier.priceToman),
-    coverId: tier.coverId,
-    uploadedCoverUrl: null,
+    coverId: tier.cover?.id ?? null,
+    coverUrl: tier.cover?.url ?? null,
     chatEnabled: tier.chatEnabled,
     capacityEnabled: tier.capacity !== null,
     capacity: tier.capacity === null ? '' : String(tier.capacity),
@@ -180,5 +180,7 @@ export function coverChange(
   draft: TierDraft,
   saved: Tier
 ): { coverTireId?: string | null } {
-  return draft.coverId === saved.coverId ? {} : { coverTireId: draft.coverId }
+  return draft.coverId === (saved.cover?.id ?? null)
+    ? {}
+    : { coverTireId: draft.coverId }
 }

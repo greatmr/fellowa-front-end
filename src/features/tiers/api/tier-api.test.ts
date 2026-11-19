@@ -8,7 +8,6 @@ vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', `${origin}/api`)
 const {
   createTier,
   deleteTier,
-  getTierCover,
   listOwnTiers,
   listTierRoles,
   updateTier,
@@ -30,6 +29,7 @@ function listRow(overrides: Record<string, unknown> = {}) {
     chatEnabled: true,
     cover: {
       id: coverId,
+      url: `https://cdn.example/${coverId}`,
       tireId: 7,
       image: `patreon/file/tires/cover/3/${coverId}`,
     },
@@ -79,7 +79,7 @@ describe('tier API contract', () => {
         priceToman: 150000,
         chatEnabled: true,
         capacity: 25,
-        coverId,
+        cover: { id: coverId, url: `https://cdn.example/${coverId}` },
         benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
         seatsTaken: 4,
       },
@@ -109,35 +109,32 @@ describe('tier API contract', () => {
       )
     )
     const [tier] = await listOwnTiers('creator-token')
-    expect(tier).toMatchObject({ coverId: null, capacity: null })
+    expect(tier).toMatchObject({ cover: null, capacity: null })
     expect(tier?.benefits).toEqual([
       { id: 3, title: 'Custom', roleId: null },
       { id: 4, title: '', roleId: 2 },
     ])
   })
 
-  it('reads the saved cover URL from the tier detail', async () => {
+  it('rejects a list cover without its url (BE-TIER-07 contract)', async () => {
     server.use(
-      http.get(`${origin}/api/tire/7`, () =>
+      http.get(`${origin}/api/tire`, () =>
         HttpResponse.json({
-          data: {
-            id: 7,
-            title: 'Supporter',
-            description: null,
-            price: 150000,
-            hasStop: false,
-            chatEnabled: true,
-            cover: { id: coverId, url: `https://cdn.example/${coverId}` },
-            advanced: { limitedUser: true, limitNumberUser: 25 },
-            benefits: [],
-          },
+          data: [
+            listRow({
+              cover: {
+                id: coverId,
+                tireId: 7,
+                image: `patreon/file/tires/cover/3/${coverId}`,
+              },
+            }),
+          ],
           errors: null,
         })
       )
     )
-    await expect(getTierCover('creator-token', 7)).resolves.toEqual({
-      id: coverId,
-      url: `https://cdn.example/${coverId}`,
+    await expect(listOwnTiers('creator-token')).rejects.toMatchObject({
+      name: 'InvalidTierResponseError',
     })
   })
 

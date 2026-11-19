@@ -79,7 +79,7 @@ The API is a legacy NestJS app mid-migration. As of 2026-10-11:
 
 ## Known gaps in this project (not precedent, and not bugs to "fix" silently)
 
-- Auth routes and React Query auth hooks exist. The tier manager uses `useTiersQuery`, `useTierRolesQuery`, and `use…TierMutation` hooks over guarded server actions. Server-only tier API helpers pass the httpOnly cookie token as an explicit Bearer header. The browser receives a narrow tier model and never the token. Other product feature screens remain placeholders; no shared store is used for auth or tier data.
+- Auth routes and React Query auth hooks exist. The tier manager uses `useTiersQuery`, `useTierRolesQuery`, and `use…TierMutation` hooks over guarded server actions. Server-only tier API helpers pass the httpOnly cookie token as an explicit Bearer header. The browser receives a narrow tier model and never the token. Tier covers are uploaded through a server action (`uploadTierCoverForHook`), so `next.config.ts` raises `experimental.serverActions.bodySizeLimit` from the 1 MB default to the 10 MB cover limit plus 64 KB (`src/features/tiers/lib/cover-limits.ts`, FE-TIER-02). That limit applies to every server action; each validates its own input and origin. Other product feature screens remain placeholders; no shared store is used for auth or tier data.
 - `src/lib/api/query-keys.ts` has only the root key; factories come with their features.
 - `test/msw/handlers.ts` is empty by design — handlers arrive with the endpoints that need them.
 - No git hooks, no commitlint, no CI, no Playwright/e2e layer.

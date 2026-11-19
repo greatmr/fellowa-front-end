@@ -23,7 +23,7 @@ const tier: Tier = {
   priceToman: 150000,
   chatEnabled: true,
   capacity: 25,
-  coverId,
+  cover: { id: coverId, url: `https://cdn.example/${coverId}` },
   benefits: [{ id: 2, title: 'Special posts', roleId: 1 }],
   seatsTaken: 3,
 }
@@ -137,7 +137,7 @@ describe('draftFromTier', () => {
       description: 'Monthly support',
       price: '150000',
       coverId,
-      uploadedCoverUrl: null,
+      coverUrl: `https://cdn.example/${coverId}`,
       chatEnabled: true,
       capacityEnabled: true,
       capacity: '25',

@@ -31,7 +31,6 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
   useCreateTierMutation,
-  useTierCoverQuery,
   useUpdateTierMutation,
   useUploadTierCoverMutation,
 } from '@/features/tiers/api/tier-hooks'
@@ -41,6 +40,7 @@ import {
   type BenefitPickerRequest,
 } from '@/features/tiers/components/benefit-picker-dialog'
 import { TierPreviewCard } from '@/features/tiers/components/tier-preview-card'
+import { MAX_TIER_COVER_BYTES } from '@/features/tiers/lib/cover-limits'
 import {
   coverChange,
   coverForCreate,
@@ -55,7 +55,6 @@ import {
 } from '@/features/tiers/lib/tier-draft'
 import {
   MAX_BENEFIT_TITLE,
-  MAX_TIER_COVER_BYTES,
   MAX_TIER_TITLE,
   MIN_TIER_PRICE_TOMAN,
   TIER_COVER_TYPES,
@@ -123,10 +122,6 @@ export function TierBuilder({
   const create = useCreateTierMutation(viewerId)
   const update = useUpdateTierMutation(viewerId)
   const upload = useUploadTierCoverMutation(viewerId)
-  const savedCover = useTierCoverQuery(
-    viewerId,
-    saved?.coverId ? saved.id : null
-  )
   const save = saved ? update : create
   const pending = save.isPending
 
@@ -140,14 +135,11 @@ export function TierBuilder({
     price !== null &&
     price < MIN_TIER_PRICE_TOMAN &&
     price !== saved?.priceToman
-  const coverUrl =
-    draft.uploadedCoverUrl ??
-    (draft.coverId !== null && draft.coverId === saved?.coverId
-      ? (savedCover.data?.url ?? null)
-      : null)
-  const maxCoverSize = format.number(MAX_TIER_COVER_BYTES / 1024, {
+  const coverUrl = draft.coverUrl
+  // Display only: the limit in megabytes (1 MB = 1024 × 1024 bytes).
+  const maxCoverSize = format.number(MAX_TIER_COVER_BYTES / (1024 * 1024), {
     style: 'unit',
-    unit: 'kilobyte',
+    unit: 'megabyte',
     maximumFractionDigits: 0,
   })
 
@@ -217,7 +209,7 @@ export function TierBuilder({
     setCoverProblem(null)
     upload.mutate(file, {
       onSuccess: (cover) =>
-        setDraft({ coverId: cover.id, uploadedCoverUrl: cover.url }),
+        setDraft({ coverId: cover.id, coverUrl: cover.url }),
       onError: (error) => {
         if (error.code === NO_PAGE) setNoPage(true)
         else if (error.status === 413) setCoverProblem('size')
@@ -446,7 +438,7 @@ export function TierBuilder({
                           disabled={upload.isPending}
                           className="text-destructive hover:text-destructive"
                           onClick={() =>
-                            setDraft({ coverId: null, uploadedCoverUrl: null })
+                            setDraft({ coverId: null, coverUrl: null })
                           }
                         >
                           {t('coverRemove')}
