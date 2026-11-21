@@ -1,155 +1,123 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import type * as I18nNavigation from '@/i18n/navigation'
 import type { SetupFacts } from '@/features/studio/types/dashboard'
 import { renderWithIntl } from '../../../../test/render'
-
-const mocks = vi.hoisted(() => ({
-  publish: vi.fn(),
-  refresh: vi.fn(),
-  toastSuccess: vi.fn(),
-  toastError: vi.fn(),
-}))
-vi.mock('@/features/studio/server/actions', () => ({
-  publishPageAction: mocks.publish,
-}))
-vi.mock('@/i18n/navigation', async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nNavigation>()),
-  useRouter: () => ({ refresh: mocks.refresh }),
-}))
-vi.mock('sonner', () => ({
-  toast: { success: mocks.toastSuccess, error: mocks.toastError },
-}))
 
 const { SetupChecklist } = await import('./setup-checklist')
 
 const fresh: SetupFacts = {
   username: null,
+  hasProfileImages: false,
   hasTier: false,
   hasPost: false,
   hasPayoutDetails: false,
   isPublished: false,
 }
 
-beforeEach(() => {
-  for (const fn of Object.values(mocks)) fn.mockReset()
-})
-
-function renderChecklist(facts: SetupFacts) {
-  return renderWithIntl(<SetupChecklist viewerId={42} facts={facts} />, {
-    locale: 'en',
+function renderChecklist(facts: SetupFacts, locale: 'en' | 'fa' = 'en') {
+  return renderWithIntl(<SetupChecklist facts={facts} />, {
+    locale,
+    strict: true,
   })
 }
 
-describe('SetupChecklist (FE-STUDIO-01, CP-01 / CP-04)', () => {
-  it('shows all five steps and no progress for an account with no page', () => {
+describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
+  it('shows the five design steps, a draft badge and no progress for a new account', () => {
     renderChecklist(fresh)
 
-    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    const items = screen.getAllByRole('listitem')
+    expect(items).toHaveLength(5)
+    expect(items[0]).toHaveTextContent('Add a profile photo and cover')
+    expect(screen.getByText('Draft')).toBeInTheDocument()
     expect(screen.getByText('0 of 5 steps done')).toBeInTheDocument()
+    expect(screen.getByText('0%')).toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '0'
     )
   })
 
-  it('reports each finished step from the facts, not from clicks', () => {
-    renderChecklist({
-      ...fresh,
-      username: 'sara',
-      hasTier: true,
-      hasPayoutDetails: true,
-    })
-
-    expect(screen.getByText('3 of 5 steps done')).toBeInTheDocument()
-    const items = screen.getAllByRole('listitem')
-    expect(within(items[0]).getByText(/— done/)).toBeInTheDocument()
-    expect(within(items[2]).getByText(/— to do/)).toBeInTheDocument()
-  })
-
-  it('links the steps whose screen exists and offers nothing for the others', () => {
-    renderChecklist(fresh)
-
-    expect(screen.getByRole('link', { name: 'Set up tiers' })).toHaveAttribute(
-      'href',
-      '/studio/tiers'
-    )
-    expect(screen.getByRole('link', { name: 'Create a post' })).toHaveAttribute(
-      'href',
-      '/studio/posts/new'
-    )
+  it('marks step 1 done from the stored photo and cover, not from the username', () => {
+    const { unmount } = renderChecklist({ ...fresh, username: 'sara' })
     expect(
-      screen.getByRole('link', { name: 'Choose a username' })
-    ).toHaveAttribute('href', '/auth/url?returnTo=%2Fstudio')
-    expect(screen.getAllByRole('link')).toHaveLength(3)
-  })
-
-  it('holds the publish button back until there is a username, then a tier', () => {
-    const { unmount } = renderChecklist(fresh)
-    expect(screen.getByRole('button', { name: 'Publish page' })).toBeDisabled()
-    expect(
-      screen.getByText('Choose a username before you publish.')
+      within(screen.getAllByRole('listitem')[0]).getByText(/— to do/)
     ).toBeInTheDocument()
     unmount()
 
-    renderChecklist({ ...fresh, username: 'sara' })
-    expect(screen.getByRole('button', { name: 'Publish page' })).toBeDisabled()
+    renderChecklist({ ...fresh, hasProfileImages: true })
     expect(
-      screen.getByText('Create a membership tier before you publish.')
+      within(screen.getAllByRole('listitem')[0]).getByText(/— done/)
     ).toBeInTheDocument()
+    expect(screen.getByText('1 of 5 steps done')).toBeInTheDocument()
+    expect(screen.getByText('20%')).toBeInTheDocument()
   })
 
-  it('publishes for this viewer, then refreshes to re-read the checklist', async () => {
-    mocks.publish.mockResolvedValue({ ok: true, data: null })
+  it('links the steps whose screen exists; payout and publish show state only', () => {
+    renderChecklist({ ...fresh, username: 'sara' })
+
+    expect(
+      screen.getByRole('link', { name: /Add a profile photo and cover/ })
+    ).toHaveAttribute('href', '/settings')
+    expect(
+      screen.getByRole('link', { name: /Create your first membership tier/ })
+    ).toHaveAttribute('href', '/studio/tiers')
+    expect(
+      screen.getByRole('link', { name: /Publish your first post/ })
+    ).toHaveAttribute('href', '/studio/posts/new')
+    expect(
+      screen.queryByRole('link', { name: /Add your payout details/ })
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('link')).toHaveLength(3)
+    // The banner carries the one publish action.
+    expect(screen.queryByRole('button', { name: 'Publish page' })).toBeNull()
+  })
+
+  it('collapses and expands the step list', async () => {
     const user = userEvent.setup()
-    renderChecklist({ ...fresh, username: 'sara', hasTier: true })
+    renderChecklist(fresh)
 
-    await user.click(screen.getByRole('button', { name: 'Publish page' }))
+    const toggle = screen.getByRole('button', { name: 'Collapse checklist' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await user.click(toggle)
 
-    expect(mocks.publish).toHaveBeenCalledWith(42)
-    expect(mocks.refresh).toHaveBeenCalledOnce()
-    expect(mocks.toastSuccess).toHaveBeenCalledWith('Your page is now public.')
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    const expand = screen.getByRole('button', { name: 'Expand checklist' })
+    expect(expand).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText('0 of 5 steps done')).toBeInTheDocument()
+
+    await user.click(expand)
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
   })
 
-  it('says so and does not refresh when the backend refuses', async () => {
-    mocks.publish.mockResolvedValue({
-      ok: false,
-      status: 400,
-      code: 'USER_ALIAS_REQUIRED',
-    })
-    const user = userEvent.setup()
-    renderChecklist({ ...fresh, username: 'sara', hasTier: true })
-
-    await user.click(screen.getByRole('button', { name: 'Publish page' }))
-
-    expect(mocks.toastError).toHaveBeenCalledWith(
-      'Choose a username before you publish.'
-    )
-    expect(mocks.refresh).not.toHaveBeenCalled()
-  })
-
-  it('offers no publish button once the page is public', () => {
-    renderChecklist({
+  it('drops the draft badge once published, and leaves when all five are done', () => {
+    const { unmount } = renderChecklist({
+      ...fresh,
       username: 'sara',
+      hasTier: true,
+      isPublished: true,
+    })
+    expect(screen.queryByText('Draft')).not.toBeInTheDocument()
+    unmount()
+
+    const { container } = renderChecklist({
+      username: 'sara',
+      hasProfileImages: true,
       hasTier: true,
       hasPost: true,
       hasPayoutDetails: true,
       isPublished: true,
     })
-
-    expect(screen.getByText('5 of 5 steps done')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Publish page' })
-    ).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
   })
 
   it('renders in Persian with Persian digits', () => {
-    renderWithIntl(<SetupChecklist viewerId={42} facts={fresh} />, {
-      locale: 'fa',
-    })
+    renderChecklist(fresh, 'fa')
 
     expect(screen.getByText('۰ از ۵ مرحله انجام شد')).toBeInTheDocument()
+    expect(
+      screen.getByText('عکس پروفایل و کاور را اضافه کن')
+    ).toBeInTheDocument()
   })
 })

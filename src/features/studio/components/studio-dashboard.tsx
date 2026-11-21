@@ -1,26 +1,37 @@
 import type { ReactNode } from 'react'
 
+import { CreatorIdentityRow } from '@/features/studio/components/creator-identity-row'
+import { PublishBanner } from '@/features/studio/components/publish-banner'
+import { RecentPosts } from '@/features/studio/components/recent-posts'
 import { SetupChecklist } from '@/features/studio/components/setup-checklist'
-import type { SetupFacts } from '@/features/studio/types/dashboard'
+import type { DashboardData } from '@/features/studio/server/load-dashboard'
 
 /**
- * Creator studio dashboard (FE-STUDIO-01; CP-01, CP-04). An account with no
- * page yet sees the checklist and no empty metric cards; earnings, audience
- * and post cards arrive with the tasks that own their data.
+ * Creator studio dashboard, home tab (FE-STUDIO-01/02; CP-01, CP-04;
+ * presentation `DashboardView` @ d843c3b): publish banner, identity row,
+ * setup checklist and recent posts. No earnings or audience cards: the design
+ * has none, and nothing here computes money. Out (FQ-27, FQ-2/FQ-3): the
+ * other tabs, post search, likes and comments, the stream overlay and the
+ * goal card.
  */
 export function StudioDashboard({
   viewerId,
   facts,
+  identity,
+  recentPosts,
   heading,
-}: {
-  viewerId: number
-  facts: SetupFacts
-  heading: ReactNode
-}) {
+}: DashboardData & { heading: ReactNode }) {
   return (
     <div className="grid max-w-3xl gap-6">
       {heading}
-      <SetupChecklist viewerId={viewerId} facts={facts} />
+      <PublishBanner viewerId={viewerId} facts={facts} />
+      <CreatorIdentityRow
+        viewerId={viewerId}
+        identity={identity}
+        isPublished={facts.isPublished}
+      />
+      <SetupChecklist facts={facts} />
+      <RecentPosts result={recentPosts} />
     </div>
   )
 }
