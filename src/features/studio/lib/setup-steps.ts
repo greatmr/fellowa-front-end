@@ -41,3 +41,15 @@ export function publishBlockedBy(
   if (!facts.hasTier) return 'firstTier'
   return null
 }
+
+/**
+ * The `studio.dashboard` message saying why publish is held back, shared by
+ * the banner and the checklist's publish row.
+ */
+export function publishBlockedMessageKey(
+  blockedBy: ReturnType<typeof publishBlockedBy>
+): 'publishNeedsUsername' | 'publishNeedsTier' | null {
+  if (blockedBy === 'username') return 'publishNeedsUsername'
+  if (blockedBy === 'firstTier') return 'publishNeedsTier'
+  return null
+}

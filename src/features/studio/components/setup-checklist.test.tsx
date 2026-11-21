@@ -1,11 +1,28 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as I18nNavigation from '@/i18n/navigation'
 import type { SetupFacts } from '@/features/studio/types/dashboard'
 import { renderWithIntl } from '../../../../test/render'
 
+const mocks = vi.hoisted(() => ({
+  publish: vi.fn(),
+  refresh: vi.fn(),
+}))
+vi.mock('@/features/studio/server/actions', () => ({
+  publishPageAction: mocks.publish,
+}))
+vi.mock('@/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nNavigation>()),
+  useRouter: () => ({ refresh: mocks.refresh }),
+}))
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
 const { SetupChecklist } = await import('./setup-checklist')
+const { PublishPageProvider } = await import('./publish-page-provider')
+const { resetChecklistDismissal } =
+  await import('@/features/studio/lib/checklist-dismissal')
 
 const fresh: SetupFacts = {
   username: null,
@@ -17,11 +34,19 @@ const fresh: SetupFacts = {
 }
 
 function renderChecklist(facts: SetupFacts, locale: 'en' | 'fa' = 'en') {
-  return renderWithIntl(<SetupChecklist facts={facts} />, {
-    locale,
-    strict: true,
-  })
+  return renderWithIntl(
+    <PublishPageProvider viewerId={42}>
+      <SetupChecklist facts={facts} />
+    </PublishPageProvider>,
+    { locale, strict: true }
+  )
 }
+
+beforeEach(() => {
+  mocks.publish.mockReset()
+  mocks.refresh.mockReset()
+  resetChecklistDismissal()
+})
 
 describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
   it('shows the five design steps, a draft badge and no progress for a new account', () => {
@@ -54,7 +79,14 @@ describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
     expect(screen.getByText('20%')).toBeInTheDocument()
   })
 
-  it('links the steps whose screen exists; payout and publish show state only', () => {
+  it('titles the card as the design does (FQ-28 B)', () => {
+    renderChecklist(fresh)
+    expect(
+      screen.getByRole('heading', { name: 'Your page is ready!' })
+    ).toBeInTheDocument()
+  })
+
+  it('links the steps whose screen exists; payout shows state only', () => {
     renderChecklist({ ...fresh, username: 'sara' })
 
     expect(
@@ -70,8 +102,43 @@ describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
       screen.queryByRole('link', { name: /Add your payout details/ })
     ).not.toBeInTheDocument()
     expect(screen.getAllByRole('link')).toHaveLength(3)
-    // The banner carries the one publish action.
-    expect(screen.queryByRole('button', { name: 'Publish page' })).toBeNull()
+  })
+
+  it('publishes from the publish row once there is a username and a tier', async () => {
+    mocks.publish.mockResolvedValue({ ok: true, data: null })
+    const user = userEvent.setup()
+    renderChecklist({ ...fresh, username: 'sara', hasTier: true })
+
+    await user.click(screen.getByRole('button', { name: /Publish your page/ }))
+
+    expect(mocks.publish).toHaveBeenCalledExactlyOnceWith(42)
+    expect(mocks.refresh).toHaveBeenCalledOnce()
+  })
+
+  it('holds the publish row back with its reason before there is a tier', () => {
+    renderChecklist({ ...fresh, username: 'sara' })
+
+    const row = screen.getByRole('button', { name: /Publish your page/ })
+    expect(row).toBeDisabled()
+    expect(row).toHaveAccessibleDescription(
+      'Create a membership tier before you publish.'
+    )
+  })
+
+  it('hides for the rest of the session on «later»', async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderChecklist(fresh)
+
+    await user.click(screen.getByRole('button', { name: 'Later' }))
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    unmount()
+
+    // Still hidden on the next visit in the same session.
+    renderChecklist(fresh)
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+    expect(
+      window.sessionStorage.getItem('fellowa:studio-checklist-dismissed')
+    ).toBe('1')
   })
 
   it('collapses and expands the step list', async () => {

@@ -233,6 +233,7 @@ describe('getRecentPosts', () => {
       {
         id: 12,
         title: 'Post 12',
+        excerpt: 'Body',
         publishedAt: null,
         createdAt: '2026-11-21T08:00:00.000Z',
         audience: 'tiers',
@@ -240,6 +241,7 @@ describe('getRecentPosts', () => {
       {
         id: 9,
         title: 'Post 9',
+        excerpt: 'Body',
         publishedAt: '2026-11-20T08:00:00.000Z',
         createdAt: '2026-11-20T08:00:00.000Z',
         audience: 'public',

@@ -22,7 +22,8 @@ export const RECENT_POSTS_LIMIT = 5
 
 /**
  * Recent posts (presentation `DashboardView` :824-900 @ d843c3b): title,
- * date, draft and audience badges, and the "create post" dark button. Every
+ * date, a two-line excerpt of the body (`text`, FE-STUDIO-03), draft and
+ * audience badges, and the "create post" dark button. Every
  * row is the owner's own post at FULL (`GET /content`); the badge shows the
  * audience the owner chose (`visibility.type`, `paywallPosition`); it
  * decides no access. Loading is the route's (`[locale]/loading.tsx`): the
@@ -60,7 +61,7 @@ export function RecentPosts({ result }: { result: RecentPostsResult }) {
             const date = post.publishedAt ?? post.createdAt
             return (
               <li key={post.id}>
-                <Card className="gap-3 px-5 py-4">
+                <Card className="gap-3 p-6">
                   <div className="grid gap-1">
                     <h3
                       dir="auto"
@@ -76,6 +77,14 @@ export function RecentPosts({ result }: { result: RecentPostsResult }) {
                       </time>
                     </p>
                   </div>
+                  {post.excerpt ? (
+                    <p
+                      dir="auto"
+                      className="line-clamp-2 text-body text-muted-foreground"
+                    >
+                      {post.excerpt}
+                    </p>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-2 border-t pt-3">
                     {post.publishedAt === null ? (
                       <Badge variant="neutral">{t('draft')}</Badge>

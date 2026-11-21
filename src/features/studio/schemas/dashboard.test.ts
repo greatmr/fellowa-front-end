@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   InvalidDashboardResponseError,
+  EXCERPT_LENGTH,
   parseDashboardPosts,
   parseHasPayoutDetails,
   parseHasRows,
@@ -140,11 +141,43 @@ describe('parseDashboardPosts', () => {
       {
         id: 3,
         title: 'Draft',
+        excerpt: 'Body',
         publishedAt: null,
         createdAt: '2026-11-21T08:00:00.000Z',
         audience: 'tiers',
       },
     ])
+  })
+
+  it('trims the body into the excerpt, and has none for an empty or missing body', () => {
+    const item = (text: string | null | undefined) => ({
+      id: 5,
+      title: 'Post',
+      text,
+      createdAt: '2026-11-21T08:00:00.000Z',
+      visibility: { contentId: 5, type: true, datePublished: null },
+    })
+    expect(
+      parseDashboardPosts(
+        envelope([item('  Hello  '), item('   '), item(null), item(undefined)])
+      ).map((post) => post.excerpt)
+    ).toEqual(['Hello', null, null, null])
+  })
+
+  it('cuts a long body to EXCERPT_LENGTH code points without splitting a character', () => {
+    const body = '😀'.repeat(EXCERPT_LENGTH + 50)
+    const [post] = parseDashboardPosts(
+      envelope([
+        {
+          id: 6,
+          title: 'Long',
+          text: body,
+          createdAt: '2026-11-21T08:00:00.000Z',
+          visibility: { contentId: 6, type: true, datePublished: null },
+        },
+      ])
+    )
+    expect(post?.excerpt).toBe(`${'😀'.repeat(EXCERPT_LENGTH)}…`)
   })
 
   it('tells a public post with a paywall from a fully public one', () => {

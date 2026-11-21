@@ -2,52 +2,28 @@
 
 import { RocketIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useTransition } from 'react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { publishPageAction } from '@/features/studio/server/actions'
-import { useRouter } from '@/i18n/navigation'
+import { usePublishPage } from '@/features/studio/components/publish-page-provider'
 
 /**
- * Publishes the creator's page. `blockedReason` is why the button is offered
- * disabled (no username or no tier yet, CP-05); the backend still answers for
- * the publish. On success the page is refreshed so the checklist is re-read
- * from the backend instead of being ticked on the client. The banner shows it
- * as the design's dark button with a rocket (`variant="inverse"`, `withIcon`).
+ * The banner's publish button. `blockedReason` is why the button is offered
+ * disabled (no username or no tier yet, CP-05). The request and its pending
+ * state are the shared `PublishPageProvider`'s, so this button and the
+ * checklist's publish row never send two requests. The banner shows it as
+ * the design's dark button with a rocket (`variant="inverse"`, `withIcon`).
  */
 export function PublishButton({
-  viewerId,
   blockedReason,
   variant = 'default',
   withIcon = false,
 }: {
-  viewerId: number
   blockedReason: string | null
   variant?: 'default' | 'inverse'
   withIcon?: boolean
 }) {
   const t = useTranslations('studio.dashboard')
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
-
-  function publish() {
-    startTransition(async () => {
-      const result = await publishPageAction(viewerId)
-      if (!result.ok) {
-        toast.error(
-          result.status === 401
-            ? t('sessionExpired')
-            : result.code === 'USER_ALIAS_REQUIRED'
-              ? t('publishNeedsUsername')
-              : t('publishFailed')
-        )
-        return
-      }
-      toast.success(t('published'))
-      router.refresh()
-    })
-  }
+  const { publish, pending } = usePublishPage()
 
   return (
     <div className="grid justify-items-start gap-1.5">
