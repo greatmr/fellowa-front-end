@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -153,7 +153,47 @@ describe('one publish action for the banner and the checklist (FE-STUDIO-03 row 
     await act(async () => resolve({ ok: true, data: null }))
     expect(mocks.refresh).toHaveBeenCalledOnce()
     expect(mocks.toastSuccess).toHaveBeenCalledOnce()
-    expect(bannerButton).toBeEnabled()
+    // Still disabled until the refreshed page shows the published state.
+    expect(bannerButton).toBeDisabled()
+    expect(row).toBeDisabled()
+  })
+
+  it('ignores a second click in the same tick', async () => {
+    mocks.publish.mockResolvedValue({ ok: true, data: null })
+    renderWithIntl(
+      <PublishPageProvider viewerId={42}>
+        <PublishBanner viewerId={42} facts={ready} />
+        <SetupChecklist facts={ready} />
+      </PublishPageProvider>,
+      strictEn
+    )
+
+    const bannerButton = screen.getByRole('button', { name: 'Publish page' })
+    const row = screen.getByRole('button', { name: /Publish your page/ })
+    await act(async () => {
+      fireEvent.click(bannerButton)
+      fireEvent.click(row)
+    })
+
+    expect(mocks.publish).toHaveBeenCalledOnce()
+  })
+
+  it('enables both again after a failure', async () => {
+    mocks.publish.mockResolvedValue({ ok: false, status: 500 })
+    const user = userEvent.setup()
+    renderWithIntl(
+      <PublishPageProvider viewerId={42}>
+        <PublishBanner viewerId={42} facts={ready} />
+        <SetupChecklist facts={ready} />
+      </PublishPageProvider>,
+      strictEn
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Publish page' }))
+    await user.click(screen.getByRole('button', { name: /Publish your page/ }))
+
+    expect(mocks.publish).toHaveBeenCalledTimes(2)
+    expect(mocks.toastError).toHaveBeenCalledTimes(2)
   })
 
   it('reports a failure once, from either place', async () => {
@@ -272,9 +312,8 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
   it('centres the page name and alias, with home and memberships tabs and no avatar', () => {
     renderWithIntl(<CreatorIdentityRow identity={identity} />, strictEn)
 
-    expect(
-      screen.getByRole('heading', { name: 'Sara Studio' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Sara Studio' })).toBeVisible()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
     expect(screen.getByText('@sara')).toBeInTheDocument()
     const tabs = screen.getByRole('navigation', { name: 'Page sections' })
     expect(within(tabs).getByRole('link', { name: 'Home' })).toHaveAttribute(
@@ -292,7 +331,7 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
       <CreatorIdentityRow identity={{ ...identity, pageName: null }} />,
       strictEn
     )
-    expect(screen.getByRole('heading', { name: 'Sara' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Sara' })).toBeInTheDocument()
     unmount()
 
     const second = renderWithIntl(
@@ -301,7 +340,7 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
       />,
       strictEn
     )
-    expect(screen.getByRole('heading', { name: '@sara' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '@sara' })).toBeInTheDocument()
     expect(screen.getAllByText('@sara')).toHaveLength(1)
     second.unmount()
 
@@ -317,7 +356,7 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
       strictEn
     )
     expect(
-      screen.getByRole('heading', { name: 'Unnamed page' })
+      screen.getByRole('region', { name: 'Unnamed page' })
     ).toBeInTheDocument()
   })
 })

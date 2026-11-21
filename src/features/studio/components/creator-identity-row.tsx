@@ -32,12 +32,14 @@ export function CreatorIdentityRow({
       className="border-b bg-card pt-8 text-center"
     >
       <StudioPage width="medium">
-        <h2
+        {/* A paragraph, not a heading: the page's h1 sits in the column
+            below, and the band comes first in the document. */}
+        <p
           id="creator-identity-name"
           className="text-headline font-bold tracking-tight break-words text-foreground sm:text-display"
         >
           <bdi>{name ?? t('unnamed')}</bdi>
-        </h2>
+        </p>
         {showAlias ? (
           <p className="mt-1 text-body-sm text-muted-foreground">
             <bdi dir="ltr">@{identity.alias}</bdi>
@@ -45,7 +47,7 @@ export function CreatorIdentityRow({
         ) : null}
         <nav
           aria-label={t('tabsLabel')}
-          className="mt-5 flex items-center justify-center gap-6 overflow-x-auto text-body sm:gap-8"
+          className="mt-5 flex items-center justify-start gap-6 overflow-x-auto text-body sm:justify-center sm:gap-8"
         >
           <Link href="/studio" aria-current="page" className={tabClass(true)}>
             {t('home')}

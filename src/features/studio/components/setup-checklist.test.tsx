@@ -120,7 +120,7 @@ describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
 
     const row = screen.getByRole('button', { name: /Publish your page/ })
     expect(row).toBeDisabled()
-    expect(row).toHaveTextContent(
+    expect(row).toHaveAccessibleDescription(
       'Create a membership tier before you publish.'
     )
   })

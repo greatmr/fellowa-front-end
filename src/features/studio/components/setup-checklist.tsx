@@ -57,6 +57,7 @@ export function SetupChecklist({ facts }: { facts: SetupFacts }) {
   const dismissed = useChecklistDismissed()
   const [collapsed, setCollapsed] = useState(false)
   const listId = useId()
+  const publishReasonId = useId()
   const steps = deriveSetupSteps(facts)
   const doneCount = steps.filter((step) => step.done).length
   const blockedKey = publishBlockedMessageKey(publishBlockedBy(facts))
@@ -182,18 +183,20 @@ export function SetupChecklist({ facts }: { facts: SetupFacts }) {
                     'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent'
                   )}
                   disabled={pending || blockedKey !== null}
+                  aria-describedby={blockedKey ? publishReasonId : undefined}
                   onClick={publish}
                 >
-                  <span className="grid gap-1">
-                    {label}
-                    {blockedKey ? (
-                      <span className="ps-9 text-label text-muted-foreground">
-                        {t(blockedKey)}
-                      </span>
-                    ) : null}
-                  </span>
+                  {label}
                   {chevron}
                 </button>
+                {blockedKey ? (
+                  <p
+                    id={publishReasonId}
+                    className="ps-11 pb-3 text-label text-muted-foreground"
+                  >
+                    {t(blockedKey)}
+                  </p>
+                ) : null}
               </li>
             )
           }
