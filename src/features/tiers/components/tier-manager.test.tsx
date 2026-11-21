@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Tier } from '@/features/tiers/types/tier'
 import { ApiError } from '@/lib/api/errors'
 
+import { TIME_ZONE } from '@/i18n/time-zone'
+
 import en from '../../../../messages/en.json'
+import fa from '../../../../messages/fa.json'
 
 const saved: Tier = {
   id: 7,
@@ -69,9 +72,23 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 const { TierManager } = await import('./tier-manager')
 const { toast } = await import('sonner')
 
-function renderManager() {
+const messages = { fa, en } as const
+
+/**
+ * Real messages, and every next-intl error thrown: by default next-intl only
+ * logs a missing key or a key that resolves to an object and renders the key
+ * path, so a broken `t()` call passes any test that does not read that text.
+ */
+function renderManager(locale: keyof typeof messages = 'en') {
   render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages[locale]}
+      timeZone={TIME_ZONE}
+      onError={(error) => {
+        throw error
+      }}
+    >
       <TierManager viewerId={4} />
     </NextIntlClientProvider>
   )
@@ -92,6 +109,40 @@ describe('TierManager', () => {
       fn.mockReset()
     }
   })
+
+  it.each(['fa', 'en'] as const)(
+    'renders the list, guide, builder, picker and delete dialog in %s with no message error',
+    async (locale) => {
+      const m = messages[locale].tiers
+      const user = userEvent.setup()
+      renderManager(locale)
+      // The guide button once rendered `t('guide')`, an object (INSUFFICIENT_PATH).
+      await user.click(screen.getByRole('button', { name: m.openGuide }))
+      const guide = screen.getByRole('dialog')
+      await user.click(
+        within(guide).getByRole('button', { name: m.guide.next })
+      )
+      await user.click(
+        within(guide).getByRole('button', { name: m.guide.finish })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.builder.addBenefit })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.picker.customTitle })
+      )
+      await user.click(screen.getByRole('button', { name: m.picker.back }))
+      await user.keyboard('{Escape}')
+      await user.click(
+        screen.getAllByRole('button', { name: m.builder.back })[0]!
+      )
+      await user.click(screen.getByRole('button', { name: m.edit }))
+      await user.click(
+        screen.getByRole('button', { name: m.builder.deleteTier })
+      )
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }
+  )
 
   it('edits a tier in the builder and saves whole-number Toman without touching the cover', async () => {
     const user = userEvent.setup()
@@ -259,6 +310,84 @@ describe('TierManager', () => {
       expect(card.getByText(name)).toBeInTheDocument()
     }
     expect(card.queryByText('Merch')).not.toBeInTheDocument()
+  })
+
+  describe('design parity, round 3 (FE-TIER-03)', () => {
+    it('captions the preview with the public-page size note', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+      expect(
+        within(preview()).getByText(
+          'This card appears at this size on your public page.'
+        )
+      ).toBeInTheDocument()
+    })
+
+    it.each([
+      ['fa', 'اعضای قبلی تا زمان تمدید طبق مبلغ قبلی'],
+      ['en', 'Existing members stay at the previous price until their renewal'],
+    ] as const)(
+      'says existing members keep the old price until renewal (O-3) in %s',
+      (locale, line) => {
+        renderManager(locale)
+        expect(screen.getByText(new RegExp(line))).toBeInTheDocument()
+      }
+    )
+
+    it('ignores adding a benefit whose title is already listed', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Edit' }))
+      await user.click(screen.getByRole('button', { name: 'Add benefit' }))
+      await user.click(screen.getByRole('button', { name: 'Custom benefit' }))
+      await user.type(
+        screen.getByLabelText('Benefit title'),
+        '  Special posts  '
+      )
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: 'Add benefit',
+        })
+      )
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(
+        within(preview())
+          .getAllByRole('listitem')
+          .map((item) => item.textContent)
+      ).toEqual(['Special posts', 'My own thanks'])
+    })
+
+    it('counts the tier title against 120 and stops typing there', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+      const name = screen.getByLabelText(/^Tier name/)
+      expect(name).toHaveAccessibleDescription('0 / 120')
+      await user.type(name, 'Gold')
+      expect(name).toHaveAccessibleDescription('4 / 120')
+      await user.type(name, 'x'.repeat(130))
+      expect(name).toHaveValue(`Gold${'x'.repeat(116)}`)
+      expect(name).toHaveAccessibleDescription('120 / 120')
+    })
+
+    it('counts the benefit title against 160 in Persian digits', async () => {
+      const user = userEvent.setup()
+      renderManager('fa')
+      const m = fa.tiers
+      await user.click(screen.getByRole('button', { name: m.create }))
+      await user.click(
+        screen.getByRole('button', { name: m.builder.addBenefit })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.picker.customTitle })
+      )
+      const title = screen.getByLabelText(m.picker.titleLabel)
+      await user.type(title, 'پست')
+      expect(title).toHaveAccessibleDescription('۳ / ۱۶۰')
+      await user.type(title, 'x'.repeat(170))
+      expect(title).toHaveAccessibleDescription('۱۶۰ / ۱۶۰')
+    })
   })
 
   it('labels the owner seat count as seats taken, against the capacity when set', () => {

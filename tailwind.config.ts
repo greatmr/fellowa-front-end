@@ -173,10 +173,20 @@ export const spacing = {
   drawer: '17.5rem',
 } as const
 
+/** The public pages' content width (`max-w-public`). */
+const publicWidth = '71.25rem'
+
 export const maxWidth = {
   content: '64rem',
-  public: '71.25rem',
+  public: publicWidth,
   error: '28rem',
+  /*
+   * One column of the public page's three-column tier grid at full width
+   * (`max-w-public`, `sm:px-6`, `gap-4`): the builder's preview card
+   * matches it (presentation `TiersView` `max-w-[285px]` "matching 3-col
+   * public grid" @ d843c3b; FE-TIER-03).
+   */
+  'tier-card': `calc((${publicWidth} - 3rem - 2rem) / 3)`,
 } as const
 
 export const boxShadow = {

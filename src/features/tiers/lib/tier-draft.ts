@@ -167,6 +167,20 @@ export function moveBenefit(
   return next
 }
 
+/**
+ * Appends a benefit unless one with the same trimmed title is already listed
+ * (presentation `TiersView` @ d843c3b): a duplicate add is ignored.
+ */
+export function addBenefit(
+  benefits: DraftBenefit[],
+  benefit: DraftBenefit
+): DraftBenefit[] {
+  const title = benefit.title.trim()
+  return benefits.some((existing) => existing.title.trim() === title)
+    ? benefits
+    : [...benefits, benefit]
+}
+
 /** For `POST`: the uploaded cover's id, or nothing. */
 export function coverForCreate(draft: TierDraft): { coverTireId?: string } {
   return draft.coverId === null ? {} : { coverTireId: draft.coverId }

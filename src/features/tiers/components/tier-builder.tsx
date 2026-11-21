@@ -39,9 +39,11 @@ import {
   BenefitPickerDialog,
   type BenefitPickerRequest,
 } from '@/features/tiers/components/benefit-picker-dialog'
+import { CharCount } from '@/features/tiers/components/char-count'
 import { TierPreviewCard } from '@/features/tiers/components/tier-preview-card'
 import { MAX_TIER_COVER_BYTES } from '@/features/tiers/lib/cover-limits'
 import {
+  addBenefit,
   coverChange,
   coverForCreate,
   draftCapacity,
@@ -332,9 +334,15 @@ export function TierBuilder({
                     maxLength={MAX_TIER_TITLE}
                     placeholder={t('namePlaceholder')}
                     aria-invalid={has('title')}
+                    aria-describedby={`${ids}-name-count`}
                     onChange={(event) =>
                       setDraft({ title: event.target.value })
                     }
+                  />
+                  <CharCount
+                    id={`${ids}-name-count`}
+                    count={draft.title.length}
+                    max={MAX_TIER_TITLE}
                   />
                 </Field>
 
@@ -759,6 +767,9 @@ export function TierBuilder({
               }
               chatEnabled={draft.chatEnabled}
             />
+            <p className="mt-3.5 text-center text-caption text-muted-foreground">
+              {tPreview('footer')}
+            </p>
           </div>
         </aside>
       </div>
@@ -769,10 +780,11 @@ export function TierBuilder({
         roles={roles}
         onAdd={(title, roleId) => {
           setDraft({
-            benefits: [
-              ...draft.benefits,
-              { key: `new-${benefitKey.current++}`, title, roleId },
-            ],
+            benefits: addBenefit(draft.benefits, {
+              key: `new-${benefitKey.current++}`,
+              title,
+              roleId,
+            }),
           })
           setPicker(null)
         }}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { CharCount } from '@/features/tiers/components/char-count'
 import { roleTitle } from '@/features/tiers/lib/role-title'
 import { MAX_BENEFIT_TITLE } from '@/features/tiers/schemas/tier'
 import type { TierRole } from '@/features/tiers/types/tier'
@@ -64,6 +65,7 @@ export function BenefitPickerDialog({
   const tTiers = useTranslations('tiers')
   const tCommon = useTranslations('common')
   const locale = useLocale()
+  const countId = useId()
   const [step, setStep] = useState<Step>(() => initialStep(request))
   const catalog = roles.data ?? []
 
@@ -178,19 +180,27 @@ export function BenefitPickerDialog({
                     : t('addHint')}
               </DialogDescription>
             </DialogHeader>
-            <label className="grid gap-2 text-label font-semibold text-foreground">
-              <span>{t('titleLabel')}</span>
-              <Input
-                autoFocus
-                required
-                maxLength={MAX_BENEFIT_TITLE}
-                placeholder={t('titlePlaceholder')}
-                value={step.title}
-                onChange={(event) =>
-                  setStep({ ...step, title: event.target.value })
-                }
+            <div>
+              <label className="grid gap-2 text-label font-semibold text-foreground">
+                <span>{t('titleLabel')}</span>
+                <Input
+                  autoFocus
+                  required
+                  maxLength={MAX_BENEFIT_TITLE}
+                  placeholder={t('titlePlaceholder')}
+                  value={step.title}
+                  aria-describedby={countId}
+                  onChange={(event) =>
+                    setStep({ ...step, title: event.target.value })
+                  }
+                />
+              </label>
+              <CharCount
+                id={countId}
+                count={step.title.length}
+                max={MAX_BENEFIT_TITLE}
               />
-            </label>
+            </div>
             <DialogFooter>
               {step.source === 'existing' ? null : (
                 <Button

@@ -484,6 +484,7 @@
   "tiers": {
     "overviewHint": "Create and manage your page's monthly membership tiers. Your page needs at least one tier before it can go public.",
     "create": "Create new tier",
+    "openGuide": "Tier setup guide",
     "guide": {
       "title": "Setting up your first membership tier",
       "step": "Step {step} of {total}",
@@ -531,7 +532,7 @@
     },
     "priceNote": {
       "label": "About price changes:",
-      "body": "A new price applies to new supporters only. Existing members keep the price they joined at."
+      "body": "A price change applies to new supporters only. Existing members stay at the previous price until their renewal, to keep their trust."
     },
     "card": {
       "moreBenefits": "+ {count} more benefits",
@@ -600,6 +601,7 @@
       "createdToast": "Tier “{title}” created",
       "savedToast": "Changes to “{title}” saved",
       "moveBenefitUp": "Move “{title}” up",
+      "charCount": "{count} / {max}",
       "moveBenefitDown": "Move “{title}” down"
     },
     "preview": {
