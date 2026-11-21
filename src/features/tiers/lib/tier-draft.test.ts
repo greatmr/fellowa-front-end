@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  addBenefit,
   coverChange,
   coverForCreate,
   moveBenefit,
@@ -173,6 +174,18 @@ describe('draftFromTier', () => {
       expect(moveBenefit(list, 0, 1).map((b) => b.key)).toEqual(['b', 'a', 'c'])
       expect(moveBenefit(list, 0, -1)).toBe(list)
       expect(moveBenefit(list, 2, 1)).toBe(list)
+    })
+
+    it('ignores an added benefit whose trimmed title is already listed', () => {
+      const list = [{ key: 'a', title: 'Live stream', roleId: 2 }]
+      expect(
+        addBenefit(list, { key: 'b', title: ' Live stream ', roleId: null })
+      ).toBe(list)
+      expect(
+        addBenefit(list, { key: 'c', title: 'Live Q&A', roleId: 2 }).map(
+          (b) => b.key
+        )
+      ).toEqual(['a', 'c'])
     })
 
     it('sends a price on update only when it changed', () => {

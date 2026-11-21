@@ -40,7 +40,7 @@ export function TierPreviewCard({
   return (
     <div
       className={cn(
-        'mx-auto w-full max-w-xs overflow-hidden rounded-md border bg-card shadow-sm',
+        'mx-auto w-full max-w-tier-card overflow-hidden rounded-md border bg-card shadow-sm',
         className
       )}
     >

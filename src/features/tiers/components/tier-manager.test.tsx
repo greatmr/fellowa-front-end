@@ -312,6 +312,84 @@ describe('TierManager', () => {
     expect(card.queryByText('Merch')).not.toBeInTheDocument()
   })
 
+  describe('design parity, round 3 (FE-TIER-03)', () => {
+    it('captions the preview with the public-page size note', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+      expect(
+        within(preview()).getByText(
+          'This card appears at this size on your public page.'
+        )
+      ).toBeInTheDocument()
+    })
+
+    it.each([
+      ['fa', 'اعضای قبلی تا زمان تمدید طبق مبلغ قبلی'],
+      ['en', 'Existing members stay at the previous price until their renewal'],
+    ] as const)(
+      'says existing members keep the old price until renewal (O-3) in %s',
+      (locale, line) => {
+        renderManager(locale)
+        expect(screen.getByText(new RegExp(line))).toBeInTheDocument()
+      }
+    )
+
+    it('ignores adding a benefit whose title is already listed', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Edit' }))
+      await user.click(screen.getByRole('button', { name: 'Add benefit' }))
+      await user.click(screen.getByRole('button', { name: 'Custom benefit' }))
+      await user.type(
+        screen.getByLabelText('Benefit title'),
+        '  Special posts  '
+      )
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: 'Add benefit',
+        })
+      )
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(
+        within(preview())
+          .getAllByRole('listitem')
+          .map((item) => item.textContent)
+      ).toEqual(['Special posts', 'My own thanks'])
+    })
+
+    it('counts the tier title against 120 and stops typing there', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+      const name = screen.getByLabelText(/^Tier name/)
+      expect(name).toHaveAccessibleDescription('0 / 120')
+      await user.type(name, 'Gold')
+      expect(name).toHaveAccessibleDescription('4 / 120')
+      await user.type(name, 'x'.repeat(130))
+      expect(name).toHaveValue(`Gold${'x'.repeat(116)}`)
+      expect(name).toHaveAccessibleDescription('120 / 120')
+    })
+
+    it('counts the benefit title against 160 in Persian digits', async () => {
+      const user = userEvent.setup()
+      renderManager('fa')
+      const m = fa.tiers
+      await user.click(screen.getByRole('button', { name: m.create }))
+      await user.click(
+        screen.getByRole('button', { name: m.builder.addBenefit })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.picker.customTitle })
+      )
+      const title = screen.getByLabelText(m.picker.titleLabel)
+      await user.type(title, 'پست')
+      expect(title).toHaveAccessibleDescription('۳ / ۱۶۰')
+      await user.type(title, 'x'.repeat(170))
+      expect(title).toHaveAccessibleDescription('۱۶۰ / ۱۶۰')
+    })
+  })
+
   it('labels the owner seat count as seats taken, against the capacity when set', () => {
     mocks.tiers = [saved, { ...saved, id: 8, title: 'Gold', capacity: 10 }]
     renderManager()
