@@ -44,6 +44,8 @@ export type CreatorIdentity = {
 export type DashboardPost = {
   id: number
   title: string
+  /** The body (`text`, owner FULL), trimmed; `null` when there is none. */
+  excerpt: string | null
   /** `null` for a draft: no route leaves a published post without a date. */
   publishedAt: string | null
   createdAt: string

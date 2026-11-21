@@ -12,7 +12,16 @@ import { useId, useState, type ComponentProps } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { deriveSetupSteps } from '@/features/studio/lib/setup-steps'
+import { usePublishPage } from '@/features/studio/components/publish-page-provider'
+import {
+  dismissChecklistForSession,
+  useChecklistDismissed,
+} from '@/features/studio/lib/checklist-dismissal'
+import {
+  deriveSetupSteps,
+  publishBlockedBy,
+  publishBlockedMessageKey,
+} from '@/features/studio/lib/setup-steps'
 import type { SetupFacts, SetupStepId } from '@/features/studio/types/dashboard'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
@@ -20,8 +29,8 @@ import { cn } from '@/lib/utils'
 type Href = ComponentProps<typeof Link>['href']
 
 /**
- * Steps whose screen exists link to it. "Publish" is state only: the banner
- * above carries the one publish action and the reason it is held back. "Profile photo and cover" goes to
+ * Steps whose screen exists link to it. "Publish" runs the shared publish
+ * action (the banner's, one request). "Profile photo and cover" goes to
  * settings until a page editor exists (FQ-27 answer, 2026-11-21). "Payout" has
  * no editing screen yet (FE-PAYOUT-01 is blocked), so it shows state only —
  * never a row that leads nowhere.
@@ -33,29 +42,29 @@ const STEP_HREFS: Partial<Record<SetupStepId, Href>> = {
 }
 
 /**
- * The five-step setup checklist (CP-04; presentation `StudioChecklistCard` @
- * d843c3b, collapse from `DashboardView`). Every step is derived from backend
- * rows on each visit; the card leaves once all five are done, as designed.
- * Not ported: "later" (a session-only dismiss with no basis), the
- * `fellowa.ir/slug` copy row (no such public address; the page is
- * `/creators/:id`), confetti (FQ-10), and a second publish button: the
- * banner above carries the one publish action.
+ * The five-step setup checklist (CP-04; FQ-28 option B: the steps, title and
+ * session-only «بعداً» of presentation `StudioChecklistCard` @ d843c3b, in
+ * `DashboardView`'s card with its collapse). Every step is derived from
+ * backend rows on each visit; the card leaves once all five are done, as
+ * designed. The publish row calls the banner's publish action, so both share
+ * one request and one pending state. Must sit inside `PublishPageProvider`.
+ * Not ported: confetti (FQ-10); the address row is `PublicAddressRow`.
  */
 export function SetupChecklist({ facts }: { facts: SetupFacts }) {
   const t = useTranslations('studio.dashboard')
   const format = useFormatter()
+  const { publish, pending } = usePublishPage()
+  const dismissed = useChecklistDismissed()
   const [collapsed, setCollapsed] = useState(false)
   const listId = useId()
   const steps = deriveSetupSteps(facts)
   const doneCount = steps.filter((step) => step.done).length
+  const blockedKey = publishBlockedMessageKey(publishBlockedBy(facts))
 
-  if (doneCount === steps.length) return null
+  if (dismissed || doneCount === steps.length) return null
 
   return (
-    <Card
-      className="gap-5 px-5 py-5 sm:px-6"
-      aria-labelledby="setup-checklist-title"
-    >
+    <Card className="gap-5 p-6" aria-labelledby="setup-checklist-title">
       <div className="flex items-start justify-between gap-4">
         <div className="grid gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -71,21 +80,32 @@ export function SetupChecklist({ facts }: { facts: SetupFacts }) {
           </div>
           <p className="text-body-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-expanded={!collapsed}
-          aria-controls={listId}
-          aria-label={collapsed ? t('expand') : t('collapse')}
-          onClick={() => setCollapsed((value) => !value)}
-        >
-          {collapsed ? (
-            <ChevronDownIcon aria-hidden />
-          ) : (
-            <MinusIcon aria-hidden />
-          )}
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={dismissChecklistForSession}
+          >
+            {t('later')}
+          </Button>
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            aria-expanded={!collapsed}
+            aria-controls={listId}
+            aria-label={collapsed ? t('expand') : t('collapse')}
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            {collapsed ? (
+              <ChevronDownIcon aria-hidden />
+            ) : (
+              <MinusIcon aria-hidden />
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-2">
@@ -143,18 +163,47 @@ export function SetupChecklist({ facts }: { facts: SetupFacts }) {
             </span>
           )
 
+          const rowClass =
+            'group flex w-full items-center justify-between gap-3 rounded-md px-2 py-3 text-start outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50'
+          const chevron = (
+            <ChevronRightIcon
+              aria-hidden
+              className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
+            />
+          )
+
+          if (step.id === 'publish' && !step.done) {
+            return (
+              <li key={step.id}>
+                <button
+                  type="button"
+                  className={cn(
+                    rowClass,
+                    'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent'
+                  )}
+                  disabled={pending || blockedKey !== null}
+                  onClick={publish}
+                >
+                  <span className="grid gap-1">
+                    {label}
+                    {blockedKey ? (
+                      <span className="ps-9 text-label text-muted-foreground">
+                        {t(blockedKey)}
+                      </span>
+                    ) : null}
+                  </span>
+                  {chevron}
+                </button>
+              </li>
+            )
+          }
+
           return (
             <li key={step.id}>
               {href ? (
-                <Link
-                  href={href}
-                  className="group flex items-center justify-between gap-3 rounded-md px-2 py-3 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
+                <Link href={href} className={rowClass}>
                   {label}
-                  <ChevronRightIcon
-                    aria-hidden
-                    className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
-                  />
+                  {chevron}
                 </Link>
               ) : (
                 <div className="px-2 py-3">{label}</div>

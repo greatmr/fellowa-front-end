@@ -41,6 +41,8 @@ const postsSchema = z.array(
   z.object({
     id: z.number(),
     title: z.string(),
+    /** `post.body`, plain text; the owner reads it whole (FULL). */
+    text: z.string().nullish(),
     createdAt: z.string(),
     paywallPosition: z.number().nullish(),
     visibility: z.object({
@@ -93,6 +95,7 @@ export function parseDashboardPosts(value: unknown): DashboardPost[] {
   return parseEnvelope(postsSchema, value, invalid).map((post) => ({
     id: post.id,
     title: post.title,
+    excerpt: trimmedOrNull(post.text),
     publishedAt: post.visibility.datePublished ?? null,
     createdAt: post.createdAt,
     audience: !post.visibility.type

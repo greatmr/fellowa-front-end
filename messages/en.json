@@ -724,7 +724,7 @@
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "dashboard": {
-      "title": "Set up your page",
+      "title": "Your page is ready!",
       "subtitle": "A few more steps to your first member. Publish whenever you're ready.",
       "draft": "Draft",
       "collapse": "Collapse checklist",
@@ -764,7 +764,9 @@
       "identity": {
         "unnamed": "Unnamed page",
         "memberships": "Memberships",
-        "viewPage": "View public page"
+        "viewPage": "View public page",
+        "home": "Home",
+        "tabsLabel": "Page sections"
       },
       "posts": {
         "title": "Recent posts",
@@ -779,6 +781,15 @@
         "errorBody": "Something went wrong while loading your posts. Try again.",
         "retry": "Try again",
         "seeAll": "All posts"
+      },
+      "later": "Later",
+      "editPage": "Edit page",
+      "address": {
+        "label": "Public page address",
+        "copy": "Copy address",
+        "copied": "Address copied.",
+        "copyFailed": "The address couldn't be copied. Copy it by hand.",
+        "notPublic": "Your page isn't public yet. You can copy its address once it's published."
       }
     },
     "notificationsLink": "View notifications",

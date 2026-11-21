@@ -51,6 +51,7 @@ describe('hasPublishedPost', () => {
   const post = (publishedAt: string | null): DashboardPost => ({
     id: 1,
     title: 'x',
+    excerpt: null,
     publishedAt,
     createdAt: '2026-11-20T08:00:00.000Z',
     audience: 'public',

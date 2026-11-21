@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { StudioPage } from '@/components/layout/studio-page'
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { getSession } from '@/features/auth/server/session'
 import { StudioDashboard } from '@/features/studio/components/studio-dashboard'
@@ -27,17 +26,17 @@ export default async function Page({
     loadDashboard(session),
   ])
 
+  // The dashboard sets its own widths: full-width bands over a medium column.
   return (
-    <StudioPage width="medium">
-      <StudioDashboard
-        {...dashboard}
-        heading={
-          <StudioPageHeader
-            title={t('pages.dashboard.title')}
-            category={t('pages.dashboard.category')}
-          />
-        }
-      />
-    </StudioPage>
+    <StudioDashboard
+      {...dashboard}
+      heading={
+        <StudioPageHeader
+          title={t('pages.dashboard.title')}
+          category={t('pages.dashboard.category')}
+          className="mb-0"
+        />
+      }
+    />
   )
 }
