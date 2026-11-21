@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server'
 
+import { StudioPage } from '@/components/layout/studio-page'
 import { getSession } from '@/features/auth/server/session'
 import { TierManager } from '@/features/tiers/components/tier-manager'
 import { redirect } from '@/i18n/navigation'
@@ -17,5 +18,9 @@ export default async function Page({
   if (!session.user.isVerified) {
     return redirect({ href: '/auth/verify-email', locale: locale as Locale })
   }
-  return <TierManager viewerId={session.user.id} />
+  return (
+    <StudioPage width="wide">
+      <TierManager viewerId={session.user.id} />
+    </StudioPage>
+  )
 }

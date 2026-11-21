@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Suspense } from 'react'
 
+import { StudioPage } from '@/components/layout/studio-page'
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { getSession } from '@/features/auth/server/session'
 import { loadExploreCategories } from '@/features/explore/server'
@@ -24,17 +25,19 @@ export default async function Page({
     loadExploreCategories(),
   ])
   return (
-    <Suspense fallback={null}>
-      <ExploreView
-        viewerId={viewerId}
-        categories={categories}
-        heading={
-          <StudioPageHeader
-            title={t('pages.explore.title')}
-            category={t('pages.explore.category')}
-          />
-        }
-      />
-    </Suspense>
+    <StudioPage>
+      <Suspense fallback={null}>
+        <ExploreView
+          viewerId={viewerId}
+          categories={categories}
+          heading={
+            <StudioPageHeader
+              title={t('pages.explore.title')}
+              category={t('pages.explore.category')}
+            />
+          }
+        />
+      </Suspense>
+    </StudioPage>
   )
 }

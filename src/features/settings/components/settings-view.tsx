@@ -48,7 +48,7 @@ export function SettingsView({
   const t = useTranslations('settings')
 
   return (
-    <div className="grid max-w-2xl gap-6">
+    <div className="grid gap-6">
       {heading}
 
       <Section title={t('account.title')}>
