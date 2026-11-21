@@ -22,7 +22,7 @@ export function StudioDashboard({
   heading,
 }: DashboardData & { heading: ReactNode }) {
   return (
-    <div className="grid max-w-3xl gap-6">
+    <div className="grid gap-6">
       {heading}
       <PublishBanner viewerId={viewerId} facts={facts} />
       <CreatorIdentityRow

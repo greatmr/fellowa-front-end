@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { StudioPage } from '@/components/layout/studio-page'
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { getSession } from '@/features/auth/server/session'
 import { SettingsView } from '@/features/settings/components/settings-view'
@@ -24,14 +25,16 @@ export default async function Page({
   ])
 
   return (
-    <SettingsView
-      {...settings}
-      heading={
-        <StudioPageHeader
-          title={t('pages.settings.title')}
-          category={t('pages.settings.category')}
-        />
-      }
-    />
+    <StudioPage width="narrow">
+      <SettingsView
+        {...settings}
+        heading={
+          <StudioPageHeader
+            title={t('pages.settings.title')}
+            category={t('pages.settings.category')}
+          />
+        }
+      />
+    </StudioPage>
   )
 }

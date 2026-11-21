@@ -171,13 +171,30 @@ export const spacing = {
   sidebar: '16.5rem',
   'sidebar-collapsed': '4.5rem',
   drawer: '17.5rem',
+  /*
+   * Side gutter of a studio page (`StudioPage`): 1rem, then 1.5rem from
+   * `sm` (presentation `TiersView`/`AudienceView` `px-4 sm:px-6` @ d843c3b).
+   */
+  gutter: '1rem',
+  'gutter-wide': '1.5rem',
 } as const
 
 /** The public pages' content width (`max-w-public`). */
 const publicWidth = '71.25rem'
 
 export const maxWidth = {
-  content: '64rem',
+  /*
+   * Studio page widths (`StudioPage` `width`), one per presentation view
+   * @ d843c3b (FE-SHELL-04): narrow = Settings `max-w-3xl`; medium =
+   * Dashboard's inner column `max-w-4xl`; default = Posts, Composer,
+   * Explore and the creator profile `max-w-5xl`, and every page with no
+   * view of its own; wide = Tiers, Audience, Payouts and Supporter
+   * payments `max-w-6xl`.
+   */
+  'page-narrow': '48rem',
+  'page-medium': '56rem',
+  'page-default': '64rem',
+  'page-wide': '72rem',
   public: publicWidth,
   error: '28rem',
   /*

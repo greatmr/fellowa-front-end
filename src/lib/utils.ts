@@ -9,6 +9,7 @@ import {
   boxShadow,
   fontSize,
   maxWidth,
+  spacing,
   transitionTimingFunction,
 } from '../../tailwind.config'
 
@@ -20,6 +21,7 @@ import {
  */
 const twMerge = extendTailwindMerge({
   extend: {
+    theme: { spacing: Object.keys(spacing) },
     classGroups: {
       'font-size': [{ text: Object.keys(fontSize) }],
       shadow: [{ shadow: Object.keys(boxShadow) }],

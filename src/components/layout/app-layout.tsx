@@ -15,7 +15,8 @@ import { Link } from '@/i18n/navigation'
  * Creator frame (presentation `App.tsx` shell, Sidebar and Header @ d843c3b).
  * `account` is the signed-in account row for the sidebar; protected product
  * data is authorized by its owning feature. The notification dot stays
- * absent until there is notification data.
+ * absent until there is notification data. Like the prototype's `<main>`,
+ * it sets no width or side gutter: each page does, through `StudioPage`.
  */
 export function AppLayout({
   children,
@@ -61,7 +62,7 @@ export function AppLayout({
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-content flex-1 px-4 py-6 outline-none sm:px-6 lg:py-8"
+          className="w-full min-w-0 flex-1 py-6 outline-none lg:py-8"
         >
           {children}
         </main>

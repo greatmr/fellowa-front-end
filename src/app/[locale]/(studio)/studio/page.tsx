@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { StudioPage } from '@/components/layout/studio-page'
 import { StudioPageHeader } from '@/components/layout/studio-page-header'
 import { getSession } from '@/features/auth/server/session'
 import { StudioDashboard } from '@/features/studio/components/studio-dashboard'
@@ -27,14 +28,16 @@ export default async function Page({
   ])
 
   return (
-    <StudioDashboard
-      {...dashboard}
-      heading={
-        <StudioPageHeader
-          title={t('pages.dashboard.title')}
-          category={t('pages.dashboard.category')}
-        />
-      }
-    />
+    <StudioPage width="medium">
+      <StudioDashboard
+        {...dashboard}
+        heading={
+          <StudioPageHeader
+            title={t('pages.dashboard.title')}
+            category={t('pages.dashboard.category')}
+          />
+        }
+      />
+    </StudioPage>
   )
 }
