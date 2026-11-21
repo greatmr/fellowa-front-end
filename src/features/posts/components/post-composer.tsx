@@ -50,8 +50,14 @@ export function PostComposer({ viewerId, saved }: Props) {
   const router = useRouter()
   const ids = useId()
   const save = useSavePostMutation(viewerId)
-  const uploading =
-    useIsMutating({ mutationKey: postKeys.mutation('image', viewerId) }) > 0
+  // A save waits for image uploads and deletes, or it would send an id that
+  // is not there yet or is going away.
+  const imagesBusy =
+    useIsMutating({ mutationKey: postKeys.mutation('image', viewerId) }) +
+      useIsMutating({
+        mutationKey: postKeys.mutation('deleteImage', viewerId),
+      }) >
+    0
   const [draft, setDraftState] = useState<PostDraft>(() =>
     saved ? draftFromPost(saved) : emptyPostDraft()
   )
@@ -60,10 +66,14 @@ export function PostComposer({ viewerId, saved }: Props) {
   const [formError, setFormError] = useState<string | null>(null)
   const [noPage, setNoPage] = useState(false)
   const [pendingIntent, setPendingIntent] = useState<SaveIntent | null>(null)
+  // Set once a save navigates away: the route change waits for the server,
+  // and a second click meanwhile would create a second post.
+  const [leaving, setLeaving] = useState(false)
 
   const problems = checkedFor ? draftProblems(draft, checkedFor) : []
   const isPublished = Boolean(saved?.publishedAt)
   const pending = save.isPending
+  const busy = pending || imagesBusy || leaving
 
   function setDraft(patch: Partial<PostDraft>) {
     setDraftState((current) => ({ ...current, ...patch }))
@@ -86,7 +96,7 @@ export function PostComposer({ viewerId, saved }: Props) {
   }
 
   function submit(intent: SaveIntent) {
-    if (pending || uploading) return
+    if (busy) return
     setCheckedFor(intent)
     if (draftProblems(draft, intent).length > 0) return
     setFormError(null)
@@ -96,6 +106,7 @@ export function PostComposer({ viewerId, saved }: Props) {
     save.mutate(saveInputFromDraft(draft, intent, saved), {
       onSuccess: (post) => {
         if (intent === 'publish') {
+          setLeaving(true)
           toast.success(isPublished ? t('savedToast') : t('publishedToast'))
           router.push('/studio/posts')
           return
@@ -103,12 +114,18 @@ export function PostComposer({ viewerId, saved }: Props) {
         toast.success(t('draftToast'))
         if (!saved) {
           // Keep writing on the saved draft, where attachments can be added.
+          setLeaving(true)
           router.replace(`/studio/posts/${post.id}/edit`)
           return
         }
         setDraftState((current) => ({
           ...current,
           images: post.images.map((image) => ({ ...image, attached: true })),
+          // Saved as free, the post lost its tier links: nothing to keep.
+          tiers:
+            post.isPublic && current.tiers.mode === 'keep'
+              ? { mode: 'pick', ids: [] }
+              : current.tiers,
         }))
         setCheckedFor(null)
       },
@@ -123,7 +140,6 @@ export function PostComposer({ viewerId, saved }: Props) {
     : serverTierError
       ? tErrors('tierRequired')
       : null
-  const busy = pending || uploading
 
   return (
     <div className="space-y-5">

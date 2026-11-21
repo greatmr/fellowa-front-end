@@ -80,7 +80,9 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
   const remove = useDeletePostMutation(viewerId)
   const [tab, setTab] = useState<PostTab>('all')
   const [filters, setFilters] = useState<ListFilters>(defaultListFilters)
+  // The last target stays while the dialog animates closed.
   const [confirm, setConfirm] = useState<Confirm | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
   const errorText = (error: ApiError) => t(`errors.${postErrorKey(error)}`)
@@ -95,15 +97,16 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
   function openConfirm(kind: Confirm['kind'], post: StudioPost) {
     setConfirmError(null)
     setConfirm({ kind, post })
+    setConfirmOpen(true)
   }
 
   function runConfirm() {
-    if (!confirm) return
+    if (!confirm || !confirmOpen) return
     const onError = (error: ApiError) => setConfirmError(errorText(error))
     if (confirm.kind === 'delete') {
       remove.mutate(confirm.post.id, {
         onSuccess: () => {
-          setConfirm(null)
+          setConfirmOpen(false)
           toast.success(t('list.deletedToast'))
         },
         onError,
@@ -111,7 +114,7 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
     } else {
       status.mutate(statusInput(confirm.post, 'draft'), {
         onSuccess: () => {
-          setConfirm(null)
+          setConfirmOpen(false)
           toast.success(t('list.unpublishedToast'))
         },
         onError,
@@ -230,13 +233,14 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
         kind={
           confirm?.kind === 'unpublish' ? 'confirmUnpublish' : 'confirmDelete'
         }
-        title={confirm ? confirm.post.title || t('list.untitled') : null}
+        open={confirmOpen}
+        title={confirm ? confirm.post.title || t('list.untitled') : ''}
         pending={
           confirm?.kind === 'delete' ? remove.isPending : status.isPending
         }
         error={confirmError}
         onConfirm={runConfirm}
-        onClose={() => setConfirm(null)}
+        onClose={() => setConfirmOpen(false)}
       />
     </div>
   )

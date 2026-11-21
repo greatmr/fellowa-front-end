@@ -1053,7 +1053,6 @@
       "dividerFree": "Everything above this line is shown to everyone.",
       "dividerFreePublic": "Everything above this line is shown to everyone; the rest only to members of your page's tiers.",
       "removeDivider": "Remove the divider",
-      "dividerAdded": "Paywall divider added",
       "plainTextNote": "Plain text; formatting (bold, italic, links) is not supported yet.",
       "images": {
         "title": "Images",

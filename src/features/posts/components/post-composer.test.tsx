@@ -241,6 +241,40 @@ describe('PostComposer', () => {
     expect(await screen.findByText(en.posts.errors.generic)).toBeInTheDocument()
   })
 
+  it('stays disabled after a successful save while the route changes', async () => {
+    const user = userEvent.setup()
+    renderComposer()
+    await user.type(title(), 'Once')
+    await user.click(screen.getByRole('button', { name: c.publish }))
+    const options = lastSave()[1]
+    ;(options?.onSuccess as (post: StudioPost) => void)(studioPost())
+    ;(options?.onSettled as () => void)()
+    expect(
+      await screen.findByRole('button', { name: c.publish })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: c.saveDraft })).toBeDisabled()
+    expect(mocks.save).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops offering "keep" once a limited post is saved as free', async () => {
+    const user = userEvent.setup()
+    renderComposer(studioPost({ isPublic: false, publishedAt: null }))
+    await user.click(
+      screen.getByRole('radio', { name: new RegExp(c.access.free) })
+    )
+    await user.click(screen.getByRole('button', { name: c.saveDraft }))
+    const options = lastSave()[1]
+    ;(options?.onSuccess as (post: StudioPost) => void)(
+      studioPost({ isPublic: true, publishedAt: null })
+    )
+    ;(options?.onSettled as () => void)()
+    await user.click(
+      screen.getByRole('radio', { name: new RegExp(c.access.tiers) })
+    )
+    expect(screen.queryByText(c.access.keepTitle)).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Gold' })).toBeInTheDocument()
+  })
+
   it('goes to the edit page after the first draft save', async () => {
     const user = userEvent.setup()
     renderComposer()

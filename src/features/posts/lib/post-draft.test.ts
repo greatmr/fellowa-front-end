@@ -104,6 +104,15 @@ describe('composer draft → write payload', () => {
   })
 })
 
+it('sends no paywall when nothing follows the divider', () => {
+  const input = saveInputFromDraft(
+    draft({ before: 'متن', after: ' \n' }),
+    'publish',
+    null
+  )
+  expect(input.payload).toMatchObject({ text: 'متن \n', paywallPosition: null })
+})
+
 describe('draftFromPost', () => {
   it('splits the body at the stored paywall position', () => {
     const result = draftFromPost(

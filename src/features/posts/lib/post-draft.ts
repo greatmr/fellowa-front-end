@@ -89,8 +89,14 @@ export function postText(draft: PostDraft): string {
   return draft.before + (draft.after ?? '')
 }
 
+/**
+ * No paywall when nothing but white space follows the divider: a position at
+ * the end gates nothing, yet would still mark a public post as paywalled
+ * (it then leaves the landing lists, api.md → Q-31).
+ */
 export function paywallPositionOf(draft: PostDraft): number | null {
-  return draft.after === null ? null : codePointLength(draft.before)
+  if (draft.after === null || draft.after.trim() === '') return null
+  return codePointLength(draft.before)
 }
 
 /**

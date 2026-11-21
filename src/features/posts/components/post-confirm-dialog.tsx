@@ -15,8 +15,9 @@ import {
 type Props = {
   /** `posts.confirmDelete` or `posts.confirmUnpublish`. */
   kind: 'confirmDelete' | 'confirmUnpublish'
-  /** The post's title while open; `null` closes the dialog. */
-  title: string | null
+  open: boolean
+  /** Kept while the dialog animates closed, so its text does not change. */
+  title: string
   pending: boolean
   /** The server's refusal, already translated; `null` for none. */
   error: string | null
@@ -27,6 +28,7 @@ type Props = {
 /** Confirms a row's delete or unpublish (FQ-30 (5): per-row actions only). */
 export function PostConfirmDialog({
   kind,
+  open,
   title,
   pending,
   error,
@@ -38,16 +40,14 @@ export function PostConfirmDialog({
 
   return (
     <Dialog
-      open={title !== null}
+      open={open}
       onOpenChange={(open) => {
         if (!open && !pending) onClose()
       }}
     >
       <DialogContent closeLabel={tCommon('close')}>
         <DialogHeader>
-          <DialogTitle dir="auto">
-            {t('title', { title: title ?? '' })}
-          </DialogTitle>
+          <DialogTitle dir="auto">{t('title', { title })}</DialogTitle>
           <DialogDescription className="leading-6">
             {t('body')}
           </DialogDescription>
