@@ -10,6 +10,16 @@ const messages = { fa, en } as const
 
 type Options = Omit<RenderOptions, 'wrapper'> & {
   locale?: keyof typeof messages
+  /**
+   * Throw every next-intl error. By default next-intl only logs a missing key
+   * or a key that resolves to an object and renders the key path, so a broken
+   * `t()` call passes any test that does not read that text.
+   */
+  strict?: boolean
+}
+
+const throwIntlError = (error: Error) => {
+  throw error
 }
 
 /**
@@ -19,7 +29,7 @@ type Options = Omit<RenderOptions, 'wrapper'> & {
  */
 export function renderWithIntl(
   ui: ReactElement,
-  { locale = 'fa', ...options }: Options = {}
+  { locale = 'fa', strict = false, ...options }: Options = {}
 ) {
   return render(ui, {
     wrapper: ({ children }) => (
@@ -27,6 +37,7 @@ export function renderWithIntl(
         locale={locale}
         messages={messages[locale]}
         timeZone={TIME_ZONE}
+        onError={strict ? throwIntlError : undefined}
       >
         {children}
       </NextIntlClientProvider>

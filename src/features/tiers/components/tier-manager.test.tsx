@@ -1,13 +1,11 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { NextIntlClientProvider } from 'next-intl'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Tier } from '@/features/tiers/types/tier'
 import { ApiError } from '@/lib/api/errors'
 
-import { TIME_ZONE } from '@/i18n/time-zone'
-
+import { renderWithIntl } from '../../../../test/render'
 import en from '../../../../messages/en.json'
 import fa from '../../../../messages/fa.json'
 
@@ -74,24 +72,8 @@ const { toast } = await import('sonner')
 
 const messages = { fa, en } as const
 
-/**
- * Real messages, and every next-intl error thrown: by default next-intl only
- * logs a missing key or a key that resolves to an object and renders the key
- * path, so a broken `t()` call passes any test that does not read that text.
- */
 function renderManager(locale: keyof typeof messages = 'en') {
-  render(
-    <NextIntlClientProvider
-      locale={locale}
-      messages={messages[locale]}
-      timeZone={TIME_ZONE}
-      onError={(error) => {
-        throw error
-      }}
-    >
-      <TierManager viewerId={4} />
-    </NextIntlClientProvider>
-  )
+  renderWithIntl(<TierManager viewerId={4} />, { locale, strict: true })
 }
 
 /** `<Money>` puts the unit in its own element; match the whole run. */
