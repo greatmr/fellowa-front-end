@@ -116,18 +116,20 @@ export function TierManager({ viewerId }: { viewerId: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <StudioPageHeader
-            title={tStudio('pages.tiers.title')}
-            category={tStudio('pages.tiers.category')}
-          />
-          <p className="-mt-4 text-label text-muted-foreground">
-            {t('overviewHint')}
-          </p>
-        </div>
+      <div
+        data-testid="tiers-list-header"
+        className="flex flex-wrap items-center justify-between gap-4"
+      >
+        <StudioPageHeader
+          title={tStudio('pages.tiers.title')}
+          category={tStudio('pages.tiers.category')}
+          description={t('overviewHint')}
+          className="mb-0"
+        />
         <div className="flex items-center gap-2.5">
-          <Button type="button" variant="outline" size="sm" onClick={openGuide}>
+          {/* Same height as the create button: a deliberate deviation from
+              the design's sm (36px) beside default (40px), FE-TIER-05. */}
+          <Button type="button" variant="outline" onClick={openGuide}>
             <Sparkles aria-hidden />
             {t('openGuide')}
           </Button>
