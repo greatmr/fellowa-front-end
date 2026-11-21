@@ -27,7 +27,7 @@ export function TierCard({ tier, onEdit }: Props) {
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-md border bg-card shadow-xs">
-      {tier.cover ? (
+      {tier.cover?.url ? (
         <div className="relative h-32 w-full overflow-hidden bg-muted">
           {/* The bucket host is not in `images.remotePatterns`; served as is. */}
           <Image

@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
       // action, each of which validates its own input.
       bodySizeLimit: SERVER_ACTION_BODY_LIMIT_BYTES,
     },
+    // FE-TIER-04: `src/proxy.ts` matches the tier page, so a cover's Server
+    // Action body is cloned through the proxy first, and Next truncates that
+    // clone at this size (default 10 MB, less than `bodySizeLimit` above).
+    // Same constant as `bodySizeLimit`, so the two cannot drift.
+    proxyClientMaxBodySize: SERVER_ACTION_BODY_LIMIT_BYTES,
   },
   partialPrefetching: true,
   turbopack: {

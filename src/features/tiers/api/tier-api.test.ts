@@ -5,7 +5,9 @@ import { server } from '../../../../test/msw/server'
 
 const origin = 'https://api.fellowa.test'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', `${origin}/api`)
+const { apiClient } = await import('@/lib/api/client')
 const {
+  TIER_COVER_UPLOAD_TIMEOUT_MS,
   createTier,
   deleteTier,
   listOwnTiers,
@@ -160,6 +162,64 @@ describe('tier API contract', () => {
     await expect(uploadTierCover('creator-token', file)).resolves.toEqual({
       id: coverId,
       url: `https://cdn.example/${coverId}`,
+    })
+  })
+
+  it('gives the cover upload alone a 60 s timeout; other calls keep the 20 s default', async () => {
+    server.use(
+      http.post(`${origin}/api/tire/cover`, () =>
+        HttpResponse.json({
+          data: { id: coverId, url: `https://cdn.example/${coverId}` },
+          errors: null,
+        })
+      ),
+      http.get(`${origin}/api/tire`, () =>
+        HttpResponse.json({ data: [], errors: null })
+      )
+    )
+    const timeouts: Array<number | undefined> = []
+    const recorder = apiClient.interceptors.request.use((config) => {
+      timeouts.push(config.timeout)
+      return config
+    })
+    try {
+      const file = new File([new Uint8Array([1])], 'cover.png', {
+        type: 'image/png',
+      })
+      await uploadTierCover('creator-token', file)
+      await listOwnTiers('creator-token')
+    } finally {
+      apiClient.interceptors.request.eject(recorder)
+    }
+    expect(TIER_COVER_UPLOAD_TIMEOUT_MS).toBe(60_000)
+    expect(timeouts).toEqual([60_000, 20_000])
+  })
+
+  it('keeps a cover whose url is a bare storage key, without the url (FE-TIER-04)', async () => {
+    const key = `patreon/file/tires/cover/3/${coverId}`
+    server.use(
+      http.get(`${origin}/api/tire`, () =>
+        HttpResponse.json({
+          data: [
+            listRow({
+              cover: { id: coverId, url: key, tireId: 7, image: key },
+            }),
+          ],
+          errors: null,
+        })
+      ),
+      http.post(`${origin}/api/tire/cover`, () =>
+        HttpResponse.json({ data: { id: coverId, url: key }, errors: null })
+      )
+    )
+    const [tier] = await listOwnTiers('creator-token')
+    expect(tier?.cover).toEqual({ id: coverId, url: null })
+    const file = new File([new Uint8Array([1])], 'cover.png', {
+      type: 'image/png',
+    })
+    await expect(uploadTierCover('creator-token', file)).resolves.toEqual({
+      id: coverId,
+      url: null,
     })
   })
 
