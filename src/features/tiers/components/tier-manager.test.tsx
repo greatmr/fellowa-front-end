@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Tier } from '@/features/tiers/types/tier'
 import { ApiError } from '@/lib/api/errors'
 
+import { TIME_ZONE } from '@/i18n/time-zone'
+
 import en from '../../../../messages/en.json'
+import fa from '../../../../messages/fa.json'
 
 const saved: Tier = {
   id: 7,
@@ -69,9 +72,23 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 const { TierManager } = await import('./tier-manager')
 const { toast } = await import('sonner')
 
-function renderManager() {
+const messages = { fa, en } as const
+
+/**
+ * Real messages, and every next-intl error thrown: by default next-intl only
+ * logs a missing key or a key that resolves to an object and renders the key
+ * path, so a broken `t()` call passes any test that does not read that text.
+ */
+function renderManager(locale: keyof typeof messages = 'en') {
   render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages[locale]}
+      timeZone={TIME_ZONE}
+      onError={(error) => {
+        throw error
+      }}
+    >
       <TierManager viewerId={4} />
     </NextIntlClientProvider>
   )
@@ -92,6 +109,40 @@ describe('TierManager', () => {
       fn.mockReset()
     }
   })
+
+  it.each(['fa', 'en'] as const)(
+    'renders the list, guide, builder, picker and delete dialog in %s with no message error',
+    async (locale) => {
+      const m = messages[locale].tiers
+      const user = userEvent.setup()
+      renderManager(locale)
+      // The guide button once rendered `t('guide')`, an object (INSUFFICIENT_PATH).
+      await user.click(screen.getByRole('button', { name: m.openGuide }))
+      const guide = screen.getByRole('dialog')
+      await user.click(
+        within(guide).getByRole('button', { name: m.guide.next })
+      )
+      await user.click(
+        within(guide).getByRole('button', { name: m.guide.finish })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.builder.addBenefit })
+      )
+      await user.click(
+        screen.getByRole('button', { name: m.picker.customTitle })
+      )
+      await user.click(screen.getByRole('button', { name: m.picker.back }))
+      await user.keyboard('{Escape}')
+      await user.click(
+        screen.getAllByRole('button', { name: m.builder.back })[0]!
+      )
+      await user.click(screen.getByRole('button', { name: m.edit }))
+      await user.click(
+        screen.getByRole('button', { name: m.builder.deleteTier })
+      )
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    }
+  )
 
   it('edits a tier in the builder and saves whole-number Toman without touching the cover', async () => {
     const user = userEvent.setup()

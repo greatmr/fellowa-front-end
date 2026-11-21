@@ -484,6 +484,7 @@
   "tiers": {
     "overviewHint": "Create and manage your page's monthly membership tiers. Your page needs at least one tier before it can go public.",
     "create": "Create new tier",
+    "openGuide": "Tier setup guide",
     "guide": {
       "title": "Setting up your first membership tier",
       "step": "Step {step} of {total}",

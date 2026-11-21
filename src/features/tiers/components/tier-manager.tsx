@@ -129,7 +129,7 @@ export function TierManager({ viewerId }: { viewerId: number }) {
         <div className="flex items-center gap-2.5">
           <Button type="button" variant="outline" size="sm" onClick={openGuide}>
             <Sparkles aria-hidden />
-            {t('guide')}
+            {t('openGuide')}
           </Button>
           <Button
             type="button"
