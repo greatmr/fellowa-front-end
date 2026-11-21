@@ -1,6 +1,7 @@
 /**
  * Tier cover size: the single source for the client check, the server action's
- * check and `next.config.ts`'s Server Action body limit (FE-TIER-02).
+ * check and `next.config.ts`'s Server Action body limit (FE-TIER-02) and proxy
+ * body clone limit (FE-TIER-04).
  * Imported by `next.config.ts`: no `@/` alias and no imports.
  */
 

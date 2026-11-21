@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import type { Tier, TierCover, TierRole } from '@/features/tiers/types/tier'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { httpUrlOrNull } from '@/lib/url'
 
 // ---- Limits from the backend DTOs (`back-end/src/modules/tier/dto`) --------
 
@@ -81,6 +82,15 @@ const roleSchema = z.object({
 })
 const coverSchema = z.object({ id: z.string().min(1), url: z.string().min(1) })
 
+/**
+ * Without object storage the server's `buildUrl` returns the bare key
+ * (`patreon/file/…`). Such a cover keeps its id, so saving the tier does not
+ * drop it, but has no URL to draw (FE-TIER-04).
+ */
+function toCover(raw: { id: string; url: string }): TierCover {
+  return { id: raw.id, url: httpUrlOrNull(raw.url) }
+}
+
 const invalid = () => new InvalidTierResponseError()
 
 /** Prices may arrive as numeric strings; never round or scale chargeable money. */
@@ -101,7 +111,7 @@ export function parseTierList(value: unknown): Tier[] {
     priceToman: parseTierPrice(row.price),
     chatEnabled: row.chatEnabled,
     capacity: row.advanced[0]?.limitNumberUser ?? null,
-    cover: row.cover ? { id: row.cover.id, url: row.cover.url } : null,
+    cover: row.cover ? toCover(row.cover) : null,
     benefits: row.benefits.map((benefit) => ({
       id: benefit.id,
       title: benefit.title ?? '',
@@ -117,7 +127,7 @@ export function parseTierRoles(value: unknown): TierRole[] {
 
 /** `POST /tire/cover`. */
 export function parseTierCoverUpload(value: unknown): TierCover {
-  return parseEnvelope(coverSchema, value, invalid)
+  return toCover(parseEnvelope(coverSchema, value, invalid))
 }
 
 export function parseTierWrite(value: unknown): number {

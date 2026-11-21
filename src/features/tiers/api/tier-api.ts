@@ -27,12 +27,22 @@ export async function listTierRoles(token: string) {
   return parseTierRoles(await apiGet<unknown>('/tire/role', withBearer(token)))
 }
 
+/**
+ * A cover of up to 10 MB goes Next → API → object storage before the API
+ * answers; the client's 20 s default is too short for that on a slow link.
+ * This request only (FE-TIER-04, [PROP] 60 s); every other call keeps 20 s.
+ */
+export const TIER_COVER_UPLOAD_TIMEOUT_MS = 60_000
+
 /** `POST /tire/cover`: multipart, field `image`. */
 export async function uploadTierCover(token: string, image: File) {
   const body = new FormData()
   body.append('image', image, image.name)
   return parseTierCoverUpload(
-    await apiPost<unknown, FormData>('/tire/cover', body, withBearer(token))
+    await apiPost<unknown, FormData>('/tire/cover', body, {
+      ...withBearer(token),
+      timeout: TIER_COVER_UPLOAD_TIMEOUT_MS,
+    })
   )
 }
 

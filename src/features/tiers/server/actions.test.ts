@@ -196,4 +196,105 @@ describe('tier hook server boundary', () => {
     })
     expect(uploads).toBe(1)
   })
+
+  describe('cover upload failures keep the status and code the builder maps (FE-TIER-04)', () => {
+    const png = () => {
+      const body = new FormData()
+      body.append(
+        'image',
+        new File([new Uint8Array([1])], 'a.png', { type: 'image/png' })
+      )
+      return body
+    }
+    // `AllExceptionsFilter`'s envelope, as `POST /tire/cover` sends it.
+    const failure = (status: number, message: string, code: string) =>
+      http.post(`${apiOrigin}/tire/cover`, () =>
+        HttpResponse.json(
+          { data: null, errors: [{ message, code }] },
+          { status }
+        )
+      )
+
+    it('passes on 503 INTEGRATION_NOT_CONFIGURED when storage is not set up', async () => {
+      server.use(
+        failure(
+          503,
+          'object storage is not configured on this server',
+          'INTEGRATION_NOT_CONFIGURED'
+        )
+      )
+      expect(await uploadTierCoverForHook(42, png())).toEqual({
+        ok: false,
+        status: 503,
+        code: 'INTEGRATION_NOT_CONFIGURED',
+        isNetworkError: false,
+      })
+    })
+
+    it('passes on 500 when the storage write fails', async () => {
+      server.use(
+        failure(500, 'S3 upload failed: timeout', 'INTERNAL_SERVER_ERROR')
+      )
+      expect(await uploadTierCoverForHook(42, png())).toEqual({
+        ok: false,
+        status: 500,
+        code: 'INTERNAL_SERVER_ERROR',
+        isNetworkError: false,
+      })
+    })
+
+    it('answers 401 without a session and 403 for an unverified account', async () => {
+      let uploads = 0
+      server.use(
+        http.post(`${apiOrigin}/tire/cover`, () => {
+          uploads++
+          return HttpResponse.json({ data: null, errors: null })
+        })
+      )
+      request.cookie = ''
+      expect(await uploadTierCoverForHook(42, png())).toMatchObject({
+        ok: false,
+        status: 401,
+      })
+      request.cookie = token()
+      server.use(
+        http.get(`${apiOrigin}/user/42/profile`, () =>
+          HttpResponse.json({
+            data: {
+              id: 42,
+              email: 'creator@example.com',
+              alias: null,
+              isVerified: false,
+              displayName: 'Sara',
+              hasPassword: true,
+            },
+            errors: null,
+          })
+        )
+      )
+      const unverified = await uploadTierCoverForHook(42, png())
+      expect(unverified).toMatchObject({ ok: false, status: 403 })
+      expect(unverified).not.toHaveProperty('code', 'INVALID_REQUEST')
+      expect(uploads).toBe(0)
+    })
+
+    it('answers 403 INVALID_REQUEST from another origin, before uploading', async () => {
+      request.origin = 'http://127.0.0.1:3001'
+      expect(await uploadTierCoverForHook(42, png())).toEqual({
+        ok: false,
+        status: 403,
+        code: 'INVALID_REQUEST',
+      })
+    })
+
+    it('marks a dropped connection as a network error', async () => {
+      server.use(
+        http.post(`${apiOrigin}/tire/cover`, () => HttpResponse.error())
+      )
+      expect(await uploadTierCoverForHook(42, png())).toMatchObject({
+        ok: false,
+        isNetworkError: true,
+      })
+    })
+  })
 })

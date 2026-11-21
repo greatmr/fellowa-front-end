@@ -67,6 +67,7 @@ vi.mock('@/features/tiers/api/tier-hooks', () => ({
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 const { TierManager } = await import('./tier-manager')
+const { toast } = await import('sonner')
 
 function renderManager() {
   render(
@@ -405,5 +406,143 @@ describe('TierManager', () => {
     Object.defineProperty(ok, 'size', { value: 5 * 1024 * 1024 })
     await user.upload(input, ok)
     expect(mocks.upload).toHaveBeenCalledWith(ok, expect.any(Object))
+  })
+
+  describe('cover upload failures (FE-TIER-04)', () => {
+    /** Opens a new tier and uploads a valid file whose upload fails so. */
+    async function failUpload(error: ApiError) {
+      mocks.upload.mockImplementation((_file, options) =>
+        (options as { onError: (error: ApiError) => void }).onError(error)
+      )
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(screen.getByRole('button', { name: 'Create new tier' }))
+      const input =
+        document.querySelector<HTMLInputElement>('input[type="file"]')!
+      await user.upload(
+        input,
+        new File(['x'], 'cover.png', { type: 'image/png' })
+      )
+      expect(mocks.upload).toHaveBeenCalledTimes(1)
+    }
+
+    const alert = () => screen.getByRole('alert')
+
+    beforeEach(() => vi.mocked(toast.error).mockReset())
+
+    it.each([
+      [
+        '503 INTEGRATION_NOT_CONFIGURED',
+        new ApiError({
+          message: 'object storage is not configured on this server',
+          status: 503,
+          code: 'INTEGRATION_NOT_CONFIGURED',
+        }),
+        'Cover uploads are unavailable right now. You can save this tier without a cover and add one later.',
+      ],
+      [
+        '500',
+        new ApiError({
+          message: 'S3 upload failed: timeout',
+          status: 500,
+          code: 'INTERNAL_SERVER_ERROR',
+        }),
+        'The image could not be stored. Try again in a moment.',
+      ],
+      [
+        '403 INVALID_REQUEST (Origin check)',
+        new ApiError({
+          message: 'API request failed',
+          status: 403,
+          code: 'INVALID_REQUEST',
+        }),
+        'This request could not be verified. Open Fellowa at its usual address, reload the page and try again.',
+      ],
+      [
+        '403 without a code (unverified account)',
+        new ApiError({ message: 'API request failed', status: 403 }),
+        'Your account cannot upload covers yet. Verify your account or sign in again.',
+      ],
+      [
+        '413 UPLOAD_TOO_LARGE',
+        new ApiError({
+          message: 'File too large',
+          status: 413,
+          code: 'UPLOAD_TOO_LARGE',
+        }),
+        'The image is too large. Choose one up to 10 MB.',
+      ],
+      [
+        '415 UPLOAD_TYPE_NOT_ALLOWED',
+        new ApiError({
+          message: 'File type not allowed',
+          status: 415,
+          code: 'UPLOAD_TYPE_NOT_ALLOWED',
+        }),
+        'Choose a JPEG, PNG, WebP or GIF image.',
+      ],
+      [
+        '503 with another code',
+        new ApiError({ message: 'Service Unavailable', status: 503 }),
+        'Could not upload the image. Try again.',
+      ],
+      [
+        'a network error or timeout',
+        new ApiError({ message: 'timeout', isNetworkError: true }),
+        'Could not upload the image. Try again.',
+      ],
+    ])('shows its own line for %s', async (_case, error, line) => {
+      await failUpload(error)
+      expect(alert()).toHaveTextContent(line)
+      expect(toast.error).not.toHaveBeenCalled()
+    })
+
+    it('shows the session toast on 401, with no line', async () => {
+      await failUpload(
+        new ApiError({ message: 'Session expired', status: 401 })
+      )
+      expect(toast.error).toHaveBeenCalledWith(
+        'Your session has ended. Sign in again.'
+      )
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('shows the address step on USER_ALIAS_REQUIRED, with no line', async () => {
+      await failUpload(
+        new ApiError({
+          message: 'Set an alias before setting up your page',
+          status: 400,
+          code: 'USER_ALIAS_REQUIRED',
+        })
+      )
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Choose your page address first'
+      )
+    })
+  })
+
+  it('shows no image for a cover without a usable url, and saving keeps it (FE-TIER-04)', async () => {
+    mocks.tiers = [
+      {
+        ...saved,
+        cover: { id: '1712345678-abcdef012345.webp', url: null },
+      },
+    ]
+    const user = userEvent.setup()
+    renderManager()
+    expect(screen.queryByRole('img')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    // The placeholder, not an <img> resolved against the page URL.
+    const placeholder = screen.getByRole('img', { name: 'Cover preview' })
+    expect(placeholder.tagName).toBe('SPAN')
+    expect(document.querySelector('img')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Remove image' })
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getAllByRole('button', { name: 'Save changes' })[0]!
+    )
+    expect(mocks.update).toHaveBeenCalledTimes(1)
+    expect(mocks.update.mock.calls[0]![0]).not.toHaveProperty('coverTireId')
   })
 })

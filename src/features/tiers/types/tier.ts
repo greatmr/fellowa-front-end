@@ -26,8 +26,11 @@ export type Tier = {
   seatsTaken: number
 }
 
-/** A cover as `POST /tire/cover` and the `GET /tire` list give it. */
-export type TierCover = { id: string; url: string }
+/**
+ * A cover as `POST /tire/cover` and the `GET /tire` list give it. `url` is
+ * `null` when the server sent something other than an absolute http(s) URL.
+ */
+export type TierCover = { id: string; url: string | null }
 
 export type TierRole = {
   id: number

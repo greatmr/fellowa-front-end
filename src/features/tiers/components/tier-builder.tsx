@@ -81,10 +81,50 @@ type Props = {
   onDelete: (tier: Tier) => void
 }
 
-type CoverProblem = 'type' | 'size' | 'failed' | null
+type CoverProblem =
+  | 'type'
+  | 'size'
+  | 'unavailable'
+  | 'storage'
+  | 'requestRefused'
+  | 'accountRefused'
+  | 'failed'
+  | null
 
 const NO_PAGE = 'USER_ALIAS_REQUIRED'
 const PRICE_BELOW_MINIMUM = 'TIER_PRICE_BELOW_MINIMUM'
+/** 503 from `StorageService` when the server has no object storage. */
+const STORAGE_NOT_CONFIGURED = 'INTEGRATION_NOT_CONFIGURED'
+/** 403 from the action's Origin check (`mutation` in `server/actions.ts`). */
+const REQUEST_REFUSED = 'INVALID_REQUEST'
+
+/**
+ * The line a failed `POST /tire/cover` shows (FE-TIER-04). A 401 is a toast,
+ * not a line, and the alias case has its own notice; both are handled first.
+ */
+function coverUploadProblem(error: ApiError): CoverProblem {
+  if (error.status === 413) return 'size'
+  if (error.status === 415) return 'type'
+  if (error.status === 503 && error.code === STORAGE_NOT_CONFIGURED) {
+    return 'unavailable'
+  }
+  if (error.status === 500) return 'storage'
+  if (error.status === 403) {
+    // Without the Origin code it is `authorizedToken`: another account's
+    // tab, or an unverified one.
+    return error.code === REQUEST_REFUSED ? 'requestRefused' : 'accountRefused'
+  }
+  return 'failed'
+}
+
+const COVER_PROBLEM_KEY = {
+  type: 'coverTypeError',
+  unavailable: 'coverUnavailable',
+  storage: 'coverStorageError',
+  requestRefused: 'coverRequestRefused',
+  accountRefused: 'coverAccountRefused',
+  failed: 'coverError',
+} as const
 
 /**
  * The full-page tier builder (presentation `TiersView` @ d843c3b): the form,
@@ -212,9 +252,8 @@ export function TierBuilder({
         setDraft({ coverId: cover.id, coverUrl: cover.url }),
       onError: (error) => {
         if (error.code === NO_PAGE) setNoPage(true)
-        else if (error.status === 413) setCoverProblem('size')
-        else if (error.status === 415) setCoverProblem('type')
-        else setCoverProblem('failed')
+        else if (error.status === 401) toast.error(t('sessionExpired'))
+        else setCoverProblem(coverUploadProblem(error))
       },
     })
   }
@@ -430,7 +469,16 @@ export function TierBuilder({
                             unoptimized
                             className="h-10 w-16 rounded-md border object-cover"
                           />
-                        ) : null}
+                        ) : (
+                          // A cover the server could not give a URL for.
+                          <span
+                            role="img"
+                            aria-label={t('coverPreviewAlt')}
+                            className="flex h-10 w-16 items-center justify-center rounded-md border bg-muted text-muted-foreground"
+                          >
+                            <ImageIcon aria-hidden className="size-4" />
+                          </span>
+                        )}
                         <Button
                           type="button"
                           variant="ghost"
@@ -451,11 +499,9 @@ export function TierBuilder({
                       role="alert"
                       className="mt-2 text-caption text-destructive"
                     >
-                      {coverProblem === 'type'
-                        ? t('coverTypeError')
-                        : coverProblem === 'size'
-                          ? t('coverTooLarge', { size: maxCoverSize })
-                          : t('coverError')}
+                      {coverProblem === 'size'
+                        ? t('coverTooLarge', { size: maxCoverSize })
+                        : t(COVER_PROBLEM_KEY[coverProblem])}
                     </p>
                   ) : null}
                   <p className="mt-2.5 text-caption text-muted-foreground">
