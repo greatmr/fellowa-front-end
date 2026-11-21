@@ -1,5 +1,6 @@
 'use client'
 
+import { RocketIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
@@ -12,14 +13,19 @@ import { useRouter } from '@/i18n/navigation'
  * Publishes the creator's page. `blockedReason` is why the button is offered
  * disabled (no username or no tier yet, CP-05); the backend still answers for
  * the publish. On success the page is refreshed so the checklist is re-read
- * from the backend instead of being ticked on the client.
+ * from the backend instead of being ticked on the client. The banner shows it
+ * as the design's dark button with a rocket (`variant="inverse"`, `withIcon`).
  */
 export function PublishButton({
   viewerId,
   blockedReason,
+  variant = 'default',
+  withIcon = false,
 }: {
   viewerId: number
   blockedReason: string | null
+  variant?: 'default' | 'inverse'
+  withIcon?: boolean
 }) {
   const t = useTranslations('studio.dashboard')
   const router = useRouter()
@@ -47,9 +53,11 @@ export function PublishButton({
     <div className="grid justify-items-start gap-1.5">
       <Button
         size="sm"
+        variant={variant}
         disabled={pending || blockedReason !== null}
         onClick={publish}
       >
+        {withIcon ? <RocketIcon aria-hidden /> : null}
         {t('steps.publish.action')}
       </Button>
       {blockedReason ? (

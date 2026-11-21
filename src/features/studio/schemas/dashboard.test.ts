@@ -2,49 +2,100 @@ import { describe, expect, it } from 'vitest'
 
 import {
   InvalidDashboardResponseError,
-  deriveSetupSteps,
+  parseDashboardPosts,
   parseHasPayoutDetails,
   parseHasRows,
-  parseProfileFacts,
-  publishBlockedBy,
+  parseProfile,
 } from '@/features/studio/schemas/dashboard'
-import type { SetupFacts } from '@/features/studio/types/dashboard'
 
-const none: SetupFacts = {
-  username: null,
-  hasTier: false,
-  hasPost: false,
-  hasPayoutDetails: false,
-  isPublished: false,
-}
 const envelope = (data: unknown) => ({ data, errors: null })
 
-describe('parseProfileFacts', () => {
-  it('keeps the username and publish flag and drops personal data', () => {
-    const facts = parseProfileFacts(
-      envelope({
-        id: 42,
-        email: 'me@example.com',
+/** `GET /user/:id/profile`, owner shape (`toSelfProfile`). */
+function profile(overrides: Record<string, unknown> = {}) {
+  return envelope({
+    id: 42,
+    email: 'me@example.com',
+    alias: 'sara',
+    pageName: null,
+    displayName: 'Sara',
+    isVerified: true,
+    isPublish: false,
+    hasPassword: true,
+    categoryId: null,
+    personal: { phoneNumber: '09121234567' },
+    about: null,
+    images: { profile: null, header: null },
+    ...overrides,
+  })
+}
+
+describe('parseProfile', () => {
+  it('keeps what the dashboard shows and drops personal data', () => {
+    const parsed = parseProfile(
+      profile({
         alias: ' sara ',
+        pageName: ' Sara Studio ',
         isPublish: true,
-        personal: { phoneNumber: '09121234567' },
+        images: {
+          profile: 'https://cdn.fellowa.test/profile/1.jpg',
+          header: 'https://cdn.fellowa.test/header/1.jpg',
+        },
       })
     )
 
-    expect(facts).toEqual({ username: 'sara', isPublished: true })
+    expect(parsed).toEqual({
+      username: 'sara',
+      isPublished: true,
+      hasProfileImages: true,
+      identity: {
+        pageName: 'Sara Studio',
+        displayName: 'Sara',
+        alias: 'sara',
+        avatarUrl: 'https://cdn.fellowa.test/profile/1.jpg',
+      },
+    })
+    expect(JSON.stringify(parsed)).not.toContain('0912')
+    expect(JSON.stringify(parsed)).not.toContain('me@example.com')
   })
 
   it('treats a missing or blank alias as no username', () => {
+    expect(parseProfile(profile({ alias: null })).username).toBeNull()
+    expect(parseProfile(profile({ alias: '  ' })).username).toBeNull()
+  })
+
+  it('needs both a profile photo and a cover for step 1', () => {
+    const only = (images: unknown) =>
+      parseProfile(profile({ images })).hasProfileImages
+    expect(only({ profile: 'https://cdn.test/a.jpg', header: null })).toBe(
+      false
+    )
+    expect(only({ profile: null, header: 'https://cdn.test/b.jpg' })).toBe(
+      false
+    )
     expect(
-      parseProfileFacts(envelope({ alias: null, isPublish: false })).username
-    ).toBeNull()
-    expect(
-      parseProfileFacts(envelope({ alias: '  ', isPublish: false })).username
-    ).toBeNull()
+      only({
+        profile: 'https://cdn.test/a.jpg',
+        header: 'https://cdn.test/b.jpg',
+      })
+    ).toBe(true)
+  })
+
+  it('counts a stored key without a usable URL as set, but shows no avatar', () => {
+    // Storage unconfigured: `buildUrl` returns the bare key (FE-TIER-04 §5).
+    const parsed = parseProfile(
+      profile({
+        images: {
+          profile: 'patreon/profile/1.jpg',
+          header: 'patreon/header/1.jpg',
+        },
+      })
+    )
+    expect(parsed.hasProfileImages).toBe(true)
+    expect(parsed.identity.avatarUrl).toBeNull()
   })
 
   it('rejects a response without the publish flag', () => {
-    expect(() => parseProfileFacts(envelope({ alias: 'sara' }))).toThrow(
+    expect(() => parseProfile(envelope({ alias: 'sara' }))).toThrow(
       InvalidDashboardResponseError
     )
   })
@@ -69,39 +120,57 @@ describe('parseHasRows / parseHasPayoutDetails', () => {
   })
 })
 
-describe('deriveSetupSteps', () => {
-  it('lists the five CP-04 steps in order, all open for a new account', () => {
-    expect(deriveSetupSteps(none)).toEqual([
-      { id: 'basics', done: false },
-      { id: 'firstTier', done: false },
-      { id: 'firstPost', done: false },
-      { id: 'payout', done: false },
-      { id: 'publish', done: false },
+describe('parseDashboardPosts', () => {
+  it('maps a draft and a tier-only post from their visibility', () => {
+    expect(
+      parseDashboardPosts(
+        envelope([
+          {
+            id: 3,
+            type: 'text',
+            title: 'Draft',
+            text: 'Body',
+            visibility: { contentId: 3, type: false, datePublished: null },
+            createdAt: '2026-11-21T08:00:00.000Z',
+            access: 'FULL',
+          },
+        ])
+      )
+    ).toEqual([
+      {
+        id: 3,
+        title: 'Draft',
+        publishedAt: null,
+        createdAt: '2026-11-21T08:00:00.000Z',
+        audience: 'tiers',
+      },
     ])
   })
 
-  it('marks each step from its own fact', () => {
-    const steps = deriveSetupSteps({
-      username: 'sara',
-      hasTier: true,
-      hasPost: false,
-      hasPayoutDetails: true,
-      isPublished: false,
+  it('tells a public post with a paywall from a fully public one', () => {
+    const item = (paywallPosition: number | null) => ({
+      id: 4,
+      title: 'Open',
+      createdAt: '2026-11-21T08:00:00.000Z',
+      paywallPosition,
+      visibility: {
+        contentId: 4,
+        type: true,
+        datePublished: '2026-11-21T08:00:00.000Z',
+      },
     })
-
-    expect(steps.map((s) => s.done)).toEqual([true, true, false, true, false])
-  })
-})
-
-describe('publishBlockedBy (CP-05)', () => {
-  it('asks for a username first, then a tier', () => {
-    expect(publishBlockedBy(none)).toBe('basics')
-    expect(publishBlockedBy({ ...none, username: 'sara' })).toBe('firstTier')
-  })
-
-  it('does not block with a username and a tier', () => {
     expect(
-      publishBlockedBy({ ...none, username: 'sara', hasTier: true })
-    ).toBeNull()
+      parseDashboardPosts(envelope([item(null), item(300)])).map(
+        (post) => post.audience
+      )
+    ).toEqual(['public', 'paywalled'])
+  })
+
+  it('rejects an item without a visibility', () => {
+    expect(() =>
+      parseDashboardPosts(
+        envelope([{ id: 3, title: 'x', createdAt: '2026-11-21T08:00:00Z' }])
+      )
+    ).toThrow(InvalidDashboardResponseError)
   })
 })
