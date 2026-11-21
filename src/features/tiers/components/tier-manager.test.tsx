@@ -372,6 +372,21 @@ describe('TierManager', () => {
     })
   })
 
+  it('centres the list header, keeps the hint in the title block and sizes both actions alike (FE-TIER-05)', () => {
+    renderManager()
+    const header = screen.getByTestId('tiers-list-header')
+    expect(header).toHaveClass('items-center')
+    expect(header).not.toHaveClass('items-end')
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading.parentElement).toContainElement(
+      screen.getByText(en.tiers.overviewHint)
+    )
+    const guide = screen.getByRole('button', { name: en.tiers.openGuide })
+    const create = screen.getByRole('button', { name: en.tiers.create })
+    expect(guide).toHaveClass('h-10')
+    expect(create).toHaveClass('h-10')
+  })
+
   it('labels the owner seat count as seats taken, against the capacity when set', () => {
     mocks.tiers = [saved, { ...saved, id: 8, title: 'Gold', capacity: 10 }]
     renderManager()
