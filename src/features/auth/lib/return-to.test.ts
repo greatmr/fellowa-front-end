@@ -12,9 +12,14 @@ import {
 } from './return-to'
 
 describe('safeReturnTo', () => {
-  it.each(['/dashboard', '/posts/new', '/memberships', '/settings'])(
-    'accepts existing private route %s',
-    (path) => expect(safeReturnTo(path)).toBe(path)
+  it.each([
+    '/dashboard',
+    '/posts/new',
+    '/memberships',
+    '/settings',
+    '/creator',
+  ])('accepts existing private route %s', (path) =>
+    expect(safeReturnTo(path)).toBe(path)
   )
 
   it.each([
@@ -25,6 +30,11 @@ describe('safeReturnTo', () => {
   ])('maps the retired %s to its current address (FE-SHELL-05)', (path, to) =>
     expect(safeReturnTo(path)).toBe(to)
   )
+
+  it('accepts the own page /creator with a locale prefix (BE-LAND-10)', () => {
+    expect(safeReturnTo('/fa/creator')).toBe('/creator')
+    expect(returnsToPage('/creator')).toBe(true)
+  })
 
   it('no longer accepts the retired /onboarding (FE-ONB-02)', () => {
     expect(safeReturnTo('/onboarding')).toBe('/dashboard')

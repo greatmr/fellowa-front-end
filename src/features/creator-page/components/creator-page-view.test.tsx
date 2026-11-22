@@ -13,11 +13,22 @@ const actions = vi.hoisted(() => ({
   setFollowingAction: vi.fn(),
   listCreatorPostsAction: vi.fn(),
   listCreatorCollectionPostsAction: vi.fn(),
+  listOwnPagePostsAction: vi.fn(),
+  listOwnPageCollectionPostsAction: vi.fn(),
 }))
 vi.mock('@/features/creator-page/server/actions', () => actions)
+// The dashboard's shared publish action (FE-STUDIO-03), used by the owner's
+// preview bar; its HTTP boundary is tested with the dashboard.
+const publish = vi.hoisted(() => ({
+  publishPageAction: vi.fn(),
+  refresh: vi.fn(),
+}))
+vi.mock('@/features/dashboard/server/actions', () => ({
+  publishPageAction: publish.publishPageAction,
+}))
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof I18nNavigation>()),
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: publish.refresh }),
 }))
 
 import type { CreatorPageViewer } from '@/features/creator-page/server/load-creator-page'
@@ -85,6 +96,7 @@ type Overrides = {
   categoryTitle?: string | null
   pageUrl?: string | null
   initialTab?: 'posts' | 'collections' | 'tiers' | 'about'
+  ownPage?: { isPublished: boolean }
 }
 
 function view(viewer: CreatorPageViewer, overrides: Overrides = {}) {
@@ -104,6 +116,7 @@ function view(viewer: CreatorPageViewer, overrides: Overrides = {}) {
       viewer={viewer}
       pageUrl={overrides.pageUrl === undefined ? PAGE_URL : overrides.pageUrl}
       initialTab={overrides.initialTab}
+      ownPage={overrides.ownPage}
     />
   )
 }
@@ -137,6 +150,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
   actions.listCreatorPostsAction.mockReset()
   actions.listCreatorCollectionPostsAction.mockReset()
+  actions.listOwnPagePostsAction.mockReset()
+  actions.listOwnPageCollectionPostsAction.mockReset()
+  publish.publishPageAction.mockReset()
+  publish.refresh.mockReset()
 })
 
 describe('CreatorPageView (FE-PAGE-01/03)', () => {
@@ -814,5 +831,147 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
     [['tiers', 'about'], 'posts'],
   ])('reads ?tab=%j as the %s tab', (value, tab) => {
     expect(creatorPageTab(value)).toBe(tab)
+  })
+
+  describe("the owner's preview at /creator (BE-LAND-10)", () => {
+    const unpublished = { ownPage: { isPublished: false } }
+
+    it('shows the not-published bar with publish and edit, and nothing to share', () => {
+      renderPage('owner', unpublished)
+
+      expect(page().getByText(/isn't published yet/)).toBeVisible()
+      expect(page().getByRole('button', { name: 'Publish page' })).toBeEnabled()
+      expect(
+        page().getByRole('link', { name: 'Edit page' }).getAttribute('href')
+      ).toMatch(/\/settings$/)
+      // The public link is a 404 until publication.
+      expect(
+        screen.queryByRole('button', { name: /Copy page link/ })
+      ).toBeNull()
+      expect(screen.queryByRole('button', { name: /Copy link/ })).toBeNull()
+      expect(screen.queryByText(/live preview of your public page/)).toBeNull()
+      // No self-follow or join for the owner.
+      expect(page().queryByRole('button', { name: /Follow/ })).toBeNull()
+      expect(
+        page().queryByRole('button', { name: 'Support / Join' })
+      ).toBeNull()
+    })
+
+    it('renders in Persian with every key present', () => {
+      renderPage('owner', unpublished, 'fa')
+
+      expect(page().getByText(/صفحه شما هنوز منتشر نشده/)).toBeVisible()
+      expect(page().getByRole('button', { name: /انتشار صفحه/ })).toBeVisible()
+    })
+
+    it('publishes through the shared action, then refreshes the page', async () => {
+      const user = userEvent.setup()
+      publish.publishPageAction.mockResolvedValue({ ok: true, data: null })
+      renderPage('owner', unpublished)
+
+      await user.click(page().getByRole('button', { name: 'Publish page' }))
+
+      expect(publish.publishPageAction).toHaveBeenCalledExactlyOnceWith(4)
+      expect(publish.refresh).toHaveBeenCalledOnce()
+      expect(
+        page().getByRole('button', { name: 'Publish page' })
+      ).toBeDisabled()
+    })
+
+    it('holds publishing back with its reason while there is no tier', () => {
+      renderPage('owner', { ...unpublished, tiers: [] })
+
+      expect(
+        page().getByRole('button', { name: 'Publish page' })
+      ).toBeDisabled()
+      expect(
+        page().getByText('Create a membership tier before you publish.')
+      ).toBeVisible()
+    })
+
+    it('links posts to the editor and loads more from the me/page route', async () => {
+      const user = userEvent.setup()
+      actions.listOwnPagePostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawTeaser(12)], { total: 2 }),
+      })
+      renderPage('owner', {
+        ...unpublished,
+        posts: postPage([rawFull(9)], { total: 2, next: 2 }),
+      })
+
+      expect(
+        page().getByRole('link', { name: 'Hello world' }).getAttribute('href')
+      ).toMatch(/\/posts\/9\/edit$/)
+
+      await user.click(screen.getByRole('button', { name: 'Load more posts' }))
+
+      expect(
+        await screen.findByRole('link', { name: 'Members video' })
+      ).toHaveAttribute('href', expect.stringMatching(/\/posts\/12\/edit$/))
+      expect(actions.listOwnPagePostsAction).toHaveBeenCalledWith({
+        creatorId: 4,
+        page: 2,
+      })
+      // Never the public routes from the preview.
+      expect(actions.listCreatorPostsAction).not.toHaveBeenCalled()
+    })
+
+    it('reads a collection from the me/page route', async () => {
+      const user = userEvent.setup()
+      actions.listOwnPageCollectionPostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawFull(9)]),
+      })
+      renderPage('owner', {
+        ...unpublished,
+        posts: postPage([]),
+        collections: parseCreatorCollections(ok([rawCollection()])),
+        initialTab: 'collections',
+      })
+
+      await user.click(page().getByRole('button', { name: /Podcast/ }))
+
+      expect(
+        await page().findByRole('link', { name: 'Hello world' })
+      ).toHaveAttribute('href', expect.stringMatching(/\/posts\/9\/edit$/))
+      expect(actions.listOwnPageCollectionPostsAction).toHaveBeenCalledWith({
+        creatorId: 4,
+        collectionId: 7,
+        page: 1,
+      })
+      expect(actions.listCreatorCollectionPostsAction).not.toHaveBeenCalled()
+    })
+
+    it('once published shows copy link and edit, and links posts to the reader', async () => {
+      actions.listOwnPagePostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawTeaser(12)], { total: 2 }),
+      })
+      const user = userEvent.setup()
+      renderPage('owner', {
+        ownPage: { isPublished: true },
+        posts: postPage([rawFull(9)], { total: 2, next: 2 }),
+      })
+
+      expect(page().getByText(/live preview of your public page/)).toBeVisible()
+      expect(
+        page().getByRole('button', { name: 'Copy page link' })
+      ).toBeEnabled()
+      expect(page().getByRole('link', { name: 'Edit page' })).toBeVisible()
+      expect(page().queryByRole('button', { name: 'Publish page' })).toBeNull()
+      // The sticky header's icon copy is back too (hidden before publication).
+      expect(
+        screen.getAllByRole('button', { name: /Copy/, hidden: true }).length
+      ).toBeGreaterThan(1)
+      expect(
+        page().getByRole('link', { name: 'Hello world' }).getAttribute('href')
+      ).toMatch(/\/creators\/4\/posts\/9$/)
+
+      await user.click(screen.getByRole('button', { name: 'Load more posts' }))
+      await screen.findByRole('link', { name: 'Members video' })
+      expect(actions.listOwnPagePostsAction).toHaveBeenCalled()
+      expect(actions.listCreatorPostsAction).not.toHaveBeenCalled()
+    })
   })
 })

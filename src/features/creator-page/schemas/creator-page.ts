@@ -49,6 +49,8 @@ const rawProfileSchema = z.object({
   numFollowers: z.string().regex(/^\d+$/),
   /** BE-LAND-09; absent from an older backend, which reads as anonymous. */
   viewer: z.object({ isFollowing: z.boolean() }).nullish(),
+  /** BE-LAND-10: only `GET /landing/me/page` sends it. */
+  isPublished: z.boolean().optional(),
 })
 
 const rawTierSchema = z.object({
@@ -103,7 +105,26 @@ const rawPostPageSchema = z.object({
 })
 
 export function parseCreatorProfile(value: unknown): CreatorProfile {
+  return toCreatorProfile(parseEnvelope(rawProfileSchema, value, invalid))
+}
+
+/**
+ * `GET /landing/me/page` (BE-LAND-10): the public profile shape plus
+ * `isPublished`, which this route always sends; without it the answer is not
+ * the owner's preview and is refused.
+ */
+export function parseOwnCreatorPage(value: unknown): {
+  profile: CreatorProfile
+  isPublished: boolean
+} {
   const raw = parseEnvelope(rawProfileSchema, value, invalid)
+  if (raw.isPublished === undefined) throw invalid()
+  return { profile: toCreatorProfile(raw), isPublished: raw.isPublished }
+}
+
+function toCreatorProfile(
+  raw: z.infer<typeof rawProfileSchema>
+): CreatorProfile {
   const followers = Number(raw.numFollowers)
   if (!Number.isSafeInteger(followers)) throw invalid()
   const about = raw.about

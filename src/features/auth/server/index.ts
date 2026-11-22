@@ -2,6 +2,7 @@ import 'server-only'
 
 /** Server-side surface other features may use (session + origin check). */
 export {
+  getSession,
   readOptionalSessionToken,
   readSession,
   type AuthSession,

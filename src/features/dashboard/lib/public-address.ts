@@ -25,18 +25,12 @@ export function postReaderUrl(
 }
 
 /**
- * Where "View my page" goes (owner option a, 2026-11-22): the public page
- * only once it is published, since the backend answers 404 for an
- * unpublished one; the dashboard, where publishing is offered, until then.
- * No item at all without an address (no alias, so no page yet).
+ * Where "View my page" goes (owner decision 2026-11-22): `/creator`, the
+ * owner's own page, which previews an unpublished page and shows a published
+ * one. No item at all without an address (no alias, so no page yet).
  */
 export function ownPageHref(user: {
-  id: number
   alias: string | null
-  isPublish?: boolean
 }): string | undefined {
-  if (user.alias === null) return undefined
-  return user.isPublish === true
-    ? publicPageAddress(undefined, user.id).path
-    : '/dashboard'
+  return user.alias === null ? undefined : '/creator'
 }

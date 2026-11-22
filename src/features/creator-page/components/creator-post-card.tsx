@@ -7,6 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { OpenTabButton } from '@/features/creator-page/components/creator-tabs'
+import {
+  type CreatorPostLink,
+  creatorPostHref,
+} from '@/features/creator-page/lib/sources'
 import type { CreatorPost } from '@/features/creator-page/types/creator-page'
 import { Link } from '@/i18n/navigation'
 
@@ -23,7 +27,8 @@ export type PostAuthor = {
  * the opening the server cut, TEASER the owner's preview; both gated levels
  * fade it and show the gate, whose only action opens the Tiers tab (no
  * single-post purchase, FQ-31). The title leads to the post page, where a
- * signed-in member reads it in full (FE-CONT-01). Not ported: the tier name
+ * signed-in member reads it in full (FE-CONT-01); in the owner's preview of
+ * an unpublished page it leads to the editor instead (`link`). Not ported: the tier name
  * and price on the gate (no post response names a tier), likes, comments and
  * share (not in the contract).
  */
@@ -31,14 +36,16 @@ export function CreatorPostCard({
   post,
   creatorId,
   author,
+  link = 'reader',
 }: {
   post: CreatorPost
   creatorId: number
   author: PostAuthor
+  link?: CreatorPostLink
 }) {
   const t = useTranslations('creatorPage.posts')
   const format = useFormatter()
-  const href = `/creators/${creatorId}/posts/${post.id}`
+  const href = creatorPostHref(creatorId, post.id, link)
   const gated = post.access !== 'FULL'
   // TEASER: the owner's typed preview, plain text. FULL and PARTIAL: the
   // body as the server sent it (PARTIAL already cut at the paywall).

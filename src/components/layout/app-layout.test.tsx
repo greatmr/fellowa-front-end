@@ -22,7 +22,7 @@ describe('AppLayout navigation has no studio (FE-SHELL-05)', () => {
     'links nowhere under /studio and says no "studio" in %s',
     (locale) => {
       const { container } = renderWithIntl(
-        <AppLayout ownPageHref="/creators/7">
+        <AppLayout ownPageHref="/creator">
           <p>content</p>
         </AppLayout>,
         { locale, strict: true }
@@ -40,14 +40,14 @@ describe('AppLayout navigation has no studio (FE-SHELL-05)', () => {
   )
 
   it('opens the creator\'s own public page from "View my page"', () => {
-    renderWithIntl(<AppLayout ownPageHref="/creators/7">{null}</AppLayout>, {
+    renderWithIntl(<AppLayout ownPageHref="/creator">{null}</AppLayout>, {
       locale: 'en',
     })
     const navs = screen.getAllByRole('navigation', { name: en.panel.mainNav })
     for (const nav of navs) {
       expect(
         within(nav).getByRole('link', { name: en.panel.nav.page })
-      ).toHaveAttribute('href', '/creators/7')
+      ).toHaveAttribute('href', '/creator')
     }
   })
 

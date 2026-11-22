@@ -5,6 +5,7 @@ import {
   parseCreatorPostPage,
   parseCreatorProfile,
   parseCreatorTiers,
+  parseOwnCreatorPage,
 } from '@/features/creator-page/schemas/creator-page'
 import { apiDelete, apiGet, apiPost, withBearer } from '@/lib/api/client'
 import { ApiError } from '@/lib/api/errors'
@@ -72,6 +73,62 @@ export async function getCreatorCollectionPostPage(
       { params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE } }
     ),
     id
+  )
+}
+
+// ---- The owner's preview (BE-LAND-10) ---------------------------------------
+// `/landing/me/page…` mirrors the public routes one for one, for the token's
+// own page, published or not: the same shapes, so the same parsers. Posts are
+// the anonymous visitor's projection (TEASER/PARTIAL, drafts left out). 400
+// `USER_ALIAS_REQUIRED` while the account has no page.
+
+const OWN_PAGE = '/landing/me/page'
+
+/** The caller's page as visitors see it, plus `isPublished`. */
+export async function getOwnCreatorPage(token: string) {
+  return parseOwnCreatorPage(await apiGet<unknown>(OWN_PAGE, withBearer(token)))
+}
+
+export async function getOwnCreatorTiers(token: string) {
+  return parseCreatorTiers(
+    await apiGet<unknown>(`${OWN_PAGE}/tiers`, withBearer(token))
+  )
+}
+
+/** `creatorId` is the caller's own id, checked against every post. */
+export async function getOwnCreatorPostPage(
+  token: string,
+  creatorId: number,
+  page: number
+) {
+  return parseCreatorPostPage(
+    await apiGet<unknown>(`${OWN_PAGE}/posts`, {
+      ...withBearer(token),
+      params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE },
+    }),
+    creatorId
+  )
+}
+
+export async function getOwnCreatorCollections(token: string) {
+  return parseCreatorCollections(
+    await apiGet<unknown>(`${OWN_PAGE}/collections`, withBearer(token))
+  )
+}
+
+/** 404 `CONTENT_COLLECTION_NOT_FOUND` for a collection not the caller's. */
+export async function getOwnCreatorCollectionPostPage(
+  token: string,
+  creatorId: number,
+  collectionId: number,
+  page: number
+) {
+  return parseCreatorPostPage(
+    await apiGet<unknown>(`${OWN_PAGE}/collections/${collectionId}/posts`, {
+      ...withBearer(token),
+      params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE },
+    }),
+    creatorId
   )
 }
 

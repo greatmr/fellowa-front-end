@@ -918,6 +918,11 @@
       "postsUnavailable": "This collection's posts couldn't be loaded.",
       "emptyPosts": "No published posts in this collection yet.",
       "gone": "This collection is no longer available."
+    },
+    "unpublishedNotice": "Your page isn't published yet. Once it is, visitors will see it just like this.",
+    "ownPage": {
+      "title": "My page",
+      "noPageBody": "Your page starts with its address. Once you choose one, the preview of your page appears here."
     }
   },
   "settings": {

@@ -12,6 +12,8 @@ const privatePaths = new Set([
   '/feed',
   '/chats',
   '/notifications',
+  // The signed-in creator's own page (BE-LAND-10).
+  '/creator',
 ])
 
 /**

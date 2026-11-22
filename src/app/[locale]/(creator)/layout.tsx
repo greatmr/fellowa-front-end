@@ -56,8 +56,8 @@ export default async function CreatorLayout({
  */
 async function CreatorFrame({ children }: { children: React.ReactNode }) {
   const session = await getSession()
-  // No alias: no item. Unpublished: the dashboard, since the public page
-  // answers 404 until it is published (`ownPageHref`).
+  // No alias: no item; otherwise `/creator`, which previews an unpublished
+  // page (`ownPageHref`).
   const ownPageHref = session ? ownPageHrefOf(session.user) : undefined
 
   return (

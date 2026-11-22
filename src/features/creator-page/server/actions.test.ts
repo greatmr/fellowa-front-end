@@ -25,6 +25,8 @@ vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
 const {
   listCreatorCollectionPostsAction,
   listCreatorPostsAction,
+  listOwnPageCollectionPostsAction,
+  listOwnPagePostsAction,
   setFollowingAction,
 } = await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
@@ -314,5 +316,82 @@ describe('listCreatorCollectionPostsAction (FE-POST-04, BE-CONT-15)', () => {
         page: 1,
       })
     ).toEqual({ ok: false, code: 'INVALID_CREATOR_PAGE_RESPONSE' })
+  })
+})
+
+describe("the owner's preview lists (BE-LAND-10)", () => {
+  // The session's account (42) owns the page; its posts say so.
+  const own = (id: number) => ({ ...rawTeaser(id), creatorId: 42 })
+
+  it('reads me/page/posts with the session token', async () => {
+    let seen: { query: string; auth: string | null } | null = null
+    server.use(
+      http.get(`${apiOrigin}/landing/me/page/posts`, ({ request: r }) => {
+        seen = {
+          query: new URL(r.url).search,
+          auth: r.headers.get('authorization'),
+        }
+        return HttpResponse.json(
+          ok(rawPostPage([own(11)], { total: 21, next: null }))
+        )
+      })
+    )
+
+    expect(
+      await listOwnPagePostsAction({ creatorId: 42, page: 2 })
+    ).toMatchObject({
+      ok: true,
+      data: { total: 21, items: [{ id: 11, access: 'TEASER' }] },
+    })
+    expect(seen).toEqual({
+      query: '?page=2&pageSize=20',
+      auth: `Bearer ${token()}`,
+    })
+  })
+
+  it('reads me/page/collections/:id/posts with the session token', async () => {
+    let auth: string | null = null
+    server.use(
+      http.get(
+        `${apiOrigin}/landing/me/page/collections/7/posts`,
+        ({ request: r }) => {
+          auth = r.headers.get('authorization')
+          return HttpResponse.json(ok(rawPostPage([own(11)])))
+        }
+      ),
+      http.get(`${apiOrigin}/landing/me/page/collections/9/posts`, () =>
+        failure(404, 'CONTENT_COLLECTION_NOT_FOUND')
+      )
+    )
+
+    expect(
+      await listOwnPageCollectionPostsAction({
+        creatorId: 42,
+        collectionId: 7,
+        page: 1,
+      })
+    ).toMatchObject({ ok: true, data: { items: [{ id: 11 }] } })
+    expect(auth).toBe(`Bearer ${token()}`)
+    expect(
+      await listOwnPageCollectionPostsAction({
+        creatorId: 42,
+        collectionId: 9,
+        page: 1,
+      })
+    ).toMatchObject({
+      ok: false,
+      status: 404,
+      code: 'CONTENT_COLLECTION_NOT_FOUND',
+    })
+  })
+
+  it('refuses without a session, or with another account than the page rendered for', async () => {
+    expect(
+      await listOwnPagePostsAction({ creatorId: 7, page: 1 })
+    ).toMatchObject({ ok: false, status: 401, code: 'SESSION_CHANGED' })
+    request.cookie = ''
+    expect(
+      await listOwnPagePostsAction({ creatorId: 42, page: 1 })
+    ).toMatchObject({ ok: false, status: 401, code: 'SESSION_EXPIRED' })
   })
 })

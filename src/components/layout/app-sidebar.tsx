@@ -16,7 +16,7 @@ import { Link } from '@/i18n/navigation'
  * (presentation Sidebar @ d843c3b). Group disclosure, links, the scroll
  * indicator and the account menu are client leaves; labels and icons render
  * on the server. `account` is the signed-in account row (SidebarAccount);
- * `ownPageHref` is the creator's public page, from the same session.
+ * `ownPageHref` is the creator's own page (`/creator`), from the same session.
  */
 function NavIcon({ item }: { item: AppNavItem }) {
   const Icon = item.icon

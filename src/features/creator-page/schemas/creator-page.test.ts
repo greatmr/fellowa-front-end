@@ -6,6 +6,7 @@ import {
   parseCreatorPostPage,
   parseCreatorProfile,
   parseCreatorTiers,
+  parseOwnCreatorPage,
 } from './creator-page'
 import {
   FREE_BODY,
@@ -219,5 +220,30 @@ describe('creator page responses (FE-PAGE-01)', () => {
     ['abc', false],
   ])('creator id %j valid: %j', (raw, ok) => {
     expect(creatorIdSchema.safeParse(raw).success).toBe(ok)
+  })
+})
+
+describe("the owner's preview response (BE-LAND-10)", () => {
+  it('reads GET /landing/me/page: the public shape plus isPublished', () => {
+    const own = parseOwnCreatorPage(
+      envelope({ ...profile, viewer: null, isPublished: false })
+    )
+    expect(own).toEqual({
+      profile: parseCreatorProfile(envelope(profile)),
+      isPublished: false,
+    })
+    expect(
+      parseOwnCreatorPage(envelope({ ...profile, isPublished: true }))
+        .isPublished
+    ).toBe(true)
+  })
+
+  it('refuses an answer without a boolean isPublished', () => {
+    expect(() => parseOwnCreatorPage(envelope(profile))).toThrow(
+      InvalidCreatorPageResponseError
+    )
+    expect(() =>
+      parseOwnCreatorPage(envelope({ ...profile, isPublished: 'yes' }))
+    ).toThrow(InvalidCreatorPageResponseError)
   })
 })

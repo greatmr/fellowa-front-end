@@ -5,11 +5,17 @@ import { z } from 'zod'
 import {
   getCreatorCollectionPostPage,
   getCreatorPostPage,
+  getOwnCreatorCollectionPostPage,
+  getOwnCreatorPostPage,
   setFollowing,
 } from '@/features/creator-page/api/creator-page-api'
 import { InvalidCreatorPageResponseError } from '@/features/creator-page/schemas/creator-page'
 import type { CreatorPostPage } from '@/features/creator-page/types/creator-page'
-import { readSession, validAuthRequestOrigin } from '@/features/auth/server'
+import {
+  authorizedViewerToken,
+  readSession,
+  validAuthRequestOrigin,
+} from '@/features/auth/server'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 
 const inputSchema = z.object({
@@ -76,6 +82,35 @@ export async function listCreatorPostsAction(input: {
   )
 }
 
+const asPageError = (error: unknown) =>
+  error instanceof InvalidCreatorPageResponseError
+    ? { code: 'INVALID_CREATOR_PAGE_RESPONSE' }
+    : undefined
+
+/**
+ * A page of the owner's own post list for the preview at `/creator`
+ * (BE-LAND-10, `GET /landing/me/page/posts`): the visitor's projection, read
+ * with the session's token, published or not. `creatorId` is the account the
+ * page rendered for; a different account in the cookie is refused rather
+ * than mixed into its list.
+ */
+export async function listOwnPagePostsAction(input: {
+  creatorId: number
+  page: number
+}): Promise<ApiActionResult<CreatorPostPage>> {
+  const parsed = postPageSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  const { creatorId, page } = parsed.data
+  const token = await authorizedViewerToken(creatorId)
+  if (!token.ok) return token
+  return runApiAction(
+    () => getOwnCreatorPostPage(token.data, creatorId, page),
+    asPageError
+  )
+}
+
 const collectionPageSchema = postPageSchema.extend({
   collectionId: z.number().int().positive().max(2_147_483_647),
 })
@@ -100,5 +135,33 @@ export async function listCreatorCollectionPostsAction(input: {
       error instanceof InvalidCreatorPageResponseError
         ? { code: 'INVALID_CREATOR_PAGE_RESPONSE' }
         : undefined
+  )
+}
+
+/**
+ * A page of one of the owner's collections for the preview
+ * (`GET /landing/me/page/collections/:id/posts`), with the session's token.
+ */
+export async function listOwnPageCollectionPostsAction(input: {
+  creatorId: number
+  collectionId: number
+  page: number
+}): Promise<ApiActionResult<CreatorPostPage>> {
+  const parsed = collectionPageSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  const { creatorId, collectionId, page } = parsed.data
+  const token = await authorizedViewerToken(creatorId)
+  if (!token.ok) return token
+  return runApiAction(
+    () =>
+      getOwnCreatorCollectionPostPage(
+        token.data,
+        creatorId,
+        collectionId,
+        page
+      ),
+    asPageError
   )
 }
