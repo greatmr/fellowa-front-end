@@ -2,7 +2,14 @@
 
 import { useId, useState } from 'react'
 import { useIsMutating } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import {
+  ArrowLeft,
+  BarChart2,
+  Headphones,
+  ImageIcon,
+  Video,
+  X,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
@@ -13,13 +20,18 @@ import { PostAccessPanel } from '@/features/posts/components/post-access-panel'
 import { PostAttachments } from '@/features/posts/components/post-attachments'
 import { PostBodyEditor } from '@/features/posts/components/post-body-editor'
 import { PostImagesField } from '@/features/posts/components/post-images-field'
+import { PostMediaField } from '@/features/posts/components/post-media-field'
+import { PostPollField } from '@/features/posts/components/post-poll-field'
 import { PostsAliasNotice } from '@/features/posts/components/posts-alias-notice'
 import {
   draftFromPost,
   draftProblems,
+  emptyPoll,
   emptyPostDraft,
+  savedUpload,
   saveInputFromDraft,
   type PostDraft,
+  type PostMediaKind,
   type SaveIntent,
 } from '@/features/posts/lib/post-draft'
 import { NO_PAGE, postErrorKey } from '@/features/posts/lib/post-errors'
@@ -35,13 +47,20 @@ type Props = {
   saved: StudioPost | null
 }
 
+const mediaChoices = [
+  { kind: 'image', Icon: ImageIcon },
+  { kind: 'video', Icon: Video },
+  { kind: 'audio', Icon: Headphones },
+  { kind: 'poll', Icon: BarChart2 },
+] as const
+
 /**
- * The composer (presentation `ComposerView` @ d843c3b), for text and image
- * posts (FQ-30 (3)): title, plain-text body with the paywall divider, images,
- * attachments once saved, access, and publish or save as draft (no date:
- * Q-18). Not ported (FQ-31, FQ-30): the formatting toolbar, the audio, video
- * and poll blocks (FE-POST-02), the single-post purchase switch and the
- * collections picker, the "upload error" demo button, and the "saved
+ * The composer (presentation `ComposerView` @ d843c3b): title, plain-text
+ * body with the paywall divider, one media block (images, a video, an audio
+ * or a poll: FQ-30, one media type per post, FE-POST-02), attachments once
+ * saved, access, and publish or save as draft (no date: Q-18). Not ported
+ * (FQ-31, FQ-30): the formatting toolbar, the single-post purchase switch and
+ * the collections picker, the "upload error" demo button, and the "saved
  * automatically" line (nothing autosaves).
  */
 export function PostComposer({ viewerId, saved }: Props) {
@@ -56,7 +75,8 @@ export function PostComposer({ viewerId, saved }: Props) {
     useIsMutating({ mutationKey: postKeys.mutation('image', viewerId) }) +
       useIsMutating({
         mutationKey: postKeys.mutation('deleteImage', viewerId),
-      }) >
+      }) +
+      useIsMutating({ mutationKey: postKeys.mutation('media', viewerId) }) >
     0
   const [draft, setDraftState] = useState<PostDraft>(() =>
     saved ? draftFromPost(saved) : emptyPostDraft()
@@ -72,6 +92,17 @@ export function PostComposer({ viewerId, saved }: Props) {
 
   const problems = checkedFor ? draftProblems(draft, checkedFor) : []
   const isPublished = Boolean(saved?.publishedAt)
+  // A saved text post can still take a media block through its route's PUT;
+  // a poll cannot (`PUT /content/poll/:id` needs the poll to exist).
+  // The draft too: after a draft save attaches media, `saved` changes only
+  // once its refetch succeeds, and a saved file must not be dropped here.
+  const canChooseMedia =
+    (saved === null || saved.type === 'text') &&
+    !draft.upload?.attached &&
+    !draft.images.some((image) => image.attached)
+  const choices = mediaChoices.filter(
+    (choice) => saved === null || choice.kind !== 'poll'
+  )
   const pending = save.isPending
   const busy = pending || imagesBusy || leaving
 
@@ -81,6 +112,12 @@ export function PostComposer({ viewerId, saved }: Props) {
     if (patch.access !== undefined || patch.tiers !== undefined) {
       setServerTierError(false)
     }
+  }
+
+  function chooseMedia(media: PostMediaKind | null) {
+    // Leaving a block drops what it held and was not saved (FQ-30).
+    setDraft({ media, images: [], upload: null, poll: emptyPoll() })
+    setCheckedFor(null)
   }
 
   function sessionExpired() {
@@ -121,6 +158,7 @@ export function PostComposer({ viewerId, saved }: Props) {
         setDraftState((current) => ({
           ...current,
           images: post.images.map((image) => ({ ...image, attached: true })),
+          upload: savedUpload(post) ?? current.upload,
           // Saved as free, the post lost its tier links: nothing to keep.
           tiers:
             post.isPublic && current.tiers.mode === 'keep'
@@ -193,18 +231,83 @@ export function PostComposer({ viewerId, saved }: Props) {
             isPublic={draft.access === 'free'}
             onChange={(parts) => setDraft(parts)}
           />
-          <PostImagesField
-            viewerId={viewerId}
-            images={draft.images}
-            onUpdate={(update) =>
-              setDraftState((current) => ({
-                ...current,
-                images: update(current.images),
-              }))
-            }
-            onNoPage={() => setNoPage(true)}
-            onSessionExpired={sessionExpired}
-          />
+          {draft.media === null ? (
+            <section aria-labelledby={`${ids}-media`} className="grid gap-3">
+              <div>
+                <h2
+                  id={`${ids}-media`}
+                  className="text-body font-semibold text-foreground"
+                >
+                  {t('mediaChoice.title')}
+                </h2>
+                <p className="mt-1 text-label text-muted-foreground">
+                  {t('mediaChoice.hint')}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {choices.map(({ kind, Icon }) => (
+                  <Button
+                    key={kind}
+                    type="button"
+                    variant="outline"
+                    onClick={() => chooseMedia(kind)}
+                  >
+                    <Icon aria-hidden />
+                    {t(`mediaChoice.${kind}`)}
+                  </Button>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <div className="grid gap-2">
+              {canChooseMedia ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  className="justify-self-end"
+                  onClick={() => chooseMedia(null)}
+                >
+                  <X aria-hidden />
+                  {t(`mediaChoice.remove.${draft.media}`)}
+                </Button>
+              ) : null}
+              {draft.media === 'image' ? (
+                <PostImagesField
+                  viewerId={viewerId}
+                  images={draft.images}
+                  onUpdate={(update) =>
+                    setDraftState((current) => ({
+                      ...current,
+                      images: update(current.images),
+                    }))
+                  }
+                  onNoPage={() => setNoPage(true)}
+                  onSessionExpired={sessionExpired}
+                />
+              ) : draft.media === 'poll' ? (
+                <PostPollField
+                  poll={draft.poll}
+                  onChange={(poll) => setDraft({ poll })}
+                  showRequired={problems.includes('poll')}
+                />
+              ) : (
+                <PostMediaField
+                  key={draft.media}
+                  viewerId={viewerId}
+                  kind={draft.media}
+                  upload={draft.upload}
+                  onUploaded={(upload) =>
+                    setDraftState((current) => ({ ...current, upload }))
+                  }
+                  onNoPage={() => setNoPage(true)}
+                  onSessionExpired={sessionExpired}
+                  showRequired={problems.includes('media')}
+                />
+              )}
+            </div>
+          )}
           <PostAttachments
             viewerId={viewerId}
             postId={saved?.id ?? null}

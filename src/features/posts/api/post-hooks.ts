@@ -11,15 +11,25 @@ import {
   deletePostAttachmentForHook,
   deletePostForHook,
   deletePostImageForHook,
+  finalizeMediaUploadForHook,
   getPostForHook,
+  initMediaUploadForHook,
   listPostsForHook,
   savePostForHook,
   setPostStatusForHook,
+  uploadMediaChunkForHook,
   uploadPostAttachmentForHook,
   uploadPostImageForHook,
 } from '@/features/posts/server/actions'
+import {
+  uploadMediaFile,
+  type MediaUploadCancelledError,
+  type MediaUploadProgress,
+} from '@/features/posts/lib/media-upload'
 import type {
+  MediaUploadKind,
   PostFile,
+  PostMedia,
   PostStatusInput,
   SavePostInput,
   StudioPost,
@@ -161,5 +171,46 @@ export function useUploadPostImageMutation(viewerId: number) {
       form.append('image', image)
       return unwrapApiActionResult(await uploadPostImageForHook(viewerId, form))
     },
+  })
+}
+
+export type MediaUploadVariables = {
+  file: File
+  kind: MediaUploadKind
+  onProgress: (progress: MediaUploadProgress) => void
+  isCancelled: () => boolean
+}
+
+/**
+ * A video or audio, init → chunks → finalize; it joins a post when the post
+ * is saved (`videoId` / `audioId`). One mutation for the whole upload, so the
+ * composer's save waits for it (`postKeys.mutation('media', …)`).
+ */
+export function useUploadPostMediaMutation(viewerId: number) {
+  return useMutation<
+    PostMedia,
+    ApiError | MediaUploadCancelledError,
+    MediaUploadVariables
+  >({
+    mutationKey: postKeys.mutation('media', viewerId),
+    mutationFn: ({ file, kind, onProgress, isCancelled }) =>
+      uploadMediaFile(
+        file,
+        kind,
+        {
+          init: async (start) =>
+            unwrapApiActionResult(
+              await initMediaUploadForHook(viewerId, start)
+            ),
+          chunk: async (form) => {
+            unwrapApiActionResult(await uploadMediaChunkForHook(viewerId, form))
+          },
+          finalize: async (finish) =>
+            unwrapApiActionResult(
+              await finalizeMediaUploadForHook(viewerId, finish)
+            ),
+        },
+        { onProgress, isCancelled }
+      ),
   })
 }

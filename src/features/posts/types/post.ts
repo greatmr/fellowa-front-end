@@ -30,6 +30,28 @@ export type StudioPost = {
   dateEarly: string | null
   images: PostFile[]
   attachments: PostFile[]
+  /** `videos[]`: Arvan videos on this post (FQ-30: at most one in practice). */
+  videos: PostMedia[]
+  /** `audios[]`: Arvan audios on this post. */
+  audios: PostMedia[]
+  /** `polls[0]`; `poll.post_id` is UNIQUE, so a post has at most one. */
+  poll: PostPoll | null
+}
+
+/**
+ * A video or audio on a post: `{id, fileNameCloud}`. No playable URL exists
+ * in any response (FE-CONT-01), so the studio shows the name only.
+ */
+export type PostMedia = { id: number; name: string | null }
+
+export type PostPollOption = { id: number; label: string }
+
+export type PostPoll = {
+  /** `typeSelect`: `true` lets a reader choose several options. */
+  multiSelect: boolean
+  /** `endDataPublished`; votes are refused from then on. */
+  closesAt: string | null
+  options: PostPollOption[]
 }
 
 /**
@@ -56,10 +78,43 @@ export type PostWritePayload = {
   visibility: PostVisibilityPayload
   /** Image posts only. */
   imageIds?: number[]
+  /** Video posts only: a finalized upload's id (`finalize-video`). */
+  videoId?: number
+  /** Audio posts only: a finalized upload's id (`finalize-audio`). */
+  audioId?: number
+  /** Poll posts only: every option, as a PUT replaces them all. */
+  options?: { option: string }[]
+  /** Poll posts only. */
+  typeSelect?: boolean
+  /** Poll posts only; resent on a PUT, which clears it when left out. */
+  endDataPublished?: string
 }
 
 /** Which create/update route a write goes to. */
-export type PostWriteKind = 'text' | 'image'
+export type PostWriteKind = 'text' | 'image' | 'video' | 'audio' | 'poll'
+
+/** The two kinds that upload through Arvan (`upload/init` … `finalize-*`). */
+export type MediaUploadKind = 'video' | 'audio'
+
+/** `POST /content/upload/init`: what the chunks and finalize need. */
+export type MediaUploadSession = {
+  fileId: string
+  uploadUrl: string
+  /** Binds the file to this account; held in memory for this upload only. */
+  uploadToken: string
+}
+
+export type MediaUploadStart = {
+  fileName: string
+  fileSize: number
+  fileType: string
+}
+
+export type MediaUploadFinish = {
+  kind: MediaUploadKind
+  fileId: string
+  uploadToken: string
+}
 
 export type SavePostInput = {
   /** Left out: create. */

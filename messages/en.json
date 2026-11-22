@@ -980,7 +980,7 @@
       },
       "empty": {
         "title": "You have not created any posts yet",
-        "body": "Publish your first text or image post; you can keep part of it free and link the rest to your membership tiers.",
+        "body": "Publish your first post: text, images, a video, an audio or a poll. You can keep part of it free and link the rest to your membership tiers.",
         "action": "Create your first post"
       },
       "noMatch": {
@@ -1029,7 +1029,9 @@
       "tierNotFound": "One of the chosen tiers no longer exists. Choose the tiers again.",
       "paywallRequired": "The text changed; save again so the divider position is sent with it.",
       "imageNotFound": "One of the images is no longer available. Remove it and upload it again.",
-      "network": "Could not connect. Check your internet connection and try again."
+      "network": "Could not connect. Check your internet connection and try again.",
+      "mediaNotFound": "The uploaded file is no longer available. Remove it and upload it again.",
+      "pollLocked": "Someone has already voted, so this poll can no longer be edited."
     },
     "aliasRequired": {
       "title": "Choose your page address first",
@@ -1113,7 +1115,66 @@
       "notFoundTitle": "This post was not found",
       "notFoundBody": "It may have been deleted, or it is not on your page.",
       "unsupportedTitle": "This kind of post cannot be edited yet",
-      "unsupportedBody": "Editing video, audio, link and poll posts comes later. From the posts list you can publish it, move it to drafts or delete it."
+      "unsupportedBody": "Editing link posts comes later. From the posts list you can publish it, move it to drafts or delete it.",
+      "mediaChoice": {
+        "title": "Add to the post",
+        "hint": "A post holds one kind of media: images, a video, an audio or a poll.",
+        "image": "Images",
+        "video": "Video",
+        "audio": "Audio",
+        "poll": "Poll",
+        "remove": {
+          "image": "Remove images",
+          "video": "Remove video",
+          "audio": "Remove audio",
+          "poll": "Remove poll"
+        }
+      },
+      "media": {
+        "savedNote": "Saved on this post. A saved file cannot be replaced yet.",
+        "pendingNote": "Uploaded. It joins the post when you save it.",
+        "finalizing": "Processing the file…",
+        "cancel": "Cancel upload",
+        "cancelling": "Cancelling after the current part…",
+        "cancelled": "The upload was cancelled.",
+        "playbackNote": "Readers will be able to play it once playback opens; the file is converted after upload.",
+        "unavailable": "Video and audio uploads are not available yet. Please try again later.",
+        "uploadError": "The file did not upload. Please try again.",
+        "video": {
+          "title": "Video",
+          "hint": "MP4, MOV, WebM or MKV, up to 2 GB.",
+          "add": "Upload video",
+          "uploading": "Uploading video…",
+          "remove": "Discard the uploaded video",
+          "unnamed": "Untitled video",
+          "typeError": "This file type is not accepted. Choose MP4, MOV, WebM or MKV.",
+          "sizeError": "The video can be at most 2 GB.",
+          "required": "Upload the video before publishing, or remove the block."
+        },
+        "audio": {
+          "title": "Audio",
+          "hint": "MP3, M4A, AAC, OGG or WAV, up to 2 GB.",
+          "add": "Upload audio",
+          "uploading": "Uploading audio…",
+          "remove": "Discard the uploaded audio",
+          "unnamed": "Untitled audio",
+          "typeError": "This file type is not accepted. Choose MP3, M4A, AAC, OGG or WAV.",
+          "sizeError": "The audio can be at most 2 GB.",
+          "required": "Upload the audio before publishing, or remove the block."
+        }
+      },
+      "poll": {
+        "title": "Poll",
+        "hint": "Readers with full access can vote. Each option can be up to 160 characters.",
+        "optionLabel": "Option {index, number}",
+        "optionPlaceholder": "Option {index, number}",
+        "removeOption": "Remove option {index, number}",
+        "addOption": "Add option",
+        "multiSelect": "Allow choosing more than one option",
+        "closesAt": "Voting closes {date}.",
+        "lockedNote": "Once someone votes, the poll can no longer be edited.",
+        "required": "A poll needs at least {count, number} options to publish."
+      }
     }
   },
   "postReader": {

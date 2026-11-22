@@ -49,6 +49,9 @@ export function studioPost(overrides: Partial<StudioPost> = {}): StudioPost {
     dateEarly: null,
     images: [],
     attachments: [],
+    videos: [],
+    audios: [],
+    poll: null,
     ...overrides,
   }
 }

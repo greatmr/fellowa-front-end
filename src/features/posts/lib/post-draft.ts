@@ -1,8 +1,12 @@
 import { codePointLength, splitAtCodePoint } from '@/features/posts/lib/paywall'
 import type {
+  MediaUploadKind,
   PostFile,
+  PostMedia,
   PostStatusInput,
   PostVisibilityPayload,
+  PostWriteKind,
+  PostWritePayload,
   SavePostInput,
   StudioPost,
 } from '@/features/posts/types/post'
@@ -19,6 +23,25 @@ export type DraftImage = PostFile & {
   attached: boolean
 }
 
+/** The one media block a post holds (FQ-30: one media type per post). */
+export type PostMediaKind = 'image' | MediaUploadKind | 'poll'
+
+export type DraftUpload = PostMedia & {
+  /** Already on this post, or finalized and waiting for the save to claim it. */
+  attached: boolean
+}
+
+export type DraftPoll = {
+  /** As typed; blank ones are dropped when saving. */
+  options: string[]
+  multiSelect: boolean
+  /** The stored closing time, resent untouched (the studio does not edit it). */
+  closesAt: string | null
+}
+
+/** Options a published poll needs ([PROP]: the API takes any number). */
+export const MIN_POLL_OPTIONS = 2
+
 export type PostDraft = {
   title: string
   /** The body, or the part before the paywall divider. */
@@ -28,14 +51,61 @@ export type PostDraft = {
   access: 'free' | 'tiers'
   tiers: TierSelection
   images: DraftImage[]
+  /** `null`: a text post, or a new post whose block is not chosen yet. */
+  media: PostMediaKind | null
+  /** The video or audio, once finalized. */
+  upload: DraftUpload | null
+  poll: DraftPoll
 }
 
 export type SaveIntent = 'publish' | 'draft'
-export type DraftProblem = 'title' | 'tiers'
+export type DraftProblem = 'title' | 'tiers' | 'media' | 'poll'
 
-/** The composer edits text and image posts; other types are FE-POST-02. */
+/** Every type the composer writes; `link` has no composer (no design). */
 export function isEditableType(type: string): boolean {
-  return type === 'text' || type === 'image'
+  return ['text', 'image', 'video', 'audio', 'poll'].includes(type)
+}
+
+function mediaKindOf(type: string): PostMediaKind | null {
+  return type === 'image' ||
+    type === 'video' ||
+    type === 'audio' ||
+    type === 'poll'
+    ? type
+    : null
+}
+
+/** The saved video or audio; a post has one (FQ-30), the first is shown. */
+export function savedUpload(post: StudioPost): DraftUpload | null {
+  const media = post.type === 'audio' ? post.audios[0] : post.videos[0]
+  return media && (post.type === 'video' || post.type === 'audio')
+    ? { ...media, attached: true }
+    : null
+}
+
+export function emptyPoll(): DraftPoll {
+  return {
+    options: Array.from({ length: MIN_POLL_OPTIONS }, () => ''),
+    multiSelect: false,
+    closesAt: null,
+  }
+}
+
+function pollFromPost(post: StudioPost): DraftPoll {
+  if (!post.poll) return emptyPoll()
+  const options = post.poll.options.map((option) => option.label)
+  // A draft may have been saved with fewer; the editor always shows two.
+  while (options.length < MIN_POLL_OPTIONS) options.push('')
+  return {
+    options,
+    multiSelect: post.poll.multiSelect,
+    closesAt: post.poll.closesAt,
+  }
+}
+
+/** The options a save sends: trimmed, blanks dropped. */
+export function pollOptionsOf(poll: DraftPoll): string[] {
+  return poll.options.map((option) => option.trim()).filter(Boolean)
 }
 
 export function emptyPostDraft(): PostDraft {
@@ -46,6 +116,9 @@ export function emptyPostDraft(): PostDraft {
     access: 'free',
     tiers: { mode: 'pick', ids: [] },
     images: [],
+    media: null,
+    upload: null,
+    poll: emptyPoll(),
   }
 }
 
@@ -61,6 +134,9 @@ export function draftFromPost(post: StudioPost): PostDraft {
     access: post.isPublic ? 'free' : 'tiers',
     tiers: post.isPublic ? { mode: 'pick', ids: [] } : { mode: 'keep' },
     images: post.images.map((image) => ({ ...image, attached: true })),
+    media: mediaKindOf(post.type),
+    upload: savedUpload(post),
+    poll: pollFromPost(post),
   }
 }
 
@@ -81,6 +157,15 @@ export function draftProblems(
     draft.tiers.ids.length === 0
   ) {
     problems.push('tiers')
+  }
+  if (intent === 'publish') {
+    if ((draft.media === 'video' || draft.media === 'audio') && !draft.upload)
+      problems.push('media')
+    if (
+      draft.media === 'poll' &&
+      pollOptionsOf(draft.poll).length < MIN_POLL_OPTIONS
+    )
+      problems.push('poll')
   }
   return problems
 }
@@ -126,13 +211,59 @@ function tierIdsFor(draft: PostDraft): number[] | undefined {
   return draft.tiers.mode === 'keep' ? undefined : draft.tiers.ids
 }
 
+/**
+ * The route a save goes to. A post created through a media route with no
+ * media yet reads `text` (api.md), so an empty image block saves as text.
+ */
+function writeKindOf(
+  draft: PostDraft,
+  saved: StudioPost | null
+): PostWriteKind {
+  if (
+    draft.media === 'poll' ||
+    draft.media === 'video' ||
+    draft.media === 'audio'
+  )
+    return draft.media
+  return draft.images.length > 0 || saved?.type === 'image' ? 'image' : 'text'
+}
+
+/** The route's own keys (`Create{Image,Video,Audio,Poll}ContentDto`). */
+function mediaPayload(
+  kind: PostWriteKind,
+  draft: PostDraft
+): Partial<PostWritePayload> {
+  switch (kind) {
+    case 'image':
+      return { imageIds: draft.images.map((image) => image.id) }
+    case 'video':
+    case 'audio': {
+      // Only a new upload: the route attaches, it never replaces, so resending
+      // the saved id would do nothing and a second id would add a second file.
+      const upload = draft.upload
+      if (!upload || upload.attached) return {}
+      return kind === 'video' ? { videoId: upload.id } : { audioId: upload.id }
+    }
+    case 'poll':
+      return {
+        options: pollOptionsOf(draft.poll).map((option) => ({ option })),
+        typeSelect: draft.poll.multiSelect,
+        // A PUT clears the closing time when it is left out.
+        ...(draft.poll.closesAt
+          ? { endDataPublished: draft.poll.closesAt }
+          : {}),
+      }
+    case 'text':
+      return {}
+  }
+}
+
 export function saveInputFromDraft(
   draft: PostDraft,
   intent: SaveIntent,
   saved: StudioPost | null
 ): SavePostInput {
-  const kind =
-    draft.images.length > 0 || saved?.type === 'image' ? 'image' : 'text'
+  const kind = writeKindOf(draft, saved)
   const tireIds = tierIdsFor(draft)
   return {
     ...(saved ? { postId: saved.id } : {}),
@@ -143,9 +274,7 @@ export function saveInputFromDraft(
       paywallPosition: paywallPositionOf(draft),
       ...(tireIds ? { tireIds } : {}),
       visibility: visibilityFor(draft.access === 'free', intent, saved),
-      ...(kind === 'image'
-        ? { imageIds: draft.images.map((image) => image.id) }
-        : {}),
+      ...mediaPayload(kind, draft),
     },
   }
 }

@@ -9,6 +9,8 @@ export type PostErrorKey =
   | 'tierNotFound'
   | 'paywallRequired'
   | 'imageNotFound'
+  | 'mediaNotFound'
+  | 'pollLocked'
   | 'network'
 
 /** `USER_ALIAS_REQUIRED`: the caller has no page yet; a notice, not a line. */
@@ -27,6 +29,11 @@ export function postErrorKey(error: ApiError): PostErrorKey {
       return 'paywallRequired'
     case 'CONTENT_IMAGE_NOT_FOUND':
       return 'imageNotFound'
+    case 'CONTENT_VIDEO_NOT_FOUND':
+    case 'CONTENT_AUDIO_NOT_FOUND':
+      return 'mediaNotFound'
+    case 'CONTENT_POLL_LOCKED':
+      return 'pollLocked'
     case 'CONTENT_NOT_FOUND':
       return 'notFound'
   }

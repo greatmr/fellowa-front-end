@@ -168,11 +168,117 @@ describe('statusInput', () => {
   })
 })
 
-it('edits text and image posts only', () => {
-  expect(['text', 'image', 'video', 'poll'].map(isEditableType)).toEqual([
-    true,
-    true,
-    false,
-    false,
-  ])
+it('edits every type the composer writes, and not links', () => {
+  expect(
+    ['text', 'image', 'video', 'audio', 'poll', 'link'].map(isEditableType)
+  ).toEqual([true, true, true, true, true, false])
+})
+
+describe('video, audio and poll posts (FE-POST-02)', () => {
+  it('creates a video post with the finalized upload id', () => {
+    const input = saveInputFromDraft(
+      draft({
+        media: 'video',
+        upload: { id: 70, name: 'clip', attached: false },
+      }),
+      'publish',
+      null
+    )
+    expect(input.kind).toBe('video')
+    expect(input.payload.videoId).toBe(70)
+    expect(input.payload).not.toHaveProperty('imageIds')
+  })
+
+  it('sends an audio id only for a new upload, never the saved one again', () => {
+    const saved = studioPost({
+      type: 'audio',
+      audios: [{ id: 81, name: 'ep1.mp3' }],
+    })
+    const fromSaved = draftFromPost(saved)
+    expect(fromSaved.media).toBe('audio')
+    expect(fromSaved.upload).toEqual({
+      id: 81,
+      name: 'ep1.mp3',
+      attached: true,
+    })
+    const input = saveInputFromDraft(fromSaved, 'publish', saved)
+    expect(input).toMatchObject({ postId: 12, kind: 'audio' })
+    expect(input.payload).not.toHaveProperty('audioId')
+  })
+
+  it('adds a video to a saved text post through the video route', () => {
+    const saved = studioPost()
+    const input = saveInputFromDraft(
+      {
+        ...draftFromPost(saved),
+        media: 'video',
+        upload: { id: 5, name: null, attached: false },
+      },
+      'draft',
+      saved
+    )
+    expect(input).toMatchObject({ postId: 12, kind: 'video' })
+    expect(input.payload.videoId).toBe(5)
+  })
+
+  it('sends trimmed poll options without blanks, the choice mode, and resends the closing time', () => {
+    const saved = studioPost({
+      type: 'poll',
+      poll: {
+        multiSelect: true,
+        closesAt: '2026-12-01T10:00:00.000Z',
+        options: [
+          { id: 1, label: 'بله' },
+          { id: 2, label: 'خیر' },
+        ],
+      },
+    })
+    const fromSaved = draftFromPost(saved)
+    expect(fromSaved.poll.options).toEqual(['بله', 'خیر'])
+    const input = saveInputFromDraft(
+      {
+        ...fromSaved,
+        poll: { ...fromSaved.poll, options: [' بله ', '', 'خیر', 'شاید'] },
+      },
+      'publish',
+      saved
+    )
+    expect(input.kind).toBe('poll')
+    expect(input.payload).toMatchObject({
+      options: [{ option: 'بله' }, { option: 'خیر' }, { option: 'شاید' }],
+      typeSelect: true,
+      endDataPublished: '2026-12-01T10:00:00.000Z',
+    })
+  })
+
+  it('creates a poll with no closing time', () => {
+    const input = saveInputFromDraft(
+      draft({
+        media: 'poll',
+        poll: { options: ['a', 'b'], multiSelect: false, closesAt: null },
+      }),
+      'publish',
+      null
+    )
+    expect(input.payload).not.toHaveProperty('endDataPublished')
+    expect(input.payload.typeSelect).toBe(false)
+  })
+
+  it('saves an empty image block as text, as the API would read it', () => {
+    expect(
+      saveInputFromDraft(draft({ media: 'image' }), 'draft', null).kind
+    ).toBe('text')
+  })
+
+  it('needs the file and two options to publish, not to save a draft', () => {
+    const video = draft({ media: 'video' })
+    expect(draftProblems(video, 'publish')).toEqual(['media'])
+    expect(draftProblems(video, 'draft')).toEqual([])
+    const poll = draft({
+      media: 'poll',
+      poll: { options: ['one', '  '], multiSelect: false, closesAt: null },
+    })
+    expect(draftProblems(poll, 'publish')).toEqual(['poll'])
+    expect(draftProblems(poll, 'draft')).toEqual([])
+  })
 })
