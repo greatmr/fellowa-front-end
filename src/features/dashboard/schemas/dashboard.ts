@@ -5,6 +5,7 @@ import type {
   DashboardPost,
 } from '@/features/dashboard/types/dashboard'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { postBodyFromApi } from '@/lib/post-body'
 import { httpUrlOrNull } from '@/lib/url'
 
 export class InvalidDashboardResponseError extends Error {
@@ -59,22 +60,6 @@ const postsSchema = z.array(
 const trimmedOrNull = (value: string | null | undefined) =>
   value?.trim() ? value.trim() : null
 
-/** Code points of the body kept for the dashboard's two-line excerpt. */
-export const EXCERPT_LENGTH = 200
-
-/**
- * The start of the body, cut in code points so Persian text and emoji are
- * not split into invalid text; the rest of the body never reaches the page.
- */
-function excerptOf(text: string | null | undefined): string | null {
-  const trimmed = trimmedOrNull(text)
-  if (!trimmed) return null
-  const points = Array.from(trimmed)
-  return points.length > EXCERPT_LENGTH
-    ? `${points.slice(0, EXCERPT_LENGTH).join('').trimEnd()}…`
-    : trimmed
-}
-
 export function parseProfile(value: unknown): {
   username: string | null
   isPublished: boolean
@@ -115,15 +100,13 @@ export function parseDashboardPosts(value: unknown): DashboardPost[] {
   return parseEnvelope(postsSchema, value, invalid).map((post) => ({
     id: post.id,
     title: post.title,
-    // Never markup: the server's excerpt, or a plain body itself. An html
-    // body is not stripped here (FE-POST-03).
-    excerpt: excerptOf(
-      post.excerpt !== undefined
-        ? post.excerpt
-        : (post.bodyFormat ?? 'plain') === 'plain'
-          ? post.text
-          : null
+    // The API string as it came: an html body was sanitised by the server.
+    // A blank body is none.
+    body: postBodyFromApi(
+      post.text?.trim() ? post.text : null,
+      post.bodyFormat ?? 'plain'
     ),
+    excerpt: trimmedOrNull(post.excerpt),
     publishedAt: post.visibility.datePublished ?? null,
     createdAt: post.createdAt,
     audience: !post.visibility.type

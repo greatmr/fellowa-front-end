@@ -775,7 +775,28 @@
         "errorTitle": "Your posts couldn't be loaded",
         "errorBody": "Something went wrong while loading your posts. Try again.",
         "retry": "Try again",
-        "seeAll": "All posts"
+        "seeAll": "All posts",
+        "sortLabel": "Sort posts",
+        "sort": {
+          "newest": "Newest",
+          "oldest": "Oldest"
+        },
+        "filterLabel": "Filter posts",
+        "filter": {
+          "all": "All posts",
+          "free": "Free only",
+          "members": "Members only"
+        },
+        "searchLabel": "Search posts",
+        "searchPlaceholder": "Search posts…",
+        "clearSearch": "Clear search",
+        "noMatchTitle": "No posts match",
+        "noMatchBody": "Try another word or filter.",
+        "clearFilters": "Clear filters",
+        "readMore": "Read in the editor",
+        "share": "Share",
+        "shareCopied": "Post link copied.",
+        "shareFailed": "Couldn't copy the post link."
       },
       "later": "Later",
       "editPage": "Edit page",

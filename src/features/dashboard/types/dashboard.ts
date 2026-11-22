@@ -1,3 +1,5 @@
+import type { PostBody } from '@/lib/post-body'
+
 /**
  * The five setup steps of CP-04, in the order the checklist shows them
  * (presentation `StudioChecklistCard` @ d843c3b).
@@ -44,7 +46,15 @@ export type CreatorIdentity = {
 export type DashboardPost = {
   id: number
   title: string
-  /** The start of the body (`text`, owner FULL), trimmed and cut; `null` when there is none. */
+  /**
+   * The whole body (`text` with its `bodyFormat`, FE-DASH-04 row 2). The
+   * owner reads their own posts at FULL; `null` when there is none.
+   */
+  body: PostBody | null
+  /**
+   * The server's plain-text start of the body (BE-CONT-14, owner reads
+   * only), trimmed; searched, never shown. `null` when absent.
+   */
   excerpt: string | null
   /** `null` for a draft: no route leaves a published post without a date. */
   publishedAt: string | null

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   InvalidDashboardResponseError,
-  EXCERPT_LENGTH,
   parseDashboardPosts,
   parseHasPayoutDetails,
   parseHasRows,
@@ -131,6 +130,10 @@ describe('parseDashboardPosts', () => {
             type: 'text',
             title: 'Draft',
             text: 'Body',
+            bodyFormat: 'plain',
+            excerpt: 'Body',
+            creatorId: 42,
+            collectionIds: [],
             visibility: { contentId: 3, type: false, datePublished: null },
             createdAt: '2026-11-21T08:00:00.000Z',
             access: 'FULL',
@@ -141,6 +144,7 @@ describe('parseDashboardPosts', () => {
       {
         id: 3,
         title: 'Draft',
+        body: { format: 'plain', text: 'Body' },
         excerpt: 'Body',
         publishedAt: null,
         createdAt: '2026-11-21T08:00:00.000Z',
@@ -149,7 +153,8 @@ describe('parseDashboardPosts', () => {
     ])
   })
 
-  it('trims the body into the excerpt, and has none for an empty or missing body', () => {
+  it('keeps the whole plain body, and has none for an empty or missing one', () => {
+    const long = 'line one\nline two '.repeat(40)
     const item = (text: string | null | undefined) => ({
       id: 5,
       title: 'Post',
@@ -159,47 +164,36 @@ describe('parseDashboardPosts', () => {
     })
     expect(
       parseDashboardPosts(
-        envelope([item('  Hello  '), item('   '), item(null), item(undefined)])
-      ).map((post) => post.excerpt)
-    ).toEqual(['Hello', null, null, null])
+        envelope([item(long), item('   '), item(null), item(undefined)])
+      ).map((post) => post.body)
+    ).toEqual([{ format: 'plain', text: long }, null, null, null])
   })
 
-  it('uses the server’s excerpt for an html body and never shows its markup (BE-CONT-14)', () => {
+  it('keeps an html body as the API sent it, with the server’s excerpt (BE-CONT-14)', () => {
+    const html = '<h2>Title</h2><p>one <strong>two</strong></p>'
     const item = (over: Record<string, unknown>) => ({
       id: 7,
       title: 'Rich',
-      text: '<h2>Title</h2><p>one <strong>two</strong></p>',
+      text: html,
       bodyFormat: 'html',
       createdAt: '2026-11-21T08:00:00.000Z',
       visibility: { contentId: 7, type: true, datePublished: null },
       ...over,
     })
-    expect(
-      parseDashboardPosts(
-        envelope([
-          item({ excerpt: 'Title one two' }),
-          // An html body with no excerpt (not the contract) shows none.
-          item({}),
-          item({ bodyFormat: 'plain', text: 'plain', excerpt: 'plain' }),
-        ])
-      ).map((post) => post.excerpt)
-    ).toEqual(['Title one two', null, 'plain'])
-  })
-
-  it('cuts a long body to EXCERPT_LENGTH code points without splitting a character', () => {
-    const body = '😀'.repeat(EXCERPT_LENGTH + 50)
-    const [post] = parseDashboardPosts(
+    const [rich, noExcerpt, plain] = parseDashboardPosts(
       envelope([
-        {
-          id: 6,
-          title: 'Long',
-          text: body,
-          createdAt: '2026-11-21T08:00:00.000Z',
-          visibility: { contentId: 6, type: true, datePublished: null },
-        },
+        item({ excerpt: '  Title one two ' }),
+        item({}),
+        item({ bodyFormat: 'plain', text: '<b>not markup</b>', excerpt: null }),
       ])
     )
-    expect(post?.excerpt).toBe(`${'😀'.repeat(EXCERPT_LENGTH)}…`)
+    expect(rich).toMatchObject({
+      body: { format: 'html', html },
+      excerpt: 'Title one two',
+    })
+    expect(noExcerpt?.excerpt).toBeNull()
+    // A plain body is text even when it looks like markup.
+    expect(plain?.body).toEqual({ format: 'plain', text: '<b>not markup</b>' })
   })
 
   it('tells a public post with a paywall from a fully public one', () => {

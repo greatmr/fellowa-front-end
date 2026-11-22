@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ownPageHref, publicPageAddress } from './public-address'
+import { ownPageHref, postReaderUrl, publicPageAddress } from './public-address'
 
 describe('publicPageAddress', () => {
   it('joins the origin and /creators/:id, without a doubled slash', () => {
@@ -14,6 +14,19 @@ describe('publicPageAddress', () => {
     expect(publicPageAddress(undefined, 42).url).toBeNull()
     expect(publicPageAddress('   ', 42).url).toBeNull()
     expect(publicPageAddress(undefined, 42).path).toBe('/creators/42')
+  })
+})
+
+describe('postReaderUrl', () => {
+  it('is the reader address under the page (/creators/:id/posts/:postId)', () => {
+    const { url } = publicPageAddress('https://fellowa.test/', 42)
+    expect(postReaderUrl(url, 9)).toBe(
+      'https://fellowa.test/creators/42/posts/9'
+    )
+  })
+
+  it('has none without an absolute page address', () => {
+    expect(postReaderUrl(null, 9)).toBeNull()
   })
 })
 

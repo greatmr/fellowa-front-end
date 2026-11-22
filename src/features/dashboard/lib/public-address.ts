@@ -14,6 +14,17 @@ export function publicPageAddress(
 }
 
 /**
+ * A post's reader address on the public page (`/creators/:id/posts/:postId`),
+ * absolute from the page's own `url`; `null` when that is `null`.
+ */
+export function postReaderUrl(
+  pageUrl: string | null,
+  postId: number
+): string | null {
+  return pageUrl === null ? null : `${pageUrl}/posts/${postId}`
+}
+
+/**
  * Where "View my page" goes (owner option a, 2026-11-22): the public page
  * only once it is published, since the backend answers 404 for an
  * unpublished one; the dashboard, where publishing is offered, until then.
