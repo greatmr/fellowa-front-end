@@ -49,18 +49,20 @@ function parse(file: string): ts.SourceFile {
   return source
 }
 
-/** Whether the module's directive prologue holds `'use client'`. */
-function isClientModule(file: string): boolean {
+/** Whether the module's directive prologue holds `directive`. */
+function hasDirective(file: string, directive: string): boolean {
   for (const statement of parse(file).statements) {
     if (
       !ts.isExpressionStatement(statement) ||
       !ts.isStringLiteral(statement.expression)
     )
       return false
-    if (statement.expression.text === 'use client') return true
+    if (statement.expression.text === directive) return true
   }
   return false
 }
+
+const isClientModule = (file: string) => hasDirective(file, 'use client')
 
 /** Resolves `@/…` and relative specifiers to a source file; packages → null. */
 function resolveImport(from: string, specifier: string): string | null {
@@ -82,7 +84,8 @@ function resolveImport(from: string, specifier: string): string | null {
 /** A component reference is safe to pass across: PascalCase, not CONSTANT. */
 const isComponentName = (name: string) => /^[A-Z](?=.*[a-z])/.test(name)
 
-type Edge = { target: string; values: string[] }
+/** `target` is null for a local specifier that resolves to no file. */
+type Edge = { specifier: string; target: string | null; values: string[] }
 
 /** The value names a module imports or re-exports from each local module. */
 function edges(file: string): Edge[] {
@@ -95,12 +98,14 @@ function edges(file: string): Edge[] {
       !ts.isStringLiteral(statement.moduleSpecifier)
     )
       continue
-    const target = resolveImport(file, statement.moduleSpecifier.text)
-    if (!target) continue
+    const specifier = statement.moduleSpecifier.text
+    if (!specifier.startsWith('@/') && !specifier.startsWith('.')) continue
+    const target = resolveImport(file, specifier)
     const values: string[] = []
     if (ts.isImportDeclaration(statement)) {
       const clause = statement.importClause
       if (clause && !clause.isTypeOnly) {
+        if (clause.name) values.push('default')
         const bindings = clause.namedBindings
         if (bindings && ts.isNamespaceImport(bindings)) values.push('* as')
         if (bindings && ts.isNamedImports(bindings))
@@ -117,19 +122,40 @@ function edges(file: string): Edge[] {
           if (!element.isTypeOnly)
             values.push((element.propertyName ?? element.name).text)
     }
-    result.push({ target, values })
+    result.push({ specifier, target, values })
   }
   return result
 }
 
-function findViolations(): string[] {
-  const queue = walk(join(SRC, 'app')).filter((file) => !isClientModule(file))
+/**
+ * Server entry points: every non-client file under `src/app`, every
+ * `'use server'` actions module (imported mostly from client components, so
+ * the walk would not reach it), the proxy and next-intl's request config.
+ */
+function serverEntries(): string[] {
+  const app = walk(join(SRC, 'app')).filter((file) => !isClientModule(file))
+  const actions = walk(SRC).filter(
+    (file) => !isClientModule(file) && hasDirective(file, 'use server')
+  )
+  const loaded = ['proxy.ts', 'i18n/request.ts']
+    .map((path) => join(SRC, path))
+    .filter((path) => existsSync(path))
+  return [...new Set([...app, ...actions, ...loaded])]
+}
+
+function findViolations(entries: string[]): string[] {
+  const queue = [...entries]
   const seen = new Set(queue)
   const violations: string[] = []
   while (queue.length > 0) {
     const file = queue.shift() as string
-    for (const { target, values } of edges(file)) {
-      if (isClientModule(target)) {
+    for (const { specifier, target, values } of edges(file)) {
+      if (!target) {
+        // An unresolved local import would hide its whole subtree.
+        violations.push(
+          `${relative(ROOT, file)} imports \`${specifier}\`, which this guard cannot resolve`
+        )
+      } else if (isClientModule(target)) {
         for (const name of values)
           if (name !== 'default' && !isComponentName(name))
             violations.push(
@@ -146,7 +172,17 @@ function findViolations(): string[] {
 
 describe('server → client module boundary', () => {
   it('server modules take only components and types from client modules', () => {
-    expect(findViolations()).toEqual([])
+    expect(findViolations(serverEntries())).toEqual([])
+  })
+
+  it('reports value, namespace, star and unresolved imports from a fixture', () => {
+    const fixtures = join(ROOT, 'test/fixtures/rsc-boundary')
+    expect(findViolations([join(fixtures, 'server-page.tsx')])).toEqual([
+      'test/fixtures/rsc-boundary/server-page.tsx imports `./missing`, which this guard cannot resolve',
+      'test/fixtures/rsc-boundary/server-page.tsx imports `* as` from client module test/fixtures/rsc-boundary/client-tabs.tsx',
+      'test/fixtures/rsc-boundary/server-page.tsx imports `tabs` from client module test/fixtures/rsc-boundary/client-tabs.tsx',
+      'test/fixtures/rsc-boundary/barrel.ts imports `*` from client module test/fixtures/rsc-boundary/client-tabs.tsx',
+    ])
   })
 
   it('detects the directive and component names it relies on', () => {
