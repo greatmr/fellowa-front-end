@@ -8,7 +8,7 @@ import {
   type Ref,
 } from 'react'
 import Image from 'next/image'
-import { ImageIcon, X } from 'lucide-react'
+import { ImageIcon, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
@@ -62,6 +62,9 @@ export function PostImagesField({
   const upload = useUploadPostImageMutation(viewerId)
   const remove = useDeletePostImageMutation(viewerId)
   const [problem, setProblem] = useState<Problem>(null)
+  // Set in the pick itself, so the loader shows in the same render as the
+  // pick rather than once the mutation observer reports `isPending`.
+  const [uploading, setUploading] = useState(false)
 
   function failed(error: ApiError, during: 'upload' | 'delete') {
     const problem = uploadProblem(error)
@@ -88,14 +91,20 @@ export function PostImagesField({
 
   function start(file: File) {
     // A second mutate would drop the first upload's callbacks.
-    if (upload.isPending) return
+    if (uploading || upload.isPending) return
     const refused = fileProblem(file, POST_IMAGE_TYPES, MAX_POST_IMAGE_BYTES)
     setProblem(refused)
     if (refused) return
+    setUploading(true)
     upload.mutate(file, {
-      onSuccess: (image) =>
-        onUpdate((current) => [...current, { ...image, attached: false }]),
-      onError: (error) => failed(error, 'upload'),
+      onSuccess: (image) => {
+        setUploading(false)
+        onUpdate((current) => [...current, { ...image, attached: false }])
+      },
+      onError: (error) => {
+        setUploading(false)
+        failed(error, 'upload')
+      },
     })
   }
 
@@ -128,6 +137,36 @@ export function PostImagesField({
         </h2>
         <p className="mt-1 text-label text-muted-foreground">{t('hint')}</p>
       </div>
+      {/* The upload area comes first, as in the design's progress block
+          (`ComposerView.tsx` `insertMediaBlock`); uploaded images and their
+          delete buttons follow it. */}
+      <input
+        ref={input}
+        type="file"
+        accept={POST_IMAGE_TYPES.join(',')}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        data-testid="post-image-input"
+        onChange={choose}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        className="justify-self-start"
+        disabled={uploading}
+        onClick={() => input.current?.click()}
+      >
+        {uploading ? (
+          <Loader2
+            aria-hidden
+            className="animate-spin motion-reduce:animate-none"
+          />
+        ) : (
+          <ImageIcon aria-hidden />
+        )}
+        {uploading ? t('uploading') : t('add')}
+      </Button>
       {images.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((image, index) => (
@@ -169,26 +208,6 @@ export function PostImagesField({
           ))}
         </ul>
       ) : null}
-      <input
-        ref={input}
-        type="file"
-        accept={POST_IMAGE_TYPES.join(',')}
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
-        data-testid="post-image-input"
-        onChange={choose}
-      />
-      <Button
-        type="button"
-        variant="outline"
-        className="justify-self-start"
-        disabled={upload.isPending}
-        onClick={() => input.current?.click()}
-      >
-        <ImageIcon aria-hidden />
-        {upload.isPending ? t('uploading') : t('add')}
-      </Button>
       {hasPending ? (
         <p className="text-caption text-muted-foreground">{t('pendingNote')}</p>
       ) : null}

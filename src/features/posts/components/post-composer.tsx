@@ -479,19 +479,6 @@ export function PostComposer({ viewerId, saved }: Props) {
               </section>
             ) : (
               <div className="grid gap-2">
-                {canChooseMedia ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={busy}
-                    className="justify-self-end"
-                    onClick={() => chooseMedia(null)}
-                  >
-                    <X aria-hidden />
-                    {t(`mediaChoice.remove.${draft.media}`)}
-                  </Button>
-                ) : null}
                 {draft.media === 'image' ? (
                   <PostImagesField
                     viewerId={viewerId}
@@ -527,6 +514,21 @@ export function PostComposer({ viewerId, saved }: Props) {
                     ref={mediaBlock}
                   />
                 )}
+                {/* After the block, so the upload area and its progress come
+                    first and the remove chip never sits ahead of them. */}
+                {canChooseMedia ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    className="justify-self-end"
+                    onClick={() => chooseMedia(null)}
+                  >
+                    <X aria-hidden />
+                    {t(`mediaChoice.remove.${draft.media}`)}
+                  </Button>
+                ) : null}
               </div>
             )}
             {fileKinds.map((kind) => (
