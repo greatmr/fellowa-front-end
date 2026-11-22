@@ -3,6 +3,7 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 import { legacyAuthRedirects } from './src/features/auth/lib/legacy-routes'
 import { SERVER_ACTION_BODY_LIMIT_BYTES } from './src/features/tiers/lib/cover-limits'
+import { retiredPanelRedirects } from './src/lib/retired-routes'
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -35,7 +36,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
   },
   async redirects() {
-    return legacyAuthRedirects()
+    return [...legacyAuthRedirects(), ...retiredPanelRedirects()]
   },
 }
 
