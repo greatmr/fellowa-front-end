@@ -1,5 +1,5 @@
 import type { DashboardPost } from '@/features/dashboard/types/dashboard'
-import type { PostBody } from '@/lib/post-body'
+import { htmlToSearchText, type PostBody } from '@/lib/post-body'
 
 /** How many of the matching posts the dashboard lists ([PROP]; `/posts` has all). */
 export const RECENT_POSTS_LIMIT = 5
@@ -36,15 +36,10 @@ export function postDate(post: DashboardPost): string {
   return post.publishedAt ?? post.createdAt
 }
 
-/** An html body's text for matching and estimating only; never rendered. */
-function htmlText(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ')
-}
-
 /**
  * Title, the server's excerpt and the body's text. An html body is matched
  * on its text with the tags removed, so a word past the excerpt's 200 code
- * points is still found and its markup never is. Entities stay as written.
+ * points is still found and its markup never is (`htmlToSearchText`).
  */
 function searchableText(post: DashboardPost): string {
   const body =
@@ -52,7 +47,7 @@ function searchableText(post: DashboardPost): string {
       ? ''
       : post.body.format === 'plain'
         ? post.body.text
-        : htmlText(post.body.html)
+        : htmlToSearchText(post.body.html)
   return [post.title, post.excerpt ?? '', body].join('\n')
 }
 
@@ -91,8 +86,8 @@ const LONG_BODY_CODE_POINTS = 400
 /**
  * Whether a body is long enough to be clamped, so the card offers the rest
  * ([PROP]). An estimate from the text, never a measurement: lines, blocks
- * and length, erring long (a paragraph in a list item counts twice, an
- * entity as its spelling). An html body is inspected as a string only.
+ * and length, erring long (a paragraph in a list item counts twice). An
+ * html body is inspected as a string only.
  */
 export function isLongBody(body: PostBody): boolean {
   if (body.format === 'plain') {
@@ -103,13 +98,6 @@ export function isLongBody(body: PostBody): boolean {
   }
   const blocks =
     body.html.match(/<\/(?:p|li|h2|h3|blockquote)>|<br\s*\/?>/gi)?.length ?? 0
-  const text = htmlText(body.html).replace(/\s+/g, ' ').trim()
+  const text = htmlToSearchText(body.html)
   return blocks > CLAMP_LINES || Array.from(text).length > LONG_BODY_CODE_POINTS
-}
-
-export function isOneOf<T extends string>(
-  list: readonly T[],
-  value: string
-): value is T {
-  return (list as readonly string[]).includes(value)
 }

@@ -1,4 +1,5 @@
 import type { OwnerPost } from '@/features/posts/types/post'
+import { htmlToSearchText } from '@/lib/post-body'
 
 /**
  * Tabs, search, access and collection filters and sort, all over the one
@@ -94,7 +95,7 @@ export function filterPosts(
       inCollection(post, filters.collection) &&
       (!query ||
         post.title.toLocaleLowerCase(locale).includes(query) ||
-        searchableText(post).toLocaleLowerCase(locale).includes(query))
+        searchText(post).toLocaleLowerCase(locale).includes(query))
   )
   if (filters.sort === 'title') {
     const collator = new Intl.Collator(locale)
@@ -106,12 +107,21 @@ export function filterPosts(
 }
 
 /**
- * The body as text to search and show. A plain body is text already. An
- * `html` body is never stripped here: the server's `excerpt` (owner reads,
- * BE-CONT-14) is its plain-text start, so a search matches its first 200
- * code points and the title.
+ * The whole body as text to match, never shown. A plain body is text
+ * already; an `html` body is matched on its text with the tags removed
+ * (`htmlToSearchText`), so a word past the excerpt's 200 code points is
+ * found and its markup never is.
  */
-export function searchableText(post: OwnerPost): string {
+export function searchText(post: OwnerPost): string {
+  return post.bodyFormat === 'plain' ? post.text : htmlToSearchText(post.text)
+}
+
+/**
+ * The body as text to show under a row's title. A plain body is text
+ * already; an `html` body shows the server's `excerpt` (owner reads,
+ * BE-CONT-14), its plain-text start.
+ */
+export function previewText(post: OwnerPost): string {
   return post.bodyFormat === 'plain' ? post.text : (post.excerpt ?? '')
 }
 

@@ -6,7 +6,8 @@ import {
   effectiveFilters,
   filterPosts,
   hasActiveFilters,
-  searchableText,
+  previewText,
+  searchText,
   snippetOf,
   tabCounts,
 } from './post-list'
@@ -99,28 +100,67 @@ describe('html bodies in the list (BE-CONT-14 excerpt)', () => {
   const html = ownerPost({
     id: 9,
     title: 'Rich',
-    text: '<p>hidden <strong>markup</strong></p><p>class</p>',
+    text: '<p>hidden <strong>markup</strong></p><p><a href="https://example.com/secret-link">class</a></p>',
     bodyFormat: 'html',
     excerpt: 'hidden markup class',
   })
+  const find = (post: typeof html, query: string) =>
+    ids(filterPosts([post], 'all', { ...defaultListFilters, query }, 'en'))
 
-  it('searches and shows the server’s excerpt, never the markup', () => {
-    expect(searchableText(html)).toBe('hidden markup class')
-    expect(snippetOf(searchableText(html))).toBe('hidden markup class')
-    const find = (query: string) =>
-      ids(filterPosts([html], 'all', { ...defaultListFilters, query }, 'en'))
-    expect(find('markup')).toEqual([9])
-    expect(find('strong')).toEqual([])
-    expect(find('<p>')).toEqual([])
+  it('shows the server’s excerpt, never the markup', () => {
+    expect(previewText(html)).toBe('hidden markup class')
+    expect(snippetOf(previewText(html))).toBe('hidden markup class')
+  })
+
+  it('searches the body’s text, never its tags or attribute values', () => {
+    expect(searchText(html)).toBe('hidden markup class')
+    expect(find(html, 'MARKUP')).toEqual([9])
+    expect(find(html, 'strong')).toEqual([])
+    expect(find(html, '<p>')).toEqual([])
+    expect(find(html, 'href')).toEqual([])
+    expect(find(html, 'example.com')).toEqual([])
+    expect(find(html, 'secret-link')).toEqual([])
+  })
+
+  it('finds a word past the excerpt’s first 200 characters', () => {
+    const deep = ownerPost({
+      id: 10,
+      title: 'Long',
+      text: `<p>${'intro '.repeat(60)}</p><p>the final <em>mixing</em> &amp; mastering</p>`,
+      bodyFormat: 'html',
+      excerpt: 'intro '.repeat(33).trim(),
+    })
+    expect(find(deep, 'mixing')).toEqual([10])
+    expect(find(deep, 'mixing & mastering')).toEqual([10])
+  })
+
+  it('finds Persian text deep in an html body', () => {
+    const fa = ownerPost({
+      id: 11,
+      title: 'فارسی',
+      text: `<p>${'مقدمه '.repeat(60)}</p><p>می‌خواهم <strong>ضبط</strong> کنم</p>`,
+      bodyFormat: 'html',
+      excerpt: 'مقدمه '.repeat(33).trim(),
+    })
+    expect(
+      ids(
+        filterPosts(
+          [fa],
+          'all',
+          { ...defaultListFilters, query: 'می‌خواهم ضبط' },
+          'fa'
+        )
+      )
+    ).toEqual([11])
   })
 
   it('has no snippet for an html body without an excerpt', () => {
-    expect(searchableText({ ...html, excerpt: null })).toBe('')
+    expect(previewText({ ...html, excerpt: null })).toBe('')
   })
 
-  it('keeps searching the whole plain body', () => {
-    expect(searchableText(ownerPost({ text: 'a long plain body' }))).toBe(
-      'a long plain body'
-    )
+  it('keeps searching and showing the whole plain body', () => {
+    const plain = ownerPost({ text: 'a long plain body' })
+    expect(searchText(plain)).toBe('a long plain body')
+    expect(previewText(plain)).toBe('a long plain body')
   })
 })
