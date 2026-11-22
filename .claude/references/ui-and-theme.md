@@ -36,6 +36,7 @@ Procedure: skill `shadcn-ui`. Porting a presentation screen: skill `presentation
 | `success` (+`-foreground`) | money-600 / white | money-600 / white | paid, active, earnings action |
 | `warning` (+`-foreground`) | amber-500 / ink-900 | amber-500 / ink-900 | attention |
 | `inverse` (+`-foreground`) | ink-900 / white | white / ink-900 | the presentation's `dark` button |
+| `inverse-hover` | ink-800 | ink-100 | hover of the `dark` button variant (`.fw-btn-dark:hover`, FE-LAND-03) |
 | `link` | brand-600 | brand-400 | text links (`primary` is too dark as text on the dark page) |
 | `border` / `input` / `ring` | ink-150 / ink-250 / brand-500 | white 8% / white 12% / brand-400 | lines, control borders, focus |
 | `chart-1…5` | brand-600, violet-600, money-500, amber-500, red-500 | the -400 steps | data series |
@@ -81,7 +82,7 @@ Weights as in the presentation: `font-medium` 500, `font-semibold` 600, `font-bo
 ### Radius, shadow, gradient, motion
 
 - `--radius: 0.625rem` → `rounded-sm` 6 · `rounded-md` **8** · `rounded-lg` 10 · `rounded-xl` 14 · `rounded-card` 20. The presentation's dominant `rounded-[8px]` (controls and cards) is `rounded-md`.
-- Shadows: Tailwind defaults (`shadow-xs` is the presentation's workhorse) plus `shadow-soft`, `shadow-panel` (sheets, popovers, floating panels), `shadow-brand` (glow under a primary CTA), `shadow-lift` / `shadow-lift-dark` (interactive-card hover, via `card-tactile`). A filled button's default variant adds `hover:shadow-sm`: a caller that sets its own `shadow-*` also sets the matching `hover:shadow-*`.
+- Shadows: Tailwind defaults (`shadow-xs` is the presentation's workhorse) plus `shadow-soft`, `shadow-panel` (sheets, popovers, floating panels), `shadow-brand` (glow under a primary CTA), `shadow-logo` (the public logo tile, FE-LAND-03), `shadow-lift` / `shadow-lift-dark` (interactive-card hover, via `card-tactile`). A filled button's default variant adds `hover:shadow-sm`: a caller that sets its own `shadow-*` also sets the matching `hover:shadow-*`.
 - Radii: also `rounded-popover` (12px; popovers and the toast).
 - Blur: `backdrop-blur-overlay` (2px, sheet overlay).
 - Gradients: `bg-cover-brand`, `bg-cover-violet`, `bg-cover-mix` (also the logo mark).
@@ -98,7 +99,7 @@ Re-apply these after any `shadcn add --overwrite`.
 
 | File | Delta | Why |
 |---|---|---|
-| `ui/button.tsx` | `font-semibold`; sizes `sm` h-9 `text-label`, `default` h-10, `lg` h-12 `text-subtitle`, `icon` size-10, **+`icon-sm`** size-9; `link` uses `text-link`; **+`inverse`**, **+`success`** variants; base `btn-tactile` instead of `transition-all`; `default` adds `hover:shadow-sm` | presentation `Button` sizes and variants; press feedback @ `efc3a57` (FE-FND-10) |
+| `ui/button.tsx` | `font-semibold`; sizes `sm` h-9 `text-label`, `default` h-10, `lg` h-12 `text-subtitle`, `icon` size-10, **+`icon-sm`** size-9; `link` uses `text-link`; **+`inverse`**, **+`success`**, **+`dark`** variants (`dark`: the inverse surface with the design's `.fw-btn-dark` flat `inverse-hover`, no hover shadow; the public header's CTA, FE-LAND-03); base `btn-tactile` instead of `transition-all`; `default` adds `hover:shadow-sm` | presentation `Button` sizes and variants; press feedback @ `efc3a57` (FE-FND-10) |
 | `ui/badge.tsx` | `px-2.5 text-label font-semibold`; **+tones** `brand violet money amber red neutral` | presentation `Badge` |
 | `ui/input.tsx` | `h-10`; **+`variant`** (cva): `default` (unchanged outline), `filled` (`bg-muted`, transparent border, `bg-card` on focus; dark keeps a `border-input` hairline except while focused or invalid); `data-variant` | presentation `Input`; filled well from `CompleteAccountScreen` @ `01fb04d` (FE-AUTH-06) |
 | `ui/card.tsx` | `rounded-md` (8px), `shadow-xs`; **+`interactive`** prop (`card-tactile cursor-pointer`) | presentation `Card` (`interactive` @ `efc3a57`, FE-FND-10) |
@@ -107,7 +108,7 @@ Re-apply these after any `shadcn add --overwrite`.
 | `ui/dialog.tsx` | **pending FE-FND-08:** still renders English "Close" | — |
 | `ui/sonner.tsx` | defaults `position="bottom-center"`, `duration={3200}`, tone `icons` (lucide `CircleCheck`/`CircleAlert`/`Info`/`TriangleAlert`, tints `money-500`·`red-500`·`brand-400`·`amber-500`; `dark:` `money-600`/`amber-700` for ≥3:1 on the white surface) merged under any caller `icons`; i18n region/close labels; the inverse surface, metrics, focus rings, description, close/cancel colours are in `globals.css` (`html .toaster[data-sonner-toaster] …`) — `richColors` stays an opt-in | presentation `ui/Toast` @ `efc3a57` (FE-FND-06) |
 
-Presentation variant names → ours: `primary`/`pay` → `default` · `dark` → `inverse` · `ghost` (bordered) and `outline` → `outline` · `danger` → `destructive`.
+Presentation variant names → ours: `primary`/`pay` → `default` · `dark` → `dark` (the faithful port: presentation `Button` `dark` hovers to ink-800 / dark-theme ink-100, i.e. `inverse-hover`; `inverse` hovers to `inverse/90`, a drift kept for its existing callers until a follow-up consolidates the two) · `ghost` (bordered) and `outline` → `outline` · `danger` → `destructive`.
 
 ## Dark mode
 

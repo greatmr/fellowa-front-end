@@ -18,16 +18,16 @@ export function LogoGlyph({ className }: { className?: string }) {
  * fdb5f6c). `auth`: the auth frame's larger solid tile, black wordmark and
  * hover lift (presentation `AuthLayout` @ 01fb04d); its hover follows the
  * nearest `group`, the link around it. `public`: the landing header and
- * footer's glowing tile and heavy wordmark (presentation `LandingView`
- * `.fw-logo` @ 798f660).
+ * footer's plain gradient tile, with no glyph, and heavy wordmark
+ * (presentation `LandingView` `.fw-logo` @ d843c3b, FE-LAND-03).
  */
 const logoVariants = {
-  tile: cva('flex items-center justify-center shadow-xs', {
+  tile: cva('flex items-center justify-center', {
     variants: {
       variant: {
-        default: 'size-8 rounded-md bg-cover-mix text-white',
-        auth: 'size-9 rounded-lg bg-primary text-primary-foreground transition-transform motion-safe:group-hover:scale-105',
-        public: 'size-8 rounded-base bg-cover-mix text-white shadow-brand',
+        default: 'size-8 rounded-md bg-cover-mix text-white shadow-xs',
+        auth: 'size-9 rounded-lg bg-primary text-primary-foreground shadow-xs transition-transform motion-safe:group-hover:scale-105',
+        public: 'size-8 rounded-base bg-cover-mix shadow-logo',
       },
     },
     defaultVariants: { variant: 'default' },
@@ -63,7 +63,9 @@ export function Logo({
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span className={logoVariants.tile({ variant })} aria-hidden>
-        <LogoGlyph className={logoVariants.glyph({ variant })} />
+        {variant === 'public' ? null : (
+          <LogoGlyph className={logoVariants.glyph({ variant })} />
+        )}
       </span>
       <span className={logoVariants.wordmark({ variant })}>{t('appName')}</span>
     </span>

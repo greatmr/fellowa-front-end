@@ -21,6 +21,9 @@ const buttonVariants = cva(
         link: 'text-link underline-offset-4 hover:underline',
         inverse:
           'bg-inverse text-inverse-foreground shadow-xs hover:bg-inverse/90',
+        /* The public header's call to action (presentation `.fw-btn-dark` @
+           d843c3b): near-black, flat, no glow; light in the dark theme. */
+        dark: 'bg-inverse text-inverse-foreground shadow-xs hover:bg-inverse-hover',
         success:
           'bg-success text-success-foreground shadow-xs hover:bg-success/90',
       },

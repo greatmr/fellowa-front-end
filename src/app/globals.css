@@ -42,6 +42,7 @@
   --warning-foreground: --theme(--color-ink-900);
   --inverse: --theme(--color-ink-900);
   --inverse-foreground: --theme(--color-white);
+  --inverse-hover: --theme(--color-ink-800);
   --link: --theme(--color-brand-600);
   --border: --theme(--color-ink-150);
   --input: --theme(--color-ink-250);
@@ -90,6 +91,7 @@
   --warning-foreground: --theme(--color-ink-900);
   --inverse: --theme(--color-white);
   --inverse-foreground: --theme(--color-ink-900);
+  --inverse-hover: --theme(--color-ink-100);
   --link: --theme(--color-brand-400);
   --border: --theme(--color-white / 8%);
   --input: --theme(--color-white / 12%);
@@ -138,6 +140,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-inverse: var(--inverse);
   --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-hover: var(--inverse-hover);
   --color-link: var(--link);
   --color-border: var(--border);
   --color-input: var(--input);
