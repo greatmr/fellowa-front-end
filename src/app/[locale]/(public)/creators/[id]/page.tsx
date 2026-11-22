@@ -1,10 +1,8 @@
 import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
 
-import {
-  CreatorPageView,
-  creatorPageTab,
-} from '@/features/creator-page/components/creator-page-view'
+import { CreatorPageView } from '@/features/creator-page/components/creator-page-view'
+import { creatorPageTab } from '@/features/creator-page/lib/tabs'
 import { loadCreatorPage } from '@/features/creator-page/server/load-creator-page'
 
 /**

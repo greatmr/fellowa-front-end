@@ -666,17 +666,17 @@ describe('PostComposer', () => {
       await user.click(
         screen.getByRole('button', { name: c.mediaChoice.image })
       )
+      const onError = (call: number) =>
+        mocks.upload.mock.calls[call]![1]?.onError as (error: ApiError) => void
+      // One upload at a time: the second pick follows the first's failure.
       await user.upload(screen.getByTestId('post-image-input'), png())
-      await user.upload(screen.getByTestId('post-image-input'), png())
-      const [first, second] = mocks.upload.mock.calls.map(
-        (call) => call[1]?.onError as (error: ApiError) => void
-      )
-      act(() => first!(new ApiError({ message: 'x', status: 401 })))
+      act(() => onError(0)(new ApiError({ message: 'x', status: 401 })))
       expect(mocks.toastError).toHaveBeenCalledWith(
         en.posts.errors.sessionExpired
       )
+      await user.upload(screen.getByTestId('post-image-input'), png())
       act(() =>
-        second!(
+        onError(1)(
           new ApiError({
             message: 'x',
             status: 400,
@@ -1317,6 +1317,16 @@ describe('PostComposer', () => {
       await user.upload(picker, new File(['x'], 'a.png', { type: 'image/png' }))
       expect(mocks.upload).toHaveBeenCalledTimes(1)
       expect((mocks.upload.mock.calls[0]![0] as File).name).toBe('a.png')
+      // While it uploads the button is the loader; it adds again after.
+      expect(
+        screen.getByRole('button', { name: f.images.uploading })
+      ).toBeDisabled()
+      act(() =>
+        (mocks.upload.mock.calls[0]![1]?.onSuccess as (i: unknown) => void)({
+          id: 41,
+          url: 'https://cdn.example/a.png',
+        })
+      )
 
       // Adding more goes through the block's own button and input.
       clicked = []
@@ -1352,8 +1362,17 @@ describe('PostComposer', () => {
         })
         // The visible button opens the block's own picker (retry, or a
         // cancelled native dialog).
+        act(() => {
+          const options = mocks.uploadMedia.mock.calls[0]![1]!
+          ;(options.onError as (error: ApiError) => void)(
+            new ApiError({ message: 'x', status: 500 })
+          )
+          ;(options.onSettled as () => void)()
+        })
         clicked = []
-        await user.click(add)
+        await user.click(
+          screen.getByRole('button', { name: f.media[kind].add })
+        )
         expect(clicked).toEqual([screen.getByTestId(`post-${kind}-input`)])
       }
     )
@@ -1398,6 +1417,83 @@ describe('PostComposer', () => {
           'textbox'
         )
       ).toHaveLength(2)
+    })
+  })
+
+  describe('the upload area comes before any delete control (2026-11-22)', () => {
+    const removal = /^(remove|delete|discard)/i
+    /** Every delete or remove button rendered before `node`. */
+    const removalsBefore = (node: HTMLElement) =>
+      screen
+        .queryAllByRole('button', { name: removal })
+        .filter(
+          (button) =>
+            button.compareDocumentPosition(node) &
+            Node.DOCUMENT_POSITION_FOLLOWING
+        )
+
+    it('shows the image loader first, and an image’s delete button once it exists', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.click(
+        screen.getByRole('button', { name: c.mediaChoice.image })
+      )
+      await user.upload(
+        screen.getByTestId('post-image-picker'),
+        new File(['x'], 'a.png', { type: 'image/png' })
+      )
+      const loader = screen.getByRole('button', { name: c.images.uploading })
+      expect(loader).toBeDisabled()
+      expect(screen.getByRole('status')).toHaveTextContent(c.images.uploading)
+      expect(removalsBefore(loader)).toEqual([])
+      expect(
+        screen.queryByRole('button', { name: 'Remove image 1' })
+      ).not.toBeInTheDocument()
+
+      act(() =>
+        (mocks.upload.mock.calls[0]![1]?.onSuccess as (i: unknown) => void)({
+          id: 40,
+          url: 'https://cdn.example/a.png',
+        })
+      )
+      const add = screen.getByRole('button', { name: c.images.add })
+      expect(
+        screen.getByRole('button', { name: 'Remove image 1' })
+      ).toBeInTheDocument()
+      expect(removalsBefore(add)).toEqual([])
+    })
+
+    it('shows the video progress first, and its discard button once uploaded', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.click(
+        screen.getByRole('button', { name: c.mediaChoice.video })
+      )
+      const file = new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+      await user.upload(screen.getByTestId('post-video-picker'), file)
+      // From local state set in the pick (the mocked mutation never reports
+      // pending), so it does not wait for the observer.
+      const status = screen.getByRole('status')
+      expect(status).toHaveTextContent(c.media.video.uploading)
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(removalsBefore(status)).toEqual([])
+      expect(
+        screen.queryByRole('button', { name: c.media.video.remove })
+      ).not.toBeInTheDocument()
+
+      const options = mocks.uploadMedia.mock.calls[0]![1]!
+      act(() => {
+        ;(options.onSuccess as (media: unknown) => void)({
+          id: 70,
+          name: 'clip.mp4',
+          playbackUrl: null,
+        })
+        ;(options.onSettled as () => void)()
+      })
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: c.media.video.remove })
+      ).toBeInTheDocument()
     })
   })
 })

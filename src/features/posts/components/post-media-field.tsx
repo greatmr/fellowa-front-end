@@ -99,7 +99,7 @@ export function PostMediaField({
 
   function start(file: File) {
     // One file per block: a saved or uploaded file is shown, not replaced.
-    if (upload || mutation.isPending) return
+    if (upload || progress || mutation.isPending) return
     const refused = fileProblem(file, types, MAX_MEDIA_UPLOAD_BYTES)
     setProblem(refused)
     if (refused) return
@@ -114,8 +114,12 @@ export function PostMediaField({
         isCancelled: () => cancelled.current,
       },
       {
-        onSuccess: (media) => onUploaded({ ...media, attached: false }),
+        onSuccess: (media) => {
+          setProgress(null)
+          onUploaded({ ...media, attached: false })
+        },
         onError: (error) => {
+          setProgress(null)
           if (error instanceof MediaUploadCancelledError) {
             setProblem('cancelled')
             return
@@ -127,10 +131,7 @@ export function PostMediaField({
           else if (problem === 'sessionExpired') onSessionExpired()
           else setProblem(problem)
         },
-        onSettled: () => {
-          setProgress(null)
-          setCancelling(false)
-        },
+        onSettled: () => setCancelling(false),
       }
     )
   }
@@ -144,7 +145,9 @@ export function PostMediaField({
     return shared ? tUpload(shared) : tMedia('uploadError')
   }
 
-  const active = mutation.isPending ? progress : null
+  // Set in the pick itself, so the progress shows in the same render as the
+  // pick rather than once the mutation observer reports `isPending`.
+  const active = progress
   const uploading = active !== null
   const ratio = active && active.total > 0 ? active.sent / active.total : 0
 
