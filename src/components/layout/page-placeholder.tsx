@@ -23,7 +23,12 @@ export type PanelPage =
  * renders the real page title so the frame can be reviewed, and says plainly
  * that the screen is not built — never fake data.
  */
-export function PagePlaceholder({ page }: { page: PanelPage }) {
+/** The dashboard is a real screen with no category, so it has no placeholder. */
+export function PagePlaceholder({
+  page,
+}: {
+  page: Exclude<PanelPage, 'dashboard'>
+}) {
   const t = useTranslations('panel')
 
   return (

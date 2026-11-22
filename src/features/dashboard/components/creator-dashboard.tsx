@@ -16,7 +16,7 @@ import { Link } from '@/i18n/navigation'
 import { env } from '@/lib/env'
 
 /**
- * Creator studio dashboard, home tab (FE-STUDIO-01/02/03; CP-01, CP-04;
+ * Creator dashboard, home tab (FE-STUDIO-01/02/03; CP-01, CP-04;
  * presentation `DashboardView` @ d843c3b): the publish banner and identity
  * band at full width, then the dashboard column (the medium page width):
  * the heading with "edit page", the public address, the setup checklist and

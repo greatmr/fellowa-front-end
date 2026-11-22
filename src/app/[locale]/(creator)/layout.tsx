@@ -49,15 +49,19 @@ export default async function CreatorLayout({
 }
 
 /**
- * The frame with the signed-in creator's own public page for "View my page".
+ * The frame with the signed-in creator's own public page for "View my page";
+ * the one place that decides that link, for the sidebar and the account menu.
  * `getSession` is request-cached: the gate above has already read it, so this
  * adds no request.
  */
 async function CreatorFrame({ children }: { children: React.ReactNode }) {
   const session = await getSession()
-  const ownPageHref = session
-    ? publicPageAddress(undefined, session.user.id).path
-    : undefined
+  // Without an address (no alias yet) there is no public page to open: the
+  // backend answers 404, so the item is left out until the address is chosen.
+  const ownPageHref =
+    session && session.user.alias !== null
+      ? publicPageAddress(undefined, session.user.id).path
+      : undefined
 
   return (
     <AppLayout
