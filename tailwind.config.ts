@@ -214,6 +214,8 @@ export const boxShadow = {
   /** Hover lift of an interactive card (`card-tactile`), light and dark. */
   lift: '0 8px 24px -12px rgb(16 16 16 / 0.12)',
   'lift-dark': '0 8px 24px -12px rgb(0 0 0 / 0.45)',
+  /** The public logo tile's violet drop (presentation `.fw-logo-mark` @ d843c3b). */
+  logo: '0 6px 16px -6px rgb(117 59 209 / 0.40)',
   /** The landing's sticky glass header (presentation `.fw-nav-outer`). */
   nav: '0 8px 32px -20px rgb(32 80 192 / 0.25)',
   /** A glass feature block: soft drop plus a lit top edge (`.fw-block`). */

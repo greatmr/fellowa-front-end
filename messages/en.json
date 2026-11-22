@@ -985,10 +985,9 @@
   "publicLayout": {
     "home": "Fellowa home",
     "mainNav": "Main navigation",
-    "openMenu": "Open navigation",
     "why": "Why Fellowa",
     "features": "Features",
-    "openPanel": "Open full panel",
+    "dashboard": "Dashboard",
     "tagline": "Fellowa: a dedicated space for creators and their true fans.",
     "copyright": "© Fellowa. All rights reserved.",
     "creators": "Creators",

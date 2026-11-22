@@ -7,7 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Navigation from '@/i18n/navigation'
 
 import en from '../../../messages/en.json'
-import { PublicMobileNav } from './public-mobile-nav'
 import { AppMobileNav } from './app-mobile-nav'
 
 const navigation = vi.hoisted(() => ({ pathname: '/' }))
@@ -31,27 +30,17 @@ describe('mobile navigation route changes', () => {
       next: '/posts',
       openLabel: en.panel.openMenu,
     },
-    {
-      frame: 'public',
-      initial: '/',
-      next: '/dashboard',
-      openLabel: en.publicLayout.openMenu,
-    },
   ])(
     'closes the $frame drawer and releases the page on a route change',
-    async ({ frame, initial, next, openLabel }) => {
+    async ({ initial, next, openLabel }) => {
       const user = userEvent.setup()
       const view = () => (
         <NextIntlClientProvider locale="en" messages={en}>
           <ThemeProvider attribute="class" defaultTheme="light">
             <button type="button">Outside action</button>
-            {frame === 'panel' ? (
-              <AppMobileNav>
-                <a href="#dashboard">Dashboard</a>
-              </AppMobileNav>
-            ) : (
-              <PublicMobileNav />
-            )}
+            <AppMobileNav>
+              <a href="#dashboard">Dashboard</a>
+            </AppMobileNav>
           </ThemeProvider>
         </NextIntlClientProvider>
       )

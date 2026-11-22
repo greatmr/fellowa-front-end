@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * The public header's always-open search (presentation `LandingView`
- * `.fw-search` @ 798f660). Submitting opens the public creator list with the
+ * `.fw-search` @ d843c3b, FE-LAND-03). Submitting opens the public creator list with the
  * query in `?q=`, which that page searches by alias. The prototype's
  * suggestion dropdown lists mock creators and is not ported.
  */
@@ -27,7 +27,7 @@ export function PublicSearch({ className }: { className?: string }) {
 
   return (
     <form role="search" onSubmit={submit} className={className}>
-      <div className="flex h-10 w-47.5 items-center gap-2.25 rounded-full border border-input bg-card/55 px-4 backdrop-blur-md transition-[width,border-color,box-shadow] duration-300 focus-within:w-75 focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/10 motion-reduce:transition-none">
+      <div className="flex h-10 w-50 items-center gap-2.25 rounded-md border border-foreground/14 bg-card/72 px-3 backdrop-blur-md transition-[width,border-color,box-shadow] duration-300 focus-within:w-75 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary focus-within:ring-inset motion-reduce:transition-none">
         <SearchIcon
           className="size-4 shrink-0 text-muted-foreground"
           aria-hidden
@@ -52,7 +52,7 @@ export function PublicSearch({ className }: { className?: string }) {
             inputRef.current?.focus()
           }}
           className={cn(
-            'flex shrink-0 rounded-full p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring',
+            'flex shrink-0 rounded-sm p-1 text-muted-foreground hover:bg-foreground/6 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring',
             !value && 'hidden'
           )}
         >
