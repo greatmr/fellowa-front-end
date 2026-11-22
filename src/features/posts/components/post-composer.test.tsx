@@ -427,7 +427,7 @@ describe('PostComposer', () => {
         second!(
           new ApiError({
             message: 'x',
-            status: 403,
+            status: 400,
             code: 'USER_ALIAS_REQUIRED',
           })
         )
@@ -548,6 +548,9 @@ describe('PostComposer', () => {
       expect(screen.getByText(c.uploadErrors.storage)).toBeInTheDocument()
       expect(mocks.push).not.toHaveBeenCalled()
       expect(screen.getByRole('button', { name: c.publish })).toBeDisabled()
+      // Moving on reloads the saved post, so the form waits read-only.
+      expect(title()).toBeDisabled()
+      expect(body()).toBeDisabled()
       await user.click(
         screen.getByRole('button', { name: 'Retry uploading a.png' })
       )
@@ -557,6 +560,35 @@ describe('PostComposer', () => {
       })
       await vi.waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/posts'))
       expect(mocks.save).toHaveBeenCalledTimes(1)
+    })
+
+    it('tells the owner once when the session ends mid-queue, and sends no more', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Draft')
+      await user.upload(screen.getByTestId('post-attachment-input'), [
+        png(),
+        new File(['y'], 'b.pdf', { type: 'application/pdf' }),
+      ])
+      mocks.uploadAttachment.mockRejectedValueOnce(
+        new ApiError({ message: 'Unauthorized', status: 401 })
+      )
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 81, publishedAt: null })
+        )
+      )
+      expect(
+        await screen.findAllByText(c.uploadErrors.sessionExpired)
+      ).toHaveLength(2)
+      expect(mocks.uploadAttachment).toHaveBeenCalledTimes(1)
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+      expect(
+        screen.getByRole('button', {
+          name: 'Continue without them',
+        })
+      ).toBeInTheDocument()
     })
 
     it('lets the owner continue without a failed attachment', async () => {
@@ -584,7 +616,7 @@ describe('PostComposer', () => {
         screen.queryByRole('button', { name: 'Retry uploading a.png' })
       ).not.toBeInTheDocument()
       await user.click(
-        screen.getByRole('button', { name: c.attachments.continueWithout })
+        screen.getByRole('button', { name: 'Continue without it' })
       )
       expect(mocks.replace).toHaveBeenCalledWith('/posts/79/edit')
     })

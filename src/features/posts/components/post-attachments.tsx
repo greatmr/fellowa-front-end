@@ -133,7 +133,7 @@ export function PostAttachments({
             className="justify-self-start"
             onClick={afterSave.onContinue}
           >
-            {t('continueWithout')}
+            {t('continueWithout', { count: afterSave.failed })}
           </Button>
         </div>
       ) : null}
@@ -234,12 +234,22 @@ export function PostAttachments({
                   ) : null}
                 </span>
               </div>
+              {/* Separate keys: a row turning failed mounts a new alert,
+                  which a screen reader announces. */}
               {item.status === 'failed' ? (
-                <p className="text-caption text-destructive">
+                <p
+                  key="failed"
+                  role="alert"
+                  className="text-caption text-destructive"
+                >
                   {problemLine(item.problem)}
                 </p>
               ) : (
-                <p role="status" className="text-caption text-muted-foreground">
+                <p
+                  key="status"
+                  role="status"
+                  className="text-caption text-muted-foreground"
+                >
                   {t(`status.${item.status}`)}
                 </p>
               )}

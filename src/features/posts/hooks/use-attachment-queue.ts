@@ -67,17 +67,35 @@ export function useAttachmentQueue(
     )
   }
 
+  /** Resolves to `false` when the session ended; the caller stops there. */
   async function send(item: QueuedAttachment, postId: number) {
     patch(item.key, { status: 'uploading', problem: null })
     try {
       await upload.mutateAsync({ postId, file: item.file })
       if (keepSent) patch(item.key, { status: 'sent' })
       else update((current) => current.filter(({ key }) => key !== item.key))
+      return true
     } catch (error) {
       const problem = uploadProblem(toApiError(error))
-      if (problem === 'sessionExpired') onSessionExpired()
       patch(item.key, { status: 'failed', problem })
+      if (problem !== 'sessionExpired') return true
+      onSessionExpired()
+      return false
     }
+  }
+
+  /**
+   * After a 401 every other send would fail the same way: the waiting files
+   * are marked with that reason at once, and the owner is told once.
+   */
+  function sessionEnded(keys: number[]) {
+    update((current) =>
+      current.map((item) =>
+        item.status === 'queued' && keys.includes(item.key)
+          ? { ...item, status: 'failed', problem: 'sessionExpired' }
+          : item
+      )
+    )
   }
 
   async function add(files: File[], postId: number | null) {
@@ -89,17 +107,25 @@ export function useAttachmentQueue(
     }))
     update((current) => [...current, ...added])
     if (postId === null) return
-    for (const { key } of added) {
+    const keys = added.map(({ key }) => key)
+    for (const key of keys) {
       // `sendQueued` may have taken it meanwhile; never send a file twice.
       const item = latest.current.find((entry) => entry.key === key)
-      if (item?.status === 'queued') await send(item, postId)
+      if (item?.status !== 'queued') continue
+      if (!(await send(item, postId))) {
+        sessionEnded(keys)
+        return
+      }
     }
   }
 
   async function sendQueued(postId: number) {
     let next = latest.current.find((item) => item.status === 'queued')
     while (next) {
-      await send(next, postId)
+      if (!(await send(next, postId))) {
+        sessionEnded(latest.current.map(({ key }) => key))
+        return
+      }
       next = latest.current.find((item) => item.status === 'queued')
     }
   }

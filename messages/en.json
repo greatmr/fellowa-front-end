@@ -1121,7 +1121,7 @@
         "retryShort": "Retry",
         "discard": "Remove {name}",
         "savedButFailed": "{intent, select, publish {The post was published} other {The draft was saved}}, but {count, plural, one {# attachment} other {# attachments}} did not upload. Retry or remove {count, plural, one {it} other {them}}, or continue without {count, plural, one {it} other {them}} and add attachments later from the editor.",
-        "continueWithout": "Continue without them"
+        "continueWithout": "Continue without {count, plural, one {it} other {them}}"
       },
       "access": {
         "title": "Who can access this post?",
