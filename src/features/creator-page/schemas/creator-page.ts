@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type {
   CreatorLink,
   CreatorPost,
+  CreatorPostPage,
   CreatorProfile,
   CreatorTier,
 } from '@/features/creator-page/types/creator-page'
@@ -22,7 +23,7 @@ const id = z.number().int().positive().safe()
 /** A link or image that is not absolute http(s) is dropped, never rendered. */
 const url = z.string().nullish().transform(httpUrlOrNull)
 
-// ---- Raw responses (BE-LAND-03) --------------------------------------------
+// ---- Raw responses (BE-LAND-03, Q-51) --------------------------------------------
 
 const rawProfileSchema = z.object({
   id,
@@ -57,13 +58,44 @@ const rawTierSchema = z.object({
   benefits: z.array(z.object({ id, title: z.string() })),
 })
 
-const rawPostSchema = z.object({
+// Q-51 `PublicPost` (BE-CONT-13 adds `creatorId`). Only the keys the list
+// shows; zod drops the rest (media on FULL, tags), so an extra key never
+// travels further than this parse.
+const postBase = {
   id,
+  /** The page that owns the post; checked against the page being shown. */
+  creatorId: id,
   title: z.string(),
-  text: z.string().nullable(),
-  tags: z.array(z.string()).nullable(),
   createdAt: z.iso.datetime({ offset: true }),
-  access: z.literal('FULL'),
+}
+
+const rawPostSchema = z.discriminatedUnion('access', [
+  z.object({
+    ...postBase,
+    access: z.literal('FULL'),
+    text: z.string().nullable(),
+  }),
+  z.object({
+    ...postBase,
+    access: z.literal('PARTIAL'),
+    /** Absent when the paywall sits at 0 (Q-19). */
+    text: z.string().optional(),
+  }),
+  z.object({
+    ...postBase,
+    access: z.literal('TEASER'),
+    /** Absent when the owner typed none. */
+    textPreview: z.string().optional(),
+  }),
+])
+
+const rawPostPageSchema = z.object({
+  items: z.array(rawPostSchema),
+  page: z.object({
+    count: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+    next: z.number().int().positive().nullable(),
+  }),
 })
 
 export function parseCreatorProfile(value: unknown): CreatorProfile {
@@ -113,14 +145,32 @@ export function parseCreatorTiers(value: unknown): CreatorTier[] {
   })
 }
 
-export function parseCreatorPosts(value: unknown): CreatorPost[] {
-  return parseEnvelope(z.array(rawPostSchema), value, invalid).map((raw) => ({
-    id: raw.id,
-    title: raw.title,
-    text: raw.text,
-    tags: raw.tags ?? [],
-    createdAt: raw.createdAt,
-  }))
+/**
+ * `GET /landing/creators/:id/posts`. A post of another page is a backend
+ * defect, refused rather than shown under this creator's name.
+ */
+export function parseCreatorPostPage(
+  value: unknown,
+  creatorId: number
+): CreatorPostPage {
+  const raw = parseEnvelope(rawPostPageSchema, value, invalid)
+  if (raw.items.some((post) => post.creatorId !== creatorId)) throw invalid()
+  const items = raw.items.map((post): CreatorPost => {
+    const common = { id: post.id, title: post.title, createdAt: post.createdAt }
+    switch (post.access) {
+      case 'FULL':
+        return { ...common, access: 'FULL', text: post.text }
+      case 'PARTIAL':
+        return { ...common, access: 'PARTIAL', text: post.text || null }
+      case 'TEASER':
+        return {
+          ...common,
+          access: 'TEASER',
+          textPreview: post.textPreview || null,
+        }
+    }
+  })
+  return { items, total: raw.page.total, nextPage: raw.page.next }
 }
 
 /** PostgreSQL `integer` ids; larger values would overflow the backend column. */

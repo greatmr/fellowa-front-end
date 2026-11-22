@@ -1,251 +1,460 @@
-import { ExternalLinkIcon, FileTextIcon, GemIcon, InfoIcon } from 'lucide-react'
+import {
+  CheckIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  GemIcon,
+  HeartIcon,
+  InfoIcon,
+  SparklesIcon,
+} from 'lucide-react'
+import Image from 'next/image'
 import { useFormatter, useTranslations } from 'next-intl'
 
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
 import { Money } from '@/components/common/money'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CopyLinkButton } from '@/features/creator-page/components/copy-link-button'
+import { CreatorPostList } from '@/features/creator-page/components/creator-post-list'
+import { CreatorStickyHeader } from '@/features/creator-page/components/creator-sticky-header'
+import {
+  CREATOR_TABS_ID,
+  type CreatorPageTab,
+  CreatorTabs,
+  CreatorTabsProvider,
+  MiniTabs,
+  OpenTabButton,
+  creatorPageTabs,
+} from '@/features/creator-page/components/creator-tabs'
+import { FollowButton } from '@/features/creator-page/components/follow-button'
 import type {
   CreatorPageData,
   CreatorPageViewer,
 } from '@/features/creator-page/server/load-creator-page'
-import { FollowButton } from '@/features/creator-page/components/follow-button'
+import type { CreatorTier } from '@/features/creator-page/types/creator-page'
 import { Link } from '@/i18n/navigation'
 import { publicPageTitle } from '@/lib/page-name'
 
-/**
- * Public creator page (FE-PAGE-01; presentation `CreatorProfileView` visitor
- * mode @ dc8467f). Not ported: goals and crypto wallets (FQ-2, FQ-3), tips,
- * single-post purchase (deferred), member counts, the sticky scroll header.
- * The name is the page's public name (FQ-17), else `@alias`; the alias line
- * under a public name stands in for the prototype's `fellowa.ir/<handle>`,
- * since public routes are numeric (C-9).
- */
-const creatorPageTabs = ['posts', 'tiers', 'about'] as const
-export type CreatorPageTab = (typeof creatorPageTabs)[number]
+export type { CreatorPageTab } from '@/features/creator-page/components/creator-tabs'
 
 /** `?tab=` from the URL as one of the tabs; anything else opens Posts. */
 export function creatorPageTab(value: unknown): CreatorPageTab {
   return creatorPageTabs.find((tab) => tab === value) ?? 'posts'
 }
 
+const HERO_ID = 'creator-page-hero'
+
+/**
+ * Public creator page (FE-PAGE-01/02/03; presentation `CreatorProfileView`
+ * @ d843c3b, FQ-32 defaults): sticky scroll header, owner preview bar, cover
+ * and identity, follower and post chips, tabs Posts · Tiers · About, in one
+ * column at the public page width. Posts come from the public list (Q-51):
+ * FULL, PARTIAL or TEASER as the server decided, the same for every viewer
+ * (FQ-33 A). The owner view is display only; the backend refuses
+ * self-interaction. Not ported: the support widget with goal, tips and
+ * crypto (FQ-2/3/31), member counts (none is public), "most popular" and
+ * trial (FQ-12/11), single-post purchase, the avatar shuffle, likes and
+ * comments, and the bio's "read more" (the whole bio is shown).
+ */
 export function CreatorPageView({
   profile,
   tiers,
   posts,
   categoryTitle,
   viewer,
+  pageUrl,
   initialTab = 'posts',
 }: CreatorPageData & { initialTab?: CreatorPageTab }) {
   const t = useTranslations('creatorPage')
   const format = useFormatter()
   const title = publicPageTitle(profile)
   const name = title?.name ?? t('unnamed')
+  const initial = title?.initial ?? name.slice(0, 1)
+  const showAlias = Boolean(title && !title.isAlias && profile.alias)
+  const following = profile.viewerFollows ?? false
+
+  const tabLabels: Record<CreatorPageTab, string> = {
+    posts:
+      posts === null
+        ? t('tabs.posts')
+        : t('tabs.withCount', {
+            label: t('tabs.posts'),
+            count: format.number(posts.total),
+          }),
+    tiers:
+      tiers === null
+        ? t('tabs.tiers')
+        : t('tabs.withCount', {
+            label: t('tabs.tiers'),
+            count: format.number(tiers.length),
+          }),
+    about: t('tabs.about'),
+  }
 
   return (
-    <article>
-      <div
-        aria-hidden
-        className="h-40 w-full rounded-card bg-cover-mix bg-cover bg-center sm:h-56"
-        style={
-          profile.coverUrl
-            ? { backgroundImage: `url(${JSON.stringify(profile.coverUrl)})` }
-            : undefined
+    <CreatorTabsProvider initialTab={initialTab}>
+      <CreatorStickyHeader
+        watchId={HERO_ID}
+        identity={
+          <div className="flex min-w-0 items-center gap-3">
+            <CreatorAvatar
+              url={profile.avatarUrl}
+              initial={initial}
+              className="size-10 shrink-0 ring-2 ring-primary/20"
+            />
+            <div className="grid min-w-0">
+              <span className="truncate text-body-sm font-bold text-foreground">
+                <bdi>{name}</bdi>
+              </span>
+              <span className="truncate text-label text-muted-foreground">
+                {showAlias ? (
+                  <>
+                    <bdi dir="ltr">@{profile.alias}</bdi>
+                    <span aria-hidden> · </span>
+                  </>
+                ) : null}
+                {t('stickySubtitle', {
+                  count: profile.followerCount,
+                  formatted: format.number(profile.followerCount),
+                })}
+              </span>
+            </div>
+          </div>
+        }
+        tabs={
+          <MiniTabs
+            labels={tabLabels}
+            className="hidden items-center gap-1 rounded-md bg-muted p-1 sm:flex"
+          />
+        }
+        actions={
+          <>
+            <CopyLinkButton
+              url={pageUrl}
+              label={t('copyLink')}
+              iconOnly
+              size="icon-sm"
+            />
+            <CreatorActions
+              creatorId={profile.id}
+              viewer={viewer}
+              following={following}
+              compact
+            />
+          </>
         }
       />
 
-      <header className="-mt-10 flex flex-col gap-4 px-2 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-        <div className="flex flex-col gap-2">
-          <Avatar className="size-20 bg-card ring-4 ring-background sm:size-24">
-            {profile.avatarUrl ? (
-              <AvatarImage src={profile.avatarUrl} alt="" />
-            ) : null}
-            <AvatarFallback className="text-title font-bold">
-              {title?.initial ?? name.slice(0, 1)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="grid gap-0.5">
-            <h1 className="text-title font-bold text-foreground">
-              <bdi>{name}</bdi>
-            </h1>
-            {title && !title.isAlias && profile.alias ? (
-              <p className="text-body-sm text-muted-foreground">
-                <bdi dir="ltr">@{profile.alias}</bdi>
-              </p>
-            ) : null}
+      <article>
+        {viewer === 'owner' ? <OwnerBar pageUrl={pageUrl} /> : null}
+
+        <div id={HERO_ID}>
+          <div
+            aria-hidden
+            className="relative h-48 w-full overflow-hidden rounded-card bg-cover-mix bg-cover bg-center sm:h-60"
+            style={
+              profile.coverUrl
+                ? {
+                    backgroundImage: `url(${JSON.stringify(profile.coverUrl)})`,
+                  }
+                : undefined
+            }
+          >
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
           </div>
-          <p className="flex flex-wrap gap-x-1.5 text-body-sm text-muted-foreground">
-            {categoryTitle ? (
-              <>
-                <span>{categoryTitle}</span>
-                <span aria-hidden>·</span>
-              </>
-            ) : null}
-            {t.rich('followers', {
-              count: profile.followerCount,
-              formatted: format.number(profile.followerCount),
-              b: (chunks) => (
-                <b className="font-bold text-foreground">{chunks}</b>
-              ),
-            })}
-          </p>
-        </div>
-        <CreatorActions
-          creatorId={profile.id}
-          viewer={viewer}
-          following={profile.viewerFollows ?? false}
-        />
-      </header>
 
-      {profile.bio ? (
-        <p
-          dir="auto"
-          className="mt-4 max-w-2xl px-2 text-body leading-7 text-foreground sm:px-6"
-        >
-          {profile.bio}
-        </p>
-      ) : null}
+          <header className="relative -mt-14 px-1 sm:-mt-16 sm:px-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <CreatorAvatar
+                url={profile.avatarUrl}
+                initial={initial}
+                className="mx-auto size-28 bg-card shadow-md ring-4 ring-background sm:mx-0 sm:size-32"
+                fallbackClassName="text-headline font-bold"
+              />
+              {/* The owner's copy and edit are in the preview bar above. */}
+              {viewer === 'owner' ? null : (
+                <div className="flex flex-wrap items-center justify-center gap-2 pb-1 sm:justify-end">
+                  <CopyLinkButton
+                    url={pageUrl}
+                    label={t('share')}
+                    variant="ghost"
+                    size="sm"
+                    className="border"
+                  />
+                  <CreatorActions
+                    creatorId={profile.id}
+                    viewer={viewer}
+                    following={following}
+                  />
+                </div>
+              )}
+            </div>
 
-      <Tabs defaultValue={initialTab} className="mt-8">
-        <TabsList>
-          <TabsTrigger value="posts">
-            {t('tabs.posts', { count: format.number(posts.length) })}
-          </TabsTrigger>
-          <TabsTrigger value="tiers">
-            {tiers === null
-              ? t('tabs.tiersUnknown')
-              : t('tabs.tiers', { count: format.number(tiers.length) })}
-          </TabsTrigger>
-          <TabsTrigger value="about">{t('tabs.about')}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="posts" className="mt-4">
-          {posts.length === 0 ? (
-            <EmptyState icon={<FileTextIcon />} title={t('emptyPosts')} />
-          ) : (
-            <ul className="grid gap-3">
-              {posts.map((post) => (
-                <li key={post.id}>
-                  <Card className="gap-2 px-5 py-4">
-                    <h2 dir="auto" className="text-subtitle font-bold">
-                      <Link
-                        href={`/creators/${profile.id}/posts/${post.id}`}
-                        className="rounded-md hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-                      >
-                        {post.title}
-                      </Link>
-                    </h2>
-                    <p className="text-label text-muted-foreground">
-                      <time dateTime={post.createdAt}>
-                        {format.dateTime(new Date(post.createdAt), {
-                          dateStyle: 'medium',
-                        })}
-                      </time>
-                    </p>
-                    {post.text ? (
-                      <p
-                        dir="auto"
-                        className="line-clamp-3 text-body leading-7 text-muted-foreground"
-                      >
-                        {post.text}
-                      </p>
-                    ) : null}
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </TabsContent>
-
-        <TabsContent value="tiers" className="mt-4">
-          {tiers === null ? (
-            <ErrorState title={t('tiersUnavailable')} />
-          ) : tiers.length === 0 ? (
-            <EmptyState icon={<GemIcon />} title={t('emptyTiers')} />
-          ) : (
-            <>
-              {viewer === 'signedIn' ? (
-                <p className="mb-3 text-label text-muted-foreground">
-                  {t('comingSoon')}
+            <div className="mt-3.5 text-center sm:text-start">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 sm:justify-start">
+                <h1 className="text-headline font-black tracking-tight text-foreground">
+                  <bdi>{name}</bdi>
+                </h1>
+                {categoryTitle ? (
+                  <Badge variant="violet">{categoryTitle}</Badge>
+                ) : null}
+              </div>
+              {showAlias ? (
+                <p className="mt-1 text-label font-medium text-muted-foreground">
+                  <bdi dir="ltr">@{profile.alias}</bdi>
                 </p>
               ) : null}
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {tiers.map((tier) => (
-                  <li key={tier.id} className="flex">
-                    <Card className="flex-1 gap-3 px-5 py-5">
-                      <h2 dir="auto" className="text-subtitle font-bold">
-                        {tier.title}
-                      </h2>
-                      <p className="numeric text-title-sm font-bold">
-                        <Money
-                          amountToman={tier.priceToman}
-                          unitClassName="text-body font-medium text-muted-foreground"
-                        />
-                      </p>
-                      {tier.description ? (
-                        <p
-                          dir="auto"
-                          className="text-body-sm leading-6 text-muted-foreground"
-                        >
-                          {tier.description}
-                        </p>
-                      ) : null}
-                      {tier.benefits.length > 0 ? (
-                        <ul className="grid gap-1 text-body-sm">
-                          {tier.benefits.map((benefit) => (
-                            <li key={benefit.id} dir="auto">
-                              {benefit.title}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                      <div className="mt-auto pt-2">
-                        <TierAction creatorId={profile.id} viewer={viewer} />
-                      </div>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="about" className="mt-4">
-          {profile.bio || profile.links.length > 0 ? (
-            <Card className="gap-4 px-5 py-5">
               {profile.bio ? (
-                <p dir="auto" className="text-body leading-7">
+                <p
+                  dir="auto"
+                  className="mx-auto mt-3 max-w-2xl text-body leading-relaxed whitespace-pre-line text-foreground sm:mx-0"
+                >
                   {profile.bio}
                 </p>
               ) : null}
-              {profile.links.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {profile.links.map((link) => (
-                    <li key={link.kind}>
-                      <Button asChild variant="outline" size="sm">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer nofollow ugc"
-                        >
-                          {t(`links.${link.kind}`)}
-                          <ExternalLinkIcon aria-hidden className="size-3.5" />
-                        </a>
-                      </Button>
+            </div>
+          </header>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2.5 border-y py-3.5">
+          <StatChip>
+            {t.rich('followers', {
+              count: profile.followerCount,
+              formatted: format.number(profile.followerCount),
+              b: (chunks) => <b className="font-semibold">{chunks}</b>,
+            })}
+          </StatChip>
+          {posts === null ? null : (
+            <StatChip>
+              {t.rich('postsCount', {
+                count: posts.total,
+                formatted: format.number(posts.total),
+                b: (chunks) => <b className="font-semibold">{chunks}</b>,
+              })}
+            </StatChip>
+          )}
+        </div>
+
+        <CreatorTabs className="mt-6 gap-0">
+          <div id={CREATOR_TABS_ID} className="scroll-mt-20">
+            <TabsList
+              aria-label={t('tabsLabel')}
+              className="no-scrollbar h-auto w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0"
+            >
+              <UnderlineTab
+                value="posts"
+                icon={<FileTextIcon aria-hidden />}
+                label={t('tabs.posts')}
+                count={posts === null ? null : format.number(posts.total)}
+              />
+              <UnderlineTab
+                value="tiers"
+                icon={<SparklesIcon aria-hidden />}
+                label={t('tabs.tiers')}
+                count={tiers === null ? null : format.number(tiers.length)}
+              />
+              <UnderlineTab
+                value="about"
+                icon={<InfoIcon aria-hidden />}
+                label={t('tabs.about')}
+                count={null}
+              />
+            </TabsList>
+          </div>
+
+          {/* Kept mounted (the list is public, so hiding it gates nothing):
+              returning to Posts keeps the filter and the pages loaded. */}
+          <TabsContent
+            value="posts"
+            forceMount
+            className="mt-8 data-[state=inactive]:hidden"
+          >
+            {posts === null ? (
+              <ErrorState title={t('postsUnavailable')} />
+            ) : (
+              <CreatorPostList
+                creatorId={profile.id}
+                firstPage={posts}
+                author={{ name, initial, avatarUrl: profile.avatarUrl }}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="tiers" className="mt-8 grid gap-6">
+            <div>
+              <h2 className="text-title-sm font-black text-foreground">
+                {t('tiersHeading')}
+              </h2>
+              <p className="mt-1 text-label leading-relaxed text-muted-foreground">
+                {t('tiersIntro', { name })}
+              </p>
+            </div>
+            {tiers === null ? (
+              <ErrorState title={t('tiersUnavailable')} />
+            ) : tiers.length === 0 ? (
+              <EmptyState icon={<GemIcon />} title={t('emptyTiers')} />
+            ) : (
+              <>
+                {viewer === 'owner' ? null : (
+                  <p
+                    id="creator-join-soon"
+                    className="text-label text-muted-foreground"
+                  >
+                    {t('comingSoon')}
+                  </p>
+                )}
+                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {tiers.map((tier) => (
+                    <li key={tier.id} className="flex">
+                      <TierCard tier={tier} viewer={viewer} />
                     </li>
                   ))}
                 </ul>
-              ) : null}
-            </Card>
-          ) : (
-            <EmptyState icon={<InfoIcon />} title={t('emptyAbout')} />
-          )}
-        </TabsContent>
-      </Tabs>
-    </article>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="about" className="mt-8">
+            {profile.bio || profile.links.length > 0 ? (
+              <Card className="gap-0 p-6">
+                <h2 className="text-title-sm font-black text-foreground">
+                  {t('aboutHeading')}
+                </h2>
+                {profile.bio ? (
+                  <p
+                    dir="auto"
+                    className="mt-3 text-body leading-8 whitespace-pre-line text-foreground"
+                  >
+                    {profile.bio}
+                  </p>
+                ) : null}
+                {profile.links.length > 0 ? (
+                  <div className="mt-6 border-t pt-6">
+                    <h3 className="mb-3 text-body-sm font-bold text-foreground">
+                      {t('linksHeading')}
+                    </h3>
+                    <ul className="flex flex-wrap gap-2.5">
+                      {profile.links.map((link) => (
+                        <li key={link.kind}>
+                          <Button asChild variant="outline" size="sm">
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer nofollow ugc"
+                            >
+                              {t(`links.${link.kind}`)}
+                              <ExternalLinkIcon
+                                aria-hidden
+                                className="size-3.5"
+                              />
+                            </a>
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </Card>
+            ) : (
+              <EmptyState icon={<InfoIcon />} title={t('emptyAbout')} />
+            )}
+          </TabsContent>
+        </CreatorTabs>
+      </article>
+    </CreatorTabsProvider>
+  )
+}
+
+function CreatorAvatar({
+  url,
+  initial,
+  className,
+  fallbackClassName = 'text-label font-bold',
+}: {
+  url: string | null
+  initial: string
+  className?: string
+  fallbackClassName?: string
+}) {
+  return (
+    <Avatar className={className}>
+      {url ? <AvatarImage src={url} alt="" /> : null}
+      <AvatarFallback className={fallbackClassName}>{initial}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+function StatChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-md bg-muted px-3 py-1.5 text-label font-medium text-foreground">
+      {children}
+    </span>
+  )
+}
+
+function UnderlineTab({
+  value,
+  icon,
+  label,
+  count,
+}: {
+  value: CreatorPageTab
+  icon: React.ReactNode
+  label: string
+  count: string | null
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="h-auto flex-none gap-2 rounded-none border-0 border-b-2 border-transparent px-5 pt-2 pb-1.5 text-body-sm font-normal text-muted-foreground hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:font-medium data-[state=active]:text-primary data-[state=active]:shadow-none"
+    >
+      {icon}
+      <span>{label}</span>
+      {count === null ? null : (
+        <span className="rounded-full bg-muted px-2 py-0.5 text-label text-muted-foreground">
+          {count}
+        </span>
+      )}
+    </TabsTrigger>
+  )
+}
+
+/**
+ * The owner's preview bar (presentation :537-573): this is how supporters
+ * see the page, with copy link and edit page (→ `/settings`, where the page
+ * name is edited). Display only; no avatar shuffle.
+ */
+function OwnerBar({ pageUrl }: { pageUrl: string | null }) {
+  const t = useTranslations('creatorPage')
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-md border border-brand-200/70 bg-brand-50 px-5 py-3 dark:border-brand-500/20 dark:bg-brand-500/10">
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className="size-2.5 shrink-0 rounded-full bg-brand-500 motion-safe:animate-pulse"
+        />
+        <p className="text-label font-medium text-brand-900 dark:text-brand-200">
+          {t('ownerNotice')}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <CopyLinkButton
+          url={pageUrl}
+          label={t('copyPageLink')}
+          variant="ghost"
+          size="sm"
+          className="bg-card shadow-xs"
+        />
+        <Button asChild size="sm">
+          <Link href="/settings">{t('editPage')}</Link>
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -257,77 +466,129 @@ function signInHref(creatorId: number) {
 }
 
 /**
- * Follow / support. Anonymous → sign in and come back; signed in → a working
- * Follow (FE-PAGE-02) and a not-yet-available Support; owner → edit page.
+ * Follow and Support / Join. Owner → edit page. Anonymous → Follow signs in
+ * and comes back. Signed in → a working Follow (FE-PAGE-02). Support / Join
+ * opens the Tiers tab for every visitor, where joining waits for checkout
+ * (FE-PAY-01). `compact` is the sticky header's version: Follow only from
+ * `sm` up.
  */
 function CreatorActions({
   creatorId,
   viewer,
   following,
+  compact = false,
 }: {
   creatorId: number
   viewer: CreatorPageViewer
   following: boolean
+  compact?: boolean
 }) {
   const t = useTranslations('creatorPage')
 
   if (viewer === 'owner') {
     return (
-      <Button asChild variant="outline">
-        <Link href="/studio/page">{t('editPage')}</Link>
+      <Button asChild size="sm">
+        <Link href="/settings">{t('editPage')}</Link>
       </Button>
     )
   }
-  if (viewer === 'anonymous') {
-    return (
-      <div className="flex flex-col gap-1.5 sm:items-end">
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+  return (
+    <>
+      <div className={compact ? 'hidden sm:block' : undefined}>
+        {viewer === 'anonymous' ? (
+          <Button asChild variant="outline" size="sm">
             <Link href={signInHref(creatorId)}>{t('follow')}</Link>
           </Button>
-          <Button asChild variant="inverse">
-            <Link href={signInHref(creatorId)}>{t('support')}</Link>
-          </Button>
-        </div>
-        <p className="text-label text-muted-foreground">{t('signInHint')}</p>
+        ) : (
+          <FollowButton creatorId={creatorId} following={following} />
+        )}
       </div>
-    )
-  }
-  return (
-    <div className="flex flex-col gap-1.5 sm:items-end">
-      <div className="flex gap-2">
-        <FollowButton creatorId={creatorId} following={following} />
-        <Button variant="inverse" disabled aria-describedby="creator-soon">
-          {t('support')}
-        </Button>
-      </div>
-      <p id="creator-soon" className="text-label text-muted-foreground">
-        {t('comingSoon')}
-      </p>
-    </div>
+      <OpenTabButton tab="tiers" size="sm">
+        <HeartIcon aria-hidden className="fill-current" />
+        {t('support')}
+      </OpenTabButton>
+    </>
   )
 }
 
-function TierAction({
-  creatorId,
+/**
+ * One tier (presentation :1050-1106) without badge, trial or supporters.
+ * Join stays disabled for every visitor until checkout exists (FE-PAY-01,
+ * FQ-32 item 6).
+ */
+function TierCard({
+  tier,
   viewer,
 }: {
-  creatorId: number
+  tier: CreatorTier
   viewer: CreatorPageViewer
 }) {
   const t = useTranslations('creatorPage')
 
-  if (viewer === 'owner') return null
-  if (viewer === 'anonymous') {
-    return (
-      <Button asChild className="w-full">
-        <Link href={signInHref(creatorId)}>{t('joinTier')}</Link>
-      </Button>
-    )
-  }
   return (
-    <Button className="w-full" disabled>
-      {t('joinTier')}
-    </Button>
+    <Card className="flex-1 gap-0 overflow-hidden p-0">
+      {tier.coverUrl ? (
+        // No allowed host in `images.remotePatterns` yet: unoptimized, as
+        // the studio renders the same URLs.
+        <Image
+          src={tier.coverUrl}
+          alt={t('tierCoverAlt', { title: tier.title })}
+          width={640}
+          height={256}
+          unoptimized
+          className="h-32 w-full object-cover"
+        />
+      ) : null}
+      <div className="flex flex-1 flex-col p-5">
+        <h3 dir="auto" className="text-subtitle font-bold text-foreground">
+          {tier.title}
+        </h3>
+        <p className="mt-2 flex items-baseline gap-1">
+          <span className="numeric text-title font-black text-foreground">
+            <Money
+              amountToman={tier.priceToman}
+              unitClassName="text-body font-medium text-muted-foreground"
+            />
+          </span>
+          <span className="text-label font-medium text-muted-foreground">
+            {t('perMonth')}
+          </span>
+        </p>
+        {tier.description ? (
+          <p
+            dir="auto"
+            className="mt-2 text-body-sm leading-6 text-muted-foreground"
+          >
+            {tier.description}
+          </p>
+        ) : null}
+        <div aria-hidden className="my-4 h-px bg-border" />
+        {tier.benefits.length > 0 ? (
+          <ul className="grid flex-1 content-start gap-2 text-label leading-relaxed text-foreground">
+            {tier.benefits.map((benefit) => (
+              <li key={benefit.id} className="flex items-start gap-2">
+                <CheckIcon
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-primary"
+                />
+                <span dir="auto">{benefit.title}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex-1" />
+        )}
+        {viewer === 'owner' ? null : (
+          <Button
+            variant="outline"
+            className="mt-4 w-full"
+            disabled
+            aria-describedby="creator-join-soon"
+          >
+            {t('joinTier')}
+          </Button>
+        )}
+      </div>
+    </Card>
   )
 }

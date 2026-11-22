@@ -12,6 +12,11 @@ export type ReaderPost = FullReaderPost | PartialReaderPost | TeaserReaderPost
 
 type ReaderPostBase = {
   id: number
+  /**
+   * The account that owns the post's page, the id `/creators/:id` takes
+   * (BE-CONT-13). Said at every level: whose post it is is not gated.
+   */
+  creatorId: number
   /** What the post holds (`text`, `image`, `video`, …); said at every level. */
   type: string
   title: string

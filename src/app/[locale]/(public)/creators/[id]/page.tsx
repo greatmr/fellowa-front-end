@@ -8,7 +8,7 @@ import {
 import { loadCreatorPage } from '@/features/creator-page/server/load-creator-page'
 
 /**
- * Public creator page (FE-PAGE-01), `/creators/:id` per C-9. Readable by
+ * Public creator page (FE-PAGE-01/03), `/creators/:id` per C-9. Readable by
  * anyone; following or joining a tier asks an anonymous visitor to sign in.
  * `?tab=tiers` opens the Tiers tab (the post reader's gate, FE-CONT-01).
  */

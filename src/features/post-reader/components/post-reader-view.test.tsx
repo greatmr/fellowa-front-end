@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+import type { CreatorByline } from '@/features/creator-page/server'
 import type { ReaderPost } from '@/features/post-reader/types/reader-post'
 import { renderWithIntl } from '../../../../test/render'
 import { parseReaderPost } from '../schemas/reader-post'
@@ -19,13 +20,26 @@ import { PostReaderView } from './post-reader-view'
 
 const fromRaw = (raw: unknown): ReaderPost => parseReaderPost(ok(raw))
 
+const byline: CreatorByline = {
+  id: 4,
+  pageName: 'Dana Studio',
+  alias: 'dana',
+  avatarUrl: null,
+}
+
 function renderPost(
   raw: unknown,
   viewer: 'anonymous' | 'signedIn' = 'anonymous',
-  locale: 'fa' | 'en' = 'en'
+  locale: 'fa' | 'en' = 'en',
+  creator: CreatorByline | null = byline
 ) {
   return renderWithIntl(
-    <PostReaderView creatorId={4} post={fromRaw(raw)} viewer={viewer} />,
+    <PostReaderView
+      creatorId={4}
+      post={fromRaw(raw)}
+      viewer={viewer}
+      creator={creator}
+    />,
     { locale, strict: true }
   )
 }
@@ -204,5 +218,37 @@ describe('PostReaderSkeleton (FE-CONT-01 loading)', () => {
     expect(screen.getByRole('status')).toHaveAccessibleName(
       locale === 'en' ? 'Loading…' : /.+/
     )
+  })
+
+  describe('byline (BE-CONT-13)', () => {
+    it("links the creator page's public name", () => {
+      renderPost(rawTeaser())
+
+      expect(
+        screen.getByRole('link', { name: /Dana Studio/ }).getAttribute('href')
+      ).toMatch(/\/creators\/4$/)
+    })
+
+    it('falls back to @alias, then to the unnamed copy, in fa', () => {
+      const { unmount } = renderPost(rawTeaser(), 'anonymous', 'fa', {
+        ...byline,
+        pageName: null,
+      })
+      expect(screen.getByRole('link', { name: /@dana/ })).toBeVisible()
+      unmount()
+
+      renderPost(rawTeaser(), 'anonymous', 'fa', {
+        ...byline,
+        pageName: null,
+        alias: null,
+      })
+      expect(screen.getByRole('link', { name: /کریتور بی‌نام/ })).toBeVisible()
+    })
+
+    it('renders no byline when the profile was not read', () => {
+      renderPost(rawFullPublic(), 'anonymous', 'en', null)
+
+      expect(screen.queryByRole('link', { name: /Dana Studio/ })).toBeNull()
+    })
   })
 })

@@ -828,16 +828,15 @@
     "follow": "دنبال کردن",
     "support": "حمایت / عضویت",
     "joinTier": "عضویت در این پلن",
-    "signInHint": "برای دنبال کردن یا عضویت وارد شو.",
     "comingSoon": "عضویت در پلن‌ها به‌زودی فعال می‌شود.",
-    "editPage": "ویرایش صفحه‌ات",
+    "editPage": "ویرایش صفحه",
     "tabs": {
-      "posts": "پست‌ها ({count})",
-      "tiers": "پلن‌های عضویت ({count})",
-      "about": "درباره",
-      "tiersUnknown": "پلن‌های عضویت"
+      "posts": "پست‌ها",
+      "tiers": "پلن‌های عضویت",
+      "about": "درباره من",
+      "withCount": "{label} ({count})"
     },
-    "emptyPosts": "هنوز پست عمومی‌ای نیست.",
+    "emptyPosts": "هنوز پستی منتشر نشده.",
     "emptyTiers": "هنوز پلنی نیست.",
     "emptyAbout": "هنوز چیزی اینجا نیست.",
     "links": {
@@ -850,7 +849,41 @@
     "tiersUnavailable": "پلن‌ها بارگذاری نشد. کمی بعد دوباره امتحان کن.",
     "following": "دنبال‌شده",
     "followFailed": "انجام نشد. دوباره امتحان کن.",
-    "sessionExpired": "نشستت تمام شده. دوباره وارد شو."
+    "sessionExpired": "نشستت تمام شده. دوباره وارد شو.",
+    "postsCount": "{count, plural, other {<b>{formatted}</b> پست منتشرشده}}",
+    "stickySubtitle": "{count, plural, other {{formatted} دنبال‌کننده}}",
+    "share": "اشتراک‌گذاری",
+    "copyLink": "کپی لینک",
+    "copyPageLink": "کپی لینک صفحه",
+    "linkCopied": "لینک صفحه کپی شد.",
+    "copyFailed": "لینک کپی نشد. از نوار آدرس کپی‌اش کن.",
+    "ownerNotice": "این پیش‌نمایش زنده صفحه عمومی شماست و حامیان آن را همین‌طور مشاهده می‌کنند.",
+    "tabsLabel": "بخش‌های صفحه",
+    "posts": {
+      "filterLabel": "فیلتر پست‌ها",
+      "all": "همه",
+      "free": "پست‌های رایگان",
+      "members": "ویژه اعضا",
+      "showing": "{count, plural, other {نمایش # از {loaded} پست بارگذاری‌شده}}",
+      "emptyFilter": "میان پست‌های بارگذاری‌شده، پستی در این دسته یافت نشد.",
+      "showAll": "مشاهده همه پست‌ها",
+      "loadMore": "پست‌های بیشتر",
+      "loadingMore": "در حال بارگذاری…",
+      "loadFailed": "پست‌های بیشتر بارگذاری نشد.",
+      "retry": "دوباره امتحان کن",
+      "freeBadge": "رایگان برای همه",
+      "membersBadge": "ویژه اعضا",
+      "gateTitle": "این محتوای اختصاصی مخصوص اعضای این صفحه است",
+      "seeTiers": "مشاهده پلن‌ها",
+      "openPost": "باز کردن پست"
+    },
+    "tiersHeading": "پلن‌های عضویت ماهانه",
+    "tiersIntro": "با عضویت در هر پلن، علاوه بر دریافت مزایای ویژه، مستقیماً از ادامه تولید آثار {name} حمایت می‌کنید.",
+    "perMonth": "/ ماه",
+    "tierCoverAlt": "تصویر پلن {title}",
+    "aboutHeading": "داستان من و هدف این صفحه",
+    "linksHeading": "کانال‌های ارتباطی رسمی",
+    "postsUnavailable": "پست‌ها بارگذاری نشد. کمی بعد دوباره امتحان کن."
   },
   "settings": {
     "account": {
@@ -1179,6 +1212,7 @@
   },
   "postReader": {
     "backToPage": "بازگشت به صفحهٔ سازنده",
+    "unnamedCreator": "کریتور بی‌نام",
     "membersBadge": "ویژهٔ اعضا",
     "dividerLabel": "ادامهٔ این پست فقط برای اعضا باز است",
     "imageAlt": "تصویر {index, number}",

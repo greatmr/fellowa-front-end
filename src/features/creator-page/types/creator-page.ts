@@ -1,7 +1,7 @@
 /**
- * Public creator page (FE-PAGE-01), from `GET /landing/creators/:id{,/tiers,
- * /content}` (BE-LAND-03; back-end/docs/modules/landing/api.md). Only what the
- * page shows. No member count or seats left exist yet.
+ * Public creator page (FE-PAGE-01/03), from `GET /landing/creators/:id{,/tiers,
+ * /posts}` (BE-LAND-03, Q-51; back-end/docs/modules/landing/api.md). Only what
+ * the page shows. No member count or seats left exist yet.
  */
 export type CreatorProfile = {
   id: number
@@ -39,11 +39,41 @@ export type CreatorTier = {
   benefits: { id: number; title: string }[]
 }
 
-/** A post an anonymous visitor may read in full (access `FULL`). */
-export type CreatorPost = {
+/**
+ * One post of the creator's public list (`GET /landing/creators/:id/posts`,
+ * Q-51), as an anonymous visitor may see it, whoever is looking (FQ-33 A).
+ * The backend decides the level and sends only that level's keys; each
+ * variant holds only those, so nothing gated travels past the parse.
+ */
+export type CreatorPost =
+  FullCreatorPost | PartialCreatorPost | TeaserCreatorPost
+
+type CreatorPostBase = {
   id: number
   title: string
-  text: string | null
-  tags: string[]
   createdAt: string
+}
+
+export type FullCreatorPost = CreatorPostBase & {
+  access: 'FULL'
+  text: string | null
+}
+
+export type PartialCreatorPost = CreatorPostBase & {
+  access: 'PARTIAL'
+  /** The opening up to the paywall, cut on the server; `null` at position 0. */
+  text: string | null
+}
+
+export type TeaserCreatorPost = CreatorPostBase & {
+  access: 'TEASER'
+  /** What the owner typed as a preview, never made from the body. */
+  textPreview: string | null
+}
+
+/** One page of the list; `total` counts every published post. */
+export type CreatorPostPage = {
+  items: CreatorPost[]
+  total: number
+  nextPage: number | null
 }

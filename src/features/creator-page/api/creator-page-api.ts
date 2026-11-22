@@ -1,7 +1,7 @@
 import 'server-only'
 
 import {
-  parseCreatorPosts,
+  parseCreatorPostPage,
   parseCreatorProfile,
   parseCreatorTiers,
 } from '@/features/creator-page/schemas/creator-page'
@@ -28,9 +28,21 @@ export async function getCreatorTiers(id: number) {
   )
 }
 
-export async function getCreatorPosts(id: number) {
-  return parseCreatorPosts(
-    await apiGet<unknown>(`/landing/creators/${id}/content`)
+/** Posts per page of the public list: the API's own default. */
+export const CREATOR_POSTS_PAGE_SIZE = 20
+
+/**
+ * One page of the creator's posts, gated ones included as TEASER or PARTIAL
+ * (Q-51). No token: the backend answers the visitor's view to everyone, and
+ * the list stays locked for members too (FQ-33 A); they read in full on the
+ * post page.
+ */
+export async function getCreatorPostPage(id: number, page: number) {
+  return parseCreatorPostPage(
+    await apiGet<unknown>(`/landing/creators/${id}/posts`, {
+      params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE },
+    }),
+    id
   )
 }
 

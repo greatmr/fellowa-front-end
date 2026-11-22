@@ -20,6 +20,7 @@ describe('parseReaderPost (FE-CONT-01)', () => {
   it('reads a landing FULL post with its media and no poll (Q-57)', () => {
     expect(parseReaderPost(ok(rawFullPublic()))).toEqual({
       id: 31,
+      creatorId: 4,
       type: 'image',
       title: 'A title',
       createdAt: '2026-11-01T10:00:00.000Z',
