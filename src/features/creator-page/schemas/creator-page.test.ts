@@ -139,14 +139,14 @@ describe('creator page responses (FE-PAGE-01)', () => {
             title: 'Hello world',
             createdAt: '2026-10-30T10:00:00.000Z',
             access: 'FULL',
-            text: FREE_BODY,
+            body: { format: 'plain', text: FREE_BODY },
           },
           {
             id: 10,
             title: 'Half open',
             createdAt: '2026-10-30T10:00:00.000Z',
             access: 'PARTIAL',
-            text: OPEN_PART,
+            body: { format: 'plain', text: OPEN_PART },
           },
           {
             id: 11,
@@ -175,9 +175,29 @@ describe('creator page responses (FE-PAGE-01)', () => {
       )
 
       expect(page.items).toMatchObject([
-        { access: 'PARTIAL', text: null },
+        { access: 'PARTIAL', body: null },
         { access: 'TEASER', textPreview: null },
       ])
+    })
+
+    it('reads an html body only when the server says html (BE-CONT-14)', () => {
+      const html = '<p dir="auto">باز</p>'
+      const page = parseCreatorPostPage(
+        ok(
+          rawPostPage([
+            { ...rawPartial(10, html), bodyFormat: 'html' },
+            { ...rawFull(), text: html, bodyFormat: 'plain' },
+            { ...rawTeaser(), bodyFormat: 'html', text: 'LEAKEDBODY' },
+          ])
+        ),
+        4
+      )
+      expect(page.items).toMatchObject([
+        { access: 'PARTIAL', body: { format: 'html', html } },
+        { access: 'FULL', body: { format: 'plain', text: html } },
+        { access: 'TEASER' },
+      ])
+      expect(JSON.stringify(page)).not.toContain('LEAKEDBODY')
     })
 
     it.each([

@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { act, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as I18nNavigation from '@/i18n/navigation'
+import type { RichParts } from '@/features/posts/lib/rich-editor'
 import type { OwnerPost } from '@/features/posts/types/post'
 import { ApiError } from '@/lib/api/errors'
 
@@ -61,6 +63,68 @@ vi.mock('sonner', () => ({
   toast: { success: mocks.toastSuccess, error: mocks.toastError },
 }))
 
+/**
+ * A stand-in for the Tiptap editor, which the composer loads with
+ * `next/dynamic`: it shows the two HTML parts the editor would report and
+ * lets a test set them. The real editor is covered by
+ * `post-body-editor.test.tsx` and `lib/rich-editor.test.ts`.
+ */
+function FakeBodyEditor({
+  initial,
+  editable,
+  onChange,
+}: {
+  initial: RichParts
+  editable: boolean
+  onChange: (parts: RichParts) => void
+}) {
+  const [parts, setParts] = useState(initial)
+  const update = (next: RichParts) => {
+    setParts(next)
+    onChange(next)
+  }
+  return (
+    <div>
+      <textarea
+        aria-label="fake body"
+        disabled={!editable}
+        value={parts.before}
+        onChange={(event) => update({ ...parts, before: event.target.value })}
+      />
+      {parts.after === null ? (
+        <button
+          type="button"
+          onClick={() => update({ before: parts.before, after: '' })}
+        >
+          fake divider
+        </button>
+      ) : (
+        <>
+          <textarea
+            aria-label="fake after"
+            value={parts.after}
+            onChange={(event) =>
+              update({ ...parts, after: event.target.value })
+            }
+          />
+          <button
+            type="button"
+            onClick={() =>
+              update({
+                before: parts.before + (parts.after ?? ''),
+                after: null,
+              })
+            }
+          >
+            fake remove divider
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+vi.mock('next/dynamic', () => ({ default: () => FakeBodyEditor }))
+
 const { PostComposer } = await import('./post-composer')
 
 const messages = { fa, en } as const
@@ -84,7 +148,9 @@ function renderComposer(
 const lastSave = () => mocks.save.mock.calls.at(-1)!
 const title = () => screen.getByRole('textbox', { name: c.titleLabel })
 const body = () =>
-  screen.getByRole<HTMLTextAreaElement>('textbox', { name: c.bodyLabel })
+  screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'fake body' })
+const after = () =>
+  screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'fake after' })
 
 describe('PostComposer', () => {
   beforeEach(() => {
@@ -116,7 +182,7 @@ describe('PostComposer', () => {
       const t = messages[locale].posts.composer
       const user = userEvent.setup()
       const { unmount } = renderComposer(null, locale)
-      await user.click(screen.getByRole('button', { name: t.insertDivider }))
+      await user.click(screen.getByRole('button', { name: 'fake divider' }))
       await user.click(
         screen.getByRole('radio', { name: new RegExp(t.access.tiers) })
       )
@@ -134,13 +200,10 @@ describe('PostComposer', () => {
     }
   )
 
-  it('renders no single-post purchase, collections or formatting controls (FQ-31, FQ-30)', () => {
+  it('renders no single-post purchase or collections controls (FQ-31, FQ-30)', () => {
     renderComposer()
     for (const text of [/purchase/i, /collection/i, /schedule/i]) {
       expect(screen.queryByText(text)).not.toBeInTheDocument()
-    }
-    for (const name of [/bold/i, /italic/i, /link/i]) {
-      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
@@ -158,14 +221,15 @@ describe('PostComposer', () => {
     const user = userEvent.setup()
     renderComposer()
     await user.type(title(), 'Hello')
-    await user.type(body(), 'Plain body')
+    fireEvent.change(body(), { target: { value: '<p dir="auto">Body</p>' } })
     await user.click(screen.getByRole('button', { name: c.publish }))
     const [input, options] = lastSave()
     expect(input).toEqual({
       kind: 'text',
       payload: {
         title: 'Hello',
-        text: 'Plain body',
+        text: '<p dir="auto">Body</p>',
+        bodyFormat: 'html',
         paywallPosition: null,
         tireIds: [],
         visibility: { type: true },
@@ -176,31 +240,45 @@ describe('PostComposer', () => {
     expect(mocks.push).toHaveBeenCalledWith('/posts')
   })
 
-  it('inserts the divider at the caret and sends its offset in code points', async () => {
+  it('sends the divider as the index of the first gated block (Q-83)', async () => {
     const user = userEvent.setup()
     renderComposer()
     await user.type(title(), 'T')
-    fireEvent.change(body(), { target: { value: 'سلام 😀 بقیه' } })
-    // Caret after "سلام 😀 " = 4 + 1 + 2 (surrogate pair) + 1 = 8 UTF-16 units.
-    body().setSelectionRange(8, 8)
-    await user.click(screen.getByRole('button', { name: c.insertDivider }))
-    expect(
-      screen.getByRole('separator', { name: c.dividerLabel })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: c.afterLabel })).toHaveValue(
-      'بقیه'
-    )
+    fireEvent.change(body(), {
+      target: { value: '<h2 dir="auto">سلام</h2><ul><li><p>😀</p></li></ul>' },
+    })
+    await user.click(screen.getByRole('button', { name: 'fake divider' }))
+    fireEvent.change(after(), { target: { value: '<p dir="auto">بقیه</p>' } })
     await user.click(screen.getByRole('button', { name: c.saveDraft }))
     expect(lastSave()[0]).toMatchObject({
       payload: {
-        text: 'سلام 😀 بقیه',
-        paywallPosition: 7,
+        text: '<h2 dir="auto">سلام</h2><ul><li><p>😀</p></li></ul><p dir="auto">بقیه</p>',
+        bodyFormat: 'html',
+        paywallPosition: 2,
         visibility: { type: true, isDraft: true },
       },
     })
-    await user.click(screen.getByRole('button', { name: c.removeDivider }))
-    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
-    expect(body()).toHaveValue('سلام 😀 بقیه')
+    ;(lastSave()[1]?.onSettled as () => void)()
+    // Removing the divider clears the paywall.
+    await user.click(
+      screen.getByRole('button', { name: 'fake remove divider' })
+    )
+    await user.click(screen.getByRole('button', { name: c.saveDraft }))
+    expect(lastSave()[0]).toMatchObject({
+      payload: { paywallPosition: null, bodyFormat: 'html' },
+    })
+  })
+
+  it('gates nothing when no block follows the divider', async () => {
+    const user = userEvent.setup()
+    renderComposer()
+    await user.type(title(), 'T')
+    fireEvent.change(body(), { target: { value: '<p>a</p>' } })
+    await user.click(screen.getByRole('button', { name: 'fake divider' }))
+    await user.click(screen.getByRole('button', { name: c.saveDraft }))
+    expect(lastSave()[0]).toMatchObject({
+      payload: { text: '<p>a</p>', paywallPosition: null },
+    })
   })
 
   it('needs a tier to publish a limited post, offers select all, and lets a draft wait', async () => {
@@ -303,13 +381,19 @@ describe('PostComposer', () => {
   it('edits a limited post: keeps its tiers and date, resends the paywall', async () => {
     const user = userEvent.setup()
     renderComposer(
-      ownerPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
+      ownerPost({
+        text: '<p dir="auto">باز</p><p dir="auto">قفل</p>',
+        bodyFormat: 'html',
+        paywallPosition: 1,
+        isPublic: false,
+      })
     )
-    expect(body()).toHaveValue('ab😀')
-    expect(screen.getByRole('textbox', { name: c.afterLabel })).toHaveValue(
-      'cd'
-    )
-    await user.type(screen.getByRole('textbox', { name: c.afterLabel }), 'e')
+    expect(body()).toHaveValue('<p dir="auto">باز</p>')
+    expect(after()).toHaveValue('<p dir="auto">قفل</p>')
+    expect(screen.queryByText(c.plainConversionNote)).not.toBeInTheDocument()
+    fireEvent.change(after(), {
+      target: { value: '<p dir="auto">قفل</p><p>e</p>' },
+    })
     await user.click(screen.getByRole('button', { name: c.saveChanges }))
     const [input, options] = lastSave()
     ;(options?.onSettled as () => void)()
@@ -318,8 +402,9 @@ describe('PostComposer', () => {
       kind: 'text',
       payload: {
         title: 'سلام دنیا',
-        text: 'ab😀cde',
-        paywallPosition: 3,
+        text: '<p dir="auto">باز</p><p dir="auto">قفل</p><p>e</p>',
+        bodyFormat: 'html',
+        paywallPosition: 1,
         visibility: { type: false, datePublished: '2026-11-20T08:00:00.000Z' },
       },
     })
@@ -328,6 +413,33 @@ describe('PostComposer', () => {
     await user.click(screen.getByRole('button', { name: c.saveChanges }))
     expect(lastSave()[0]).toMatchObject({ payload: { tireIds: [5] } })
     expect(screen.getByText(c.moveToDraftHint)).toBeInTheDocument()
+  })
+
+  it('converts a plain post on save only: paragraphs, the divider at the matching block, sent as html', async () => {
+    const user = userEvent.setup()
+    // Offset 7 (Q-19 code points) falls after "یک\n\nدو😀".
+    renderComposer(
+      ownerPost({
+        text: 'یک\n\nدو😀\n\nسه <b>',
+        bodyFormat: 'plain',
+        paywallPosition: 7,
+        isPublic: false,
+      })
+    )
+    expect(screen.getByText(c.plainConversionNote)).toBeInTheDocument()
+    expect(body()).toHaveValue('<p dir="auto">یک</p><p dir="auto">دو😀</p>')
+    expect(after()).toHaveValue('<p dir="auto">سه &lt;b&gt;</p>')
+    // Nothing is written on open.
+    expect(mocks.save).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    expect(lastSave()[0]).toMatchObject({
+      payload: {
+        text: '<p dir="auto">یک</p><p dir="auto">دو😀</p><p dir="auto">سه &lt;b&gt;</p>',
+        // A format change on a paywalled post must carry the position.
+        bodyFormat: 'html',
+        paywallPosition: 2,
+      },
+    })
   })
 
   it('uploads a picked image, refuses another type, and saves an image post', async () => {

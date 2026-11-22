@@ -99,6 +99,42 @@ describe('PostReaderView (FE-CONT-01)', () => {
     expect(container.querySelector('img')).toBeNull()
   })
 
+  it('html (BE-CONT-14): renders the server’s sanitised blocks, cut at the paywall, and nothing past it', () => {
+    renderPost({
+      ...rawPartial(
+        '<h2 dir="auto">Opening</h2><p dir="auto">one <strong>bold</strong> <a href="https://a.test" rel="noopener noreferrer nofollow ugc">link</a></p>'
+      ),
+      bodyFormat: 'html',
+    })
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Opening' })
+    ).toBeVisible()
+    expect(screen.getByText('bold').tagName).toBe('STRONG')
+    expect(screen.getByRole('link', { name: 'link' })).toHaveAttribute(
+      'rel',
+      'noopener noreferrer nofollow ugc'
+    )
+    expect(
+      screen.getByRole('separator', {
+        name: 'The rest of this post is open to members only',
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('plain: markup in the body is shown as text, never rendered', () => {
+    const { container } = renderPost({
+      ...rawFullPublic(),
+      text: '<strong>not bold</strong><img src=x onerror="alert(1)">',
+    })
+    expect(
+      screen.getByText(
+        '<strong>not bold</strong><img src=x onerror="alert(1)">'
+      )
+    ).toBeVisible()
+    expect(container.querySelector('strong')).toBeNull()
+    expect(container.querySelector('img[onerror]')).toBeNull()
+  })
+
   it('PARTIAL at position 0: the divider and gate with no text', () => {
     const { container } = renderPost(rawPartial(null))
 

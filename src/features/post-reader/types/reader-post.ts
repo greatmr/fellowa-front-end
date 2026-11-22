@@ -1,3 +1,5 @@
+import type { PostBody } from '@/lib/post-body'
+
 /**
  * One post as its reader may see it (FE-CONT-01), from `GET /landing/posts/:id`
  * (anonymous) or `GET /content/:id` (signed in). The backend decides `access`
@@ -27,7 +29,8 @@ export type ReaderFile = { id: number; url: string | null }
 
 export type FullReaderPost = ReaderPostBase & {
   access: 'FULL'
-  text: string | null
+  /** `text` in its `bodyFormat` (Q-83); `null` without a body. */
+  body: PostBody | null
   images: ReaderFile[]
   attachments: ReaderFile[]
   links: { id: number; url: string | null }[]
@@ -41,8 +44,11 @@ export type FullReaderPost = ReaderPostBase & {
 
 export type PartialReaderPost = ReaderPostBase & {
   access: 'PARTIAL'
-  /** The body up to the paywall, cut on the server; `null` at position 0. */
-  text: string | null
+  /**
+   * The body up to the paywall, cut on the server (whole blocks for `html`);
+   * `null` at position 0.
+   */
+  body: PostBody | null
 }
 
 export type TeaserReaderPost = ReaderPostBase & {

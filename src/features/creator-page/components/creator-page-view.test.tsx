@@ -295,6 +295,27 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
       expect(container).not.toHaveTextContent(/buy|purchase|comment|like/i)
     })
 
+    it('renders an html body (BE-CONT-14) as the server’s blocks, and a plain one as text', () => {
+      const { container } = renderPage('anonymous', {
+        posts: postPage([
+          {
+            ...rawPartial(
+              10,
+              '<h2 dir="auto">Open part</h2><p>a <em>b</em></p>'
+            ),
+            bodyFormat: 'html',
+          },
+          { ...rawFull(9), text: '<em>literal</em>', bodyFormat: 'plain' },
+        ]),
+      })
+      expect(
+        screen.getByRole('heading', { level: 2, name: 'Open part' })
+      ).toBeVisible()
+      expect(screen.getByText('b').tagName).toBe('EM')
+      expect(screen.getByText('<em>literal</em>')).toBeVisible()
+      expect(container.querySelectorAll('em')).toHaveLength(1)
+    })
+
     it('never renders a gated body: TEASER with no preview shows only the gate', () => {
       const { container } = renderPage('anonymous', {
         posts: postPage([rawTeaser(11, null), rawPartial(10, null)]),

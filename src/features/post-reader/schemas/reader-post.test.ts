@@ -25,7 +25,7 @@ describe('parseReaderPost (FE-CONT-01)', () => {
       title: 'A title',
       createdAt: '2026-11-01T10:00:00.000Z',
       access: 'FULL',
-      text: BODY,
+      body: { format: 'plain', text: BODY },
       images: [{ id: 5, url: 'https://cdn.test/IMAGEKEY.png' }],
       attachments: [{ id: 9, url: 'https://cdn.test/FILEKEY.pdf' }],
       links: [{ id: 8, url: 'https://link.test/page' }],
@@ -64,12 +64,34 @@ describe('parseReaderPost (FE-CONT-01)', () => {
   it('reads PARTIAL as the opening the server cut, or none at position 0', () => {
     expect(parseReaderPost(ok(rawPartial()))).toMatchObject({
       access: 'PARTIAL',
-      text: OPEN_PART,
+      body: { format: 'plain', text: OPEN_PART },
     })
     expect(parseReaderPost(ok(rawPartial(null)))).toMatchObject({
       access: 'PARTIAL',
-      text: null,
+      body: null,
     })
+  })
+
+  it('reads an html body only when the server says html (BE-CONT-14)', () => {
+    const html = '<p dir="auto">باز</p><ul><li>یک</li></ul>'
+    expect(
+      parseReaderPost(ok({ ...rawPartial(html), bodyFormat: 'html' }))
+    ).toMatchObject({ access: 'PARTIAL', body: { format: 'html', html } })
+    expect(
+      parseReaderPost(
+        ok({ ...rawFullPublic(), text: html, bodyFormat: 'html' })
+      )
+    ).toMatchObject({ access: 'FULL', body: { format: 'html', html } })
+    // Absent (an older server) or plain: text, never markup.
+    expect(parseReaderPost(ok({ ...rawPartial(html) }))).toMatchObject({
+      body: { format: 'plain', text: html },
+    })
+    expect(
+      parseReaderPost(ok({ ...rawPartial(html), bodyFormat: 'plain' }))
+    ).toMatchObject({ body: { format: 'plain', text: html } })
+    expect(() =>
+      parseReaderPost(ok({ ...rawPartial(html), bodyFormat: 'markdown' }))
+    ).toThrow()
   })
 
   it('reads TEASER as the owner preview, or none', () => {

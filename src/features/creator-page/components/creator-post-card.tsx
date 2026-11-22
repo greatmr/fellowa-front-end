@@ -1,6 +1,7 @@
 import { LockIcon } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { RichBody } from '@/components/common/rich-body'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,7 +40,14 @@ export function CreatorPostCard({
   const format = useFormatter()
   const href = `/creators/${creatorId}/posts/${post.id}`
   const gated = post.access !== 'FULL'
-  const shownText = post.access === 'TEASER' ? post.textPreview : post.text
+  // TEASER: the owner's typed preview, plain text. FULL and PARTIAL: the
+  // body as the server sent it (PARTIAL already cut at the paywall).
+  const shown =
+    post.access === 'TEASER'
+      ? post.textPreview
+        ? { format: 'plain' as const, text: post.textPreview }
+        : null
+      : post.body
 
   return (
     <Card
@@ -93,14 +101,14 @@ export function CreatorPostCard({
         </Link>
       </h2>
 
-      {shownText ? (
+      {shown ? (
         <div className={gated ? 'mt-2 teaser-fade px-5' : 'mt-2 px-5 pb-5'}>
-          <p
-            dir="auto"
-            className="line-clamp-6 text-body leading-7 whitespace-pre-line text-muted-foreground"
-          >
-            {shownText}
-          </p>
+          <RichBody
+            body={shown}
+            // Headings in a card preview read at body size: the card's title
+            // is the heading that matters here.
+            className="line-clamp-6 text-body leading-7 text-muted-foreground [&_h2]:mt-2 [&_h2]:text-body [&_h3]:mt-2 [&_h3]:text-body"
+          />
         </div>
       ) : gated ? null : (
         <div className="pb-5" />

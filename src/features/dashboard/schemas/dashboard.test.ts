@@ -164,6 +164,28 @@ describe('parseDashboardPosts', () => {
     ).toEqual(['Hello', null, null, null])
   })
 
+  it('uses the server’s excerpt for an html body and never shows its markup (BE-CONT-14)', () => {
+    const item = (over: Record<string, unknown>) => ({
+      id: 7,
+      title: 'Rich',
+      text: '<h2>Title</h2><p>one <strong>two</strong></p>',
+      bodyFormat: 'html',
+      createdAt: '2026-11-21T08:00:00.000Z',
+      visibility: { contentId: 7, type: true, datePublished: null },
+      ...over,
+    })
+    expect(
+      parseDashboardPosts(
+        envelope([
+          item({ excerpt: 'Title one two' }),
+          // An html body with no excerpt (not the contract) shows none.
+          item({}),
+          item({ bodyFormat: 'plain', text: 'plain', excerpt: 'plain' }),
+        ])
+      ).map((post) => post.excerpt)
+    ).toEqual(['Title one two', null, 'plain'])
+  })
+
   it('cuts a long body to EXCERPT_LENGTH code points without splitting a character', () => {
     const body = '😀'.repeat(EXCERPT_LENGTH + 50)
     const [post] = parseDashboardPosts(

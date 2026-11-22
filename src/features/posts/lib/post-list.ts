@@ -60,7 +60,7 @@ export function filterPosts(
         (filters.access === 'free') === post.isPublic) &&
       (!query ||
         post.title.toLocaleLowerCase(locale).includes(query) ||
-        post.text.toLocaleLowerCase(locale).includes(query))
+        searchableText(post).toLocaleLowerCase(locale).includes(query))
   )
   if (filters.sort === 'title') {
     const collator = new Intl.Collator(locale)
@@ -69,6 +69,16 @@ export function filterPosts(
   return [...shown].sort(
     (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
   )
+}
+
+/**
+ * The body as text to search and show. A plain body is text already. An
+ * `html` body is never stripped here: the server's `excerpt` (owner reads,
+ * BE-CONT-14) is its plain-text start, so a search matches its first 200
+ * code points and the title.
+ */
+export function searchableText(post: OwnerPost): string {
+  return post.bodyFormat === 'plain' ? post.text : (post.excerpt ?? '')
 }
 
 /** The start of the body, cut in code points so no character is split. */

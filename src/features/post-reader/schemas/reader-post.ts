@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import type { ReaderPost } from '@/features/post-reader/types/reader-post'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { postBodyFromApi } from '@/lib/post-body'
 import { httpUrlOrNull } from '@/lib/url'
 
 export class InvalidReaderPostResponseError extends Error {
@@ -41,6 +42,12 @@ const base = {
   type: z.string(),
   title: z.string(),
   createdAt: z.iso.datetime({ offset: true }),
+  /**
+   * BE-CONT-14: how `text` is written, at every level. A server without it
+   * stores plain bodies only, so its absence reads as `plain`: an unknown
+   * format is never rendered as HTML.
+   */
+  bodyFormat: z.enum(['plain', 'html']).optional(),
 }
 
 const file = z.object({ id, url: z.string().nullable() })
@@ -88,6 +95,7 @@ const readerPostSchema = z.discriminatedUnion('access', [
 /** `GET /landing/posts/:id` and `GET /content/:id`. */
 export function parseReaderPost(value: unknown): ReaderPost {
   const raw = parseEnvelope(readerPostSchema, value, invalid)
+  const format = raw.bodyFormat ?? 'plain'
   const common = {
     id: raw.id,
     creatorId: raw.creatorId,
@@ -101,7 +109,7 @@ export function parseReaderPost(value: unknown): ReaderPost {
       return {
         ...common,
         access: 'FULL',
-        text: raw.text,
+        body: postBodyFromApi(raw.text, format),
         images: raw.images.map((f) => ({
           id: f.id,
           url: httpUrlOrNull(f.url),
@@ -122,7 +130,12 @@ export function parseReaderPost(value: unknown): ReaderPost {
       }
     }
     case 'PARTIAL':
-      return { ...common, access: 'PARTIAL', text: raw.text || null }
+      // Already cut by the server: code points (plain) or whole blocks (html).
+      return {
+        ...common,
+        access: 'PARTIAL',
+        body: postBodyFromApi(raw.text, format),
+      }
     case 'TEASER':
       return {
         ...common,

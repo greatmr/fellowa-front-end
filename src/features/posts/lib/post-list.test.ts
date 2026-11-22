@@ -5,6 +5,7 @@ import {
   defaultListFilters,
   filterPosts,
   hasActiveFilters,
+  searchableText,
   snippetOf,
   tabCounts,
 } from './post-list'
@@ -66,5 +67,35 @@ describe('posts list, client side over GET /content', () => {
     expect(snippetOf('  ')).toBe(null)
     const long = '😀'.repeat(200)
     expect(snippetOf(long)).toBe(`${'😀'.repeat(160)}…`)
+  })
+})
+
+describe('html bodies in the list (BE-CONT-14 excerpt)', () => {
+  const html = ownerPost({
+    id: 9,
+    title: 'Rich',
+    text: '<p>hidden <strong>markup</strong></p><p>class</p>',
+    bodyFormat: 'html',
+    excerpt: 'hidden markup class',
+  })
+
+  it('searches and shows the server’s excerpt, never the markup', () => {
+    expect(searchableText(html)).toBe('hidden markup class')
+    expect(snippetOf(searchableText(html))).toBe('hidden markup class')
+    const find = (query: string) =>
+      ids(filterPosts([html], 'all', { ...defaultListFilters, query }, 'en'))
+    expect(find('markup')).toEqual([9])
+    expect(find('strong')).toEqual([])
+    expect(find('<p>')).toEqual([])
+  })
+
+  it('has no snippet for an html body without an excerpt', () => {
+    expect(searchableText({ ...html, excerpt: null })).toBe('')
+  })
+
+  it('keeps searching the whole plain body', () => {
+    expect(searchableText(ownerPost({ text: 'a long plain body' }))).toBe(
+      'a long plain body'
+    )
   })
 })

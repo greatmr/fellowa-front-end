@@ -45,6 +45,7 @@ import {
   filterPosts,
   hasActiveFilters,
   isDraft,
+  searchableText,
   snippetOf,
   tabCounts,
   type AccessFilter,
@@ -416,7 +417,7 @@ function PostTable({
           <tbody className="divide-y">
             {posts.map((post) => {
               const title = post.title || t('untitled')
-              const snippet = snippetOf(post.text)
+              const snippet = snippetOf(searchableText(post))
               const editable = isEditableType(post.type)
               return (
                 <tr
