@@ -364,9 +364,12 @@ describe('posts server boundary', () => {
               {
                 id: 70,
                 contentId: 20,
-                videoCloudId: 'v-1',
+                videoCloudId: null,
                 videoCloudChannel: null,
                 fileNameCloud: 'clip.mp4',
+                // BE-CONT-16, object storage: no Arvan asset id.
+                playbackUrl:
+                  'http://localhost:9000/fellowa/content/video/1-a.mp4',
                 createdAt: '2026-11-20T08:00:00.000Z',
               },
             ],
@@ -410,12 +413,20 @@ describe('posts server boundary', () => {
         ownerPost({
           id: 20,
           type: 'video',
-          videos: [{ id: 70, name: 'clip.mp4' }],
+          videos: [
+            {
+              id: 70,
+              name: 'clip.mp4',
+              playbackUrl:
+                'http://localhost:9000/fellowa/content/video/1-a.mp4',
+            },
+          ],
         }),
         ownerPost({
           id: 21,
           type: 'audio',
-          audios: [{ id: 81, name: null }],
+          // A server older than BE-CONT-16 sends no `playbackUrl`.
+          audios: [{ id: 81, name: null, playbackUrl: null }],
         }),
         ownerPost({
           id: 22,
@@ -556,7 +567,10 @@ describe('posts server boundary', () => {
         fileId: 'abc==',
         uploadToken: 'upload-token',
       })
-    ).toEqual({ ok: true, data: { id: 70, name: 'clip.mp4' } })
+    ).toEqual({
+      ok: true,
+      data: { id: 70, name: 'clip.mp4', playbackUrl: null },
+    })
     expect(writes).toEqual([
       { method: 'POST', path: '/content/upload/init', body: start },
       {
@@ -612,6 +626,35 @@ describe('posts server boundary', () => {
         fileType: 'video/mp4',
       })
     ).toMatchObject({ ok: false, code: 'INVALID_POST_RESPONSE' })
+  })
+
+  it('reads the object-storage finalize answer: Ready, with its playbackUrl (BE-CONT-16)', async () => {
+    server.use(
+      http.post(`${apiOrigin}/content/upload/finalize-audio`, () =>
+        ok({
+          id: 81,
+          audioCloudId: null,
+          audioCloudChannel: null,
+          fileNameCloud: 'ep1.mp3',
+          status: 'Ready',
+          playbackUrl: 'http://localhost:9000/fellowa/content/audio/1-b.mp3',
+        })
+      )
+    )
+    expect(
+      await finalizeMediaUploadForHook(42, {
+        kind: 'audio',
+        fileId: '0123456789abcdef0123456789abcdef',
+        uploadToken: 'upload-token',
+      })
+    ).toEqual({
+      ok: true,
+      data: {
+        id: 81,
+        name: 'ep1.mp3',
+        playbackUrl: 'http://localhost:9000/fellowa/content/audio/1-b.mp3',
+      },
+    })
   })
 
   it('passes the API’s upload refusals through with their codes', async () => {

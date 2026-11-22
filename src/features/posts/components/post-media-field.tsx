@@ -12,6 +12,7 @@ import {
 import { Headphones, Video, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { PostMediaPlayer } from '@/components/common/post-media-player'
 import { Button } from '@/components/ui/button'
 import { useUploadPostMediaMutation } from '@/features/posts/api/post-hooks'
 import {
@@ -54,7 +55,8 @@ const icons = { video: Video, audio: Headphones } as const
  * joins the post when it is saved (`videoId` / `audioId`). A saved file is
  * shown, not replaced: the route attaches and never removes, and no route
  * deletes a video or audio (api.md), so a second upload would add a second
- * file to the post.
+ * file to the post. A file with a `playbackUrl` (object storage, BE-CONT-16)
+ * gets a player under its chip, as a preview.
  */
 export function PostMediaField({
   viewerId,
@@ -186,6 +188,16 @@ export function PostMediaField({
             </Button>
           )}
         </div>
+      ) : null}
+
+      {/* Object storage answers with a URL at once (BE-CONT-16); an Arvan
+          file has none and keeps the name only. */}
+      {upload?.playbackUrl ? (
+        <PostMediaPlayer
+          kind={kind}
+          src={upload.playbackUrl}
+          title={upload.name ?? t('unnamed')}
+        />
       ) : null}
 
       {active ? (

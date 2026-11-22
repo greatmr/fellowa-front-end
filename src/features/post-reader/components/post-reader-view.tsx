@@ -9,6 +9,7 @@ import {
 import Image from 'next/image'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { PostMediaPlayer } from '@/components/common/post-media-player'
 import { RichBody } from '@/components/common/rich-body'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -157,6 +158,10 @@ function BodyText({ text }: { text: string }) {
 
 function FullBody({ post }: { post: FullReaderPost }) {
   const t = useTranslations('postReader')
+  // Only object-storage files carry a URL (BE-CONT-16); Arvan ones keep the
+  // "playback opens soon" line.
+  const unplayableVideos = post.videos.filter((v) => !v.playbackUrl).length
+  const unplayableAudios = post.audios.filter((a) => !a.playbackUrl)
 
   return (
     <div className="grid gap-5 px-5 pt-4 pb-5">
@@ -183,18 +188,38 @@ function FullBody({ post }: { post: FullReaderPost }) {
         </ul>
       ) : null}
 
-      {post.videoCount > 0 ? (
+      {post.videos.map((video) =>
+        video.playbackUrl ? (
+          <PostMediaPlayer
+            key={video.id}
+            kind="video"
+            src={video.playbackUrl}
+            title={post.title}
+          />
+        ) : null
+      )}
+      {unplayableVideos > 0 ? (
         <MediaNotice
           icon={<VideoIcon aria-hidden />}
-          text={t('videoUnavailable', { count: post.videoCount })}
+          text={t('videoUnavailable', { count: unplayableVideos })}
         />
       ) : null}
-      {post.audios.length > 0 ? (
+      {post.audios.map((audio) =>
+        audio.playbackUrl ? (
+          <PostMediaPlayer
+            key={audio.id}
+            kind="audio"
+            src={audio.playbackUrl}
+            title={post.title}
+          />
+        ) : null
+      )}
+      {unplayableAudios.length > 0 ? (
         <MediaNotice
           icon={<AudioLinesIcon aria-hidden />}
           text={
-            post.audios.every((audio) => audio.ready)
-              ? t('audioUnavailable', { count: post.audios.length })
+            unplayableAudios.every((audio) => audio.ready)
+              ? t('audioUnavailable', { count: unplayableAudios.length })
               : t('audioProcessing')
           }
         />

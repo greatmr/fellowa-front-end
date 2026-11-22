@@ -46,9 +46,9 @@ export type OwnerPost = {
   dateEarly: string | null
   images: PostFile[]
   attachments: PostFile[]
-  /** `videos[]`: Arvan videos on this post (FQ-30: at most one in practice). */
+  /** `videos[]`: videos on this post (FQ-30: at most one in practice). */
   videos: PostMedia[]
-  /** `audios[]`: Arvan audios on this post. */
+  /** `audios[]`: audios on this post. */
   audios: PostMedia[]
   /** `polls[0]`; `poll.post_id` is UNIQUE, so a post has at most one. */
   poll: PostPoll | null
@@ -60,10 +60,15 @@ export type OwnerPost = {
 }
 
 /**
- * A video or audio on a post: `{id, fileNameCloud}`. No playable URL exists
- * in any response (FE-CONT-01), so the panel shows the name only.
+ * A video or audio on a post: `{id, fileNameCloud, playbackUrl}`.
+ * `playbackUrl` (BE-CONT-16) is an http(s) URL for a file in object storage,
+ * `null` for an Arvan asset (no Arvan playback yet) or an older server.
  */
-export type PostMedia = { id: number; name: string | null }
+export type PostMedia = {
+  id: number
+  name: string | null
+  playbackUrl: string | null
+}
 
 export type PostPollOption = { id: number; label: string }
 

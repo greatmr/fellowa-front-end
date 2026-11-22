@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { CreatorByline } from '@/features/creator-page/server'
@@ -11,9 +11,12 @@ import {
   PREVIEW,
   ok,
   rawFullMember,
+  rawFullObjectStorage,
   rawFullPublic,
   rawPartial,
   rawTeaser,
+  VIDEO_URL,
+  AUDIO_URL,
 } from '../test/fixtures'
 import { PostReaderSkeleton } from './post-reader-skeleton'
 import { PostReaderView } from './post-reader-view'
@@ -73,6 +76,66 @@ describe('PostReaderView (FE-CONT-01)', () => {
     expect(screen.queryByRole('separator')).toBeNull()
     expect(container).not.toHaveTextContent(PREVIEW)
   })
+
+  it('FULL with playbackUrl (BE-CONT-16): plays video and audio, no autoplay', () => {
+    renderPost(rawFullObjectStorage())
+
+    const video = screen.getByLabelText('Video: A title')
+    expect(video.tagName).toBe('VIDEO')
+    expect(video).toHaveAttribute('src', VIDEO_URL)
+    expect(video).toHaveAttribute('controls')
+    expect(video).toHaveAttribute('preload', 'metadata')
+    expect(video).not.toHaveAttribute('autoplay')
+    const audio = screen.getByLabelText('Audio: A title')
+    expect(audio.tagName).toBe('AUDIO')
+    expect(audio).toHaveAttribute('src', AUDIO_URL)
+    expect(screen.queryByText(/Playback here opens soon/)).toBeNull()
+  })
+
+  it('FULL without playbackUrl (Arvan): no player, the "opens soon" line', () => {
+    const { container } = renderPost(rawFullPublic())
+
+    expect(container.querySelector('video, audio')).toBeNull()
+    expect(
+      screen.getByText(
+        'This post has an audio track. Playback here opens soon.'
+      )
+    ).toBeVisible()
+  })
+
+  it('a video the browser cannot play gives way to a line and a link', () => {
+    renderPost(rawFullObjectStorage())
+
+    fireEvent.error(screen.getByLabelText('Video: A title'))
+
+    expect(screen.queryByLabelText('Video: A title')).toBeNull()
+    expect(
+      screen.getByText("This file can't be played in your browser.")
+    ).toBeVisible()
+    expect(
+      screen.getByRole('link', { name: 'Open or download the file' })
+    ).toHaveAttribute('href', VIDEO_URL)
+    // The audio is untouched.
+    expect(screen.getByLabelText('Audio: A title')).toHaveAttribute(
+      'src',
+      AUDIO_URL
+    )
+  })
+
+  it.each(['PARTIAL', 'TEASER'] as const)(
+    '%s: no player, even if a response wrongly held media',
+    (access) => {
+      const locked = access === 'PARTIAL' ? rawPartial() : rawTeaser()
+      const { container } = renderPost({
+        ...locked,
+        videos: rawFullObjectStorage().videos,
+        audios: rawFullObjectStorage().audios,
+      })
+
+      expect(container.querySelector('video, audio')).toBeNull()
+      expect(container.innerHTML).not.toContain('localhost:9000')
+    }
+  )
 
   it('FULL for a member: the poll options, read-only', () => {
     renderPost(rawFullMember(), 'signedIn')
@@ -225,6 +288,20 @@ describe('PostReaderView (FE-CONT-01)', () => {
     expect(screen.getByRole('link', { name: 'مشاهدهٔ پلن‌ها' })).toBeVisible()
     expect(
       screen.getByRole('link', { name: 'عضو هستید؟ وارد شوید' })
+    ).toBeVisible()
+  })
+
+  it('renders the player and its fallback in Persian with every key present', () => {
+    renderPost(rawFullObjectStorage(), 'signedIn', 'fa')
+
+    const video = screen.getByLabelText('ویدیو: A title')
+    expect(screen.getByLabelText('صوت: A title')).toBeInTheDocument()
+    fireEvent.error(video)
+    expect(
+      screen.getByText('این فایل در مرورگر شما پخش نمی‌شود.')
+    ).toBeVisible()
+    expect(
+      screen.getByRole('link', { name: 'باز کردن یا دانلود فایل' })
     ).toBeVisible()
   })
 

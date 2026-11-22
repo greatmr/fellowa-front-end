@@ -59,8 +59,11 @@ const fullSchema = z.object({
   images: z.array(file),
   attachments: z.array(file),
   links: z.array(z.object({ id, link: z.string().nullable() })),
-  videos: z.array(z.object({ id })),
-  audios: z.array(z.object({ id, status: z.boolean() })),
+  /** BE-CONT-16 `playbackUrl`: `null` for Arvan, absent from older servers. */
+  videos: z.array(z.object({ id, playbackUrl: z.string().nullish() })),
+  audios: z.array(
+    z.object({ id, status: z.boolean(), playbackUrl: z.string().nullish() })
+  ),
   /** `GET /content/:id` only; at most one element (`poll.post_id` UNIQUE). */
   polls: z
     .array(
@@ -119,8 +122,15 @@ export function parseReaderPost(value: unknown): ReaderPost {
           url: httpUrlOrNull(f.url),
         })),
         links: raw.links.map((l) => ({ id: l.id, url: httpUrlOrNull(l.link) })),
-        videoCount: raw.videos.length,
-        audios: raw.audios.map((a) => ({ id: a.id, ready: a.status })),
+        videos: raw.videos.map((v) => ({
+          id: v.id,
+          playbackUrl: httpUrlOrNull(v.playbackUrl),
+        })),
+        audios: raw.audios.map((a) => ({
+          id: a.id,
+          ready: a.status,
+          playbackUrl: httpUrlOrNull(a.playbackUrl),
+        })),
         poll: poll
           ? {
               id: poll.id,

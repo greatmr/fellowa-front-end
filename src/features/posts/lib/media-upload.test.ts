@@ -34,7 +34,11 @@ function steps(): MediaUploadSteps & {
         uploadToken: String(form.get('uploadToken')),
       })
     }),
-    finalize: vi.fn(async () => ({ id: 70, name: 'clip.mp4' })),
+    finalize: vi.fn(async () => ({
+      id: 70,
+      name: 'clip.mp4',
+      playbackUrl: null,
+    })),
   }
 }
 
@@ -65,7 +69,7 @@ describe('uploadMediaFile', () => {
       uploadToken: 'upload-token',
     })
     expect(progress).toEqual([0, 10, 20, 25, 25])
-    expect(media).toEqual({ id: 70, name: 'clip.mp4' })
+    expect(media).toEqual({ id: 70, name: 'clip.mp4', playbackUrl: null })
   })
 
   it('stops between chunks when cancelled, and never finalizes', async () => {
