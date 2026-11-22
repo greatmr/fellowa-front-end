@@ -1,3 +1,5 @@
+import type { PostBody } from '@/lib/post-body'
+
 /**
  * Public creator page (FE-PAGE-01/03), from `GET /landing/creators/:id{,/tiers,
  * /posts}` (BE-LAND-03, Q-51; back-end/docs/modules/landing/api.md). Only what
@@ -56,13 +58,17 @@ type CreatorPostBase = {
 
 export type FullCreatorPost = CreatorPostBase & {
   access: 'FULL'
-  text: string | null
+  /** `text` in its `bodyFormat` (Q-83); `null` without a body. */
+  body: PostBody | null
 }
 
 export type PartialCreatorPost = CreatorPostBase & {
   access: 'PARTIAL'
-  /** The opening up to the paywall, cut on the server; `null` at position 0. */
-  text: string | null
+  /**
+   * The opening up to the paywall, cut on the server (whole blocks for
+   * `html`); `null` at position 0.
+   */
+  body: PostBody | null
 }
 
 export type TeaserCreatorPost = CreatorPostBase & {

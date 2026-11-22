@@ -41,8 +41,12 @@ const postsSchema = z.array(
   z.object({
     id: z.number(),
     title: z.string(),
-    /** `post.body`, plain text; the owner reads it whole (FULL). */
+    /** `post.body`: plain text, or sanitised HTML when `bodyFormat` is `html`. */
     text: z.string().nullish(),
+    /** BE-CONT-14; absent from an older server, whose bodies are all plain. */
+    bodyFormat: z.enum(['plain', 'html']).optional(),
+    /** BE-CONT-14: the server's plain-text start of the body (owner reads). */
+    excerpt: z.string().nullish(),
     createdAt: z.string(),
     paywallPosition: z.number().nullish(),
     visibility: z.object({
@@ -111,7 +115,15 @@ export function parseDashboardPosts(value: unknown): DashboardPost[] {
   return parseEnvelope(postsSchema, value, invalid).map((post) => ({
     id: post.id,
     title: post.title,
-    excerpt: excerptOf(post.text),
+    // Never markup: the server's excerpt, or a plain body itself. An html
+    // body is not stripped here (FE-POST-03).
+    excerpt: excerptOf(
+      post.excerpt !== undefined
+        ? post.excerpt
+        : (post.bodyFormat ?? 'plain') === 'plain'
+          ? post.text
+          : null
+    ),
     publishedAt: post.visibility.datePublished ?? null,
     createdAt: post.createdAt,
     audience: !post.visibility.type

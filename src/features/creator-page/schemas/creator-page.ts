@@ -9,6 +9,7 @@ import type {
 } from '@/features/creator-page/types/creator-page'
 import { parseTierPrice } from '@/features/tiers'
 import { parseEnvelope } from '@/lib/api/envelope'
+import { postBodyFromApi } from '@/lib/post-body'
 import { httpUrlOrNull } from '@/lib/url'
 
 export class InvalidCreatorPageResponseError extends Error {
@@ -67,6 +68,8 @@ const postBase = {
   creatorId: id,
   title: z.string(),
   createdAt: z.iso.datetime({ offset: true }),
+  /** BE-CONT-14; absent from an older server, whose bodies are all plain. */
+  bodyFormat: z.enum(['plain', 'html']).optional(),
 }
 
 const rawPostSchema = z.discriminatedUnion('access', [
@@ -157,11 +160,20 @@ export function parseCreatorPostPage(
   if (raw.items.some((post) => post.creatorId !== creatorId)) throw invalid()
   const items = raw.items.map((post): CreatorPost => {
     const common = { id: post.id, title: post.title, createdAt: post.createdAt }
+    const format = post.bodyFormat ?? 'plain'
     switch (post.access) {
       case 'FULL':
-        return { ...common, access: 'FULL', text: post.text }
+        return {
+          ...common,
+          access: 'FULL',
+          body: postBodyFromApi(post.text, format),
+        }
       case 'PARTIAL':
-        return { ...common, access: 'PARTIAL', text: post.text || null }
+        return {
+          ...common,
+          access: 'PARTIAL',
+          body: postBodyFromApi(post.text, format),
+        }
       case 'TEASER':
         return {
           ...common,

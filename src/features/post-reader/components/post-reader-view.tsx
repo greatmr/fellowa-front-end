@@ -9,6 +9,7 @@ import {
 import Image from 'next/image'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { RichBody } from '@/components/common/rich-body'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ import type {
 } from '@/features/post-reader/types/reader-post'
 import { Link } from '@/i18n/navigation'
 import { publicPageTitle } from '@/lib/page-name'
+import type { PostBody } from '@/lib/post-body'
 
 /**
  * The gated post reader (FE-CONT-01; presentation `CreatorProfileView` post
@@ -77,7 +79,7 @@ export function PostReaderView({
           <FullBody post={post} />
         ) : post.access === 'PARTIAL' ? (
           <div className="grid gap-4 px-5 pt-4 pb-5">
-            {post.text ? <BodyText text={post.text} /> : null}
+            {post.body ? <PostBodyText body={post.body} /> : null}
             <div
               role="separator"
               aria-label={t('dividerLabel')}
@@ -135,6 +137,13 @@ function Byline({ creator }: { creator: CreatorByline }) {
   )
 }
 
+function PostBodyText({ body }: { body: PostBody }) {
+  return (
+    <RichBody body={body} className="text-body leading-8 text-foreground" />
+  )
+}
+
+/** The owner's typed preview: always plain text. */
 function BodyText({ text }: { text: string }) {
   return (
     <p
@@ -151,7 +160,7 @@ function FullBody({ post }: { post: FullReaderPost }) {
 
   return (
     <div className="grid gap-5 px-5 pt-4 pb-5">
-      {post.text ? <BodyText text={post.text} /> : null}
+      {post.body ? <PostBodyText body={post.body} /> : null}
 
       {post.images.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2">
