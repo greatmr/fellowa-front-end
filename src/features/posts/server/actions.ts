@@ -5,10 +5,13 @@ import {
   deletePost,
   deletePostAttachment,
   deletePostImage,
+  finalizeMediaUpload,
   getOwnPost,
+  initMediaUpload,
   listOwnPosts,
   savePost,
   setPostStatus,
+  uploadMediaChunk,
   uploadPostAttachment,
   uploadPostImage,
 } from '@/features/posts/api/post-api'
@@ -19,14 +22,22 @@ import {
   POST_IMAGE_TYPES,
   fileProblem,
 } from '@/features/posts/lib/upload-limits'
+import { MEDIA_CHUNK_BYTES } from '@/features/posts/lib/media-upload-limits'
 import {
   InvalidPostResponseError,
+  mediaChunkFieldsSchema,
+  mediaUploadFinishSchema,
+  mediaUploadStartSchema,
   postIdSchema,
   postStatusSchema,
   savePostSchema,
 } from '@/features/posts/schemas/post'
 import type {
+  MediaUploadFinish,
+  MediaUploadSession,
+  MediaUploadStart,
   PostFile,
+  PostMedia,
   PostStatusInput,
   SavePostInput,
   StudioPost,
@@ -189,5 +200,52 @@ export async function deletePostAttachmentForHook(
     if (!validId(attachmentId)) invalidPost()
     await deletePostAttachment(await authorizedToken(viewerId), attachmentId)
     return null
+  })
+}
+
+export async function initMediaUploadForHook(
+  viewerId: number,
+  start: MediaUploadStart
+): Promise<ApiActionResult<MediaUploadSession>> {
+  return mutation(async () => {
+    const parsed = mediaUploadStartSchema.safeParse(start)
+    if (!parsed.success) invalidPost()
+    return initMediaUpload(await authorizedToken(viewerId), parsed.data)
+  })
+}
+
+/** One chunk: `file` (≤ `MEDIA_CHUNK_BYTES`), `uploadUrl`, `uploadToken`, `offset`. */
+export async function uploadMediaChunkForHook(
+  viewerId: number,
+  form: FormData
+): Promise<ApiActionResult<null>> {
+  return mutation(async () => {
+    const bytes = form.get('file')
+    const fields = mediaChunkFieldsSchema.safeParse({
+      uploadUrl: form.get('uploadUrl'),
+      uploadToken: form.get('uploadToken'),
+      offset: form.get('offset'),
+    })
+    if (
+      !(bytes instanceof Blob) ||
+      bytes.size === 0 ||
+      bytes.size > MEDIA_CHUNK_BYTES ||
+      !fields.success
+    ) {
+      invalidPost()
+    }
+    await uploadMediaChunk(await authorizedToken(viewerId), fields.data, bytes)
+    return null
+  })
+}
+
+export async function finalizeMediaUploadForHook(
+  viewerId: number,
+  finish: MediaUploadFinish
+): Promise<ApiActionResult<PostMedia>> {
+  return mutation(async () => {
+    const parsed = mediaUploadFinishSchema.safeParse(finish)
+    if (!parsed.success) invalidPost()
+    return finalizeMediaUpload(await authorizedToken(viewerId), parsed.data)
   })
 }

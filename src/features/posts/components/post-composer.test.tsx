@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn<Mutate>(),
   upload: vi.fn<Mutate>(),
   removeImage: vi.fn<Mutate>(),
+  uploadMedia: vi.fn<Mutate>(),
+  mediaPending: false,
   push: vi.fn(),
   replace: vi.fn(),
   toastSuccess: vi.fn(),
@@ -39,6 +41,10 @@ vi.mock('@/features/posts/api/post-hooks', () => ({
   useSavePostMutation: () => mutation(mocks.save),
   useUploadPostImageMutation: () => mutation(mocks.upload),
   useDeletePostImageMutation: () => mutation(mocks.removeImage),
+  useUploadPostMediaMutation: () => ({
+    isPending: mocks.mediaPending,
+    mutate: mocks.uploadMedia,
+  }),
   useUploadPostAttachmentMutation: () => mutation(vi.fn()),
   useDeletePostAttachmentMutation: () => mutation(vi.fn()),
 }))
@@ -82,6 +88,7 @@ describe('PostComposer', () => {
       mocks.save,
       mocks.upload,
       mocks.removeImage,
+      mocks.uploadMedia,
       mocks.push,
       mocks.replace,
       mocks.toastSuccess,
@@ -89,6 +96,7 @@ describe('PostComposer', () => {
     ]) {
       fn.mockReset()
     }
+    mocks.mediaPending = false
     mocks.tiers = {
       isPending: false,
       isError: false,
@@ -126,7 +134,7 @@ describe('PostComposer', () => {
     for (const text of [/purchase/i, /collection/i, /schedule/i]) {
       expect(screen.queryByText(text)).not.toBeInTheDocument()
     }
-    for (const name of [/bold/i, /italic/i, /link/i, /poll/i, /video/i]) {
+    for (const name of [/bold/i, /italic/i, /link/i]) {
       expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
@@ -321,6 +329,7 @@ describe('PostComposer', () => {
     const user = userEvent.setup({ applyAccept: false })
     renderComposer()
     await user.type(title(), 'Gallery')
+    await user.click(screen.getByRole('button', { name: c.mediaChoice.image }))
     const input = screen.getByTestId('post-image-input')
     await user.upload(
       input,
@@ -364,5 +373,315 @@ describe('PostComposer', () => {
       await screen.findByRole('button', { name: c.images.add })
     ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  describe('video, audio and poll blocks (FE-POST-02)', () => {
+    type MediaVariables = {
+      file: File
+      kind: string
+      onProgress: (progress: unknown) => void
+      isCancelled: () => boolean
+    }
+    const lastMedia = () =>
+      mocks.uploadMedia.mock.calls.at(-1) as unknown as [
+        MediaVariables,
+        Record<string, (value?: unknown) => void>,
+      ]
+    const choose = (name: string) =>
+      userEvent.setup().click(screen.getByRole('button', { name }))
+
+    it.each(['fa', 'en'] as const)(
+      'offers one media block at a time in %s with no message error',
+      async (locale) => {
+        const t = messages[locale].posts.composer
+        const user = userEvent.setup()
+        renderComposer(null, locale)
+        for (const kind of ['image', 'video', 'audio', 'poll'] as const) {
+          expect(
+            screen.getByRole('button', { name: t.mediaChoice[kind] })
+          ).toBeInTheDocument()
+        }
+        await user.click(
+          screen.getByRole('button', { name: t.mediaChoice.video })
+        )
+        expect(screen.getByText(t.media.video.hint)).toBeInTheDocument()
+        expect(screen.getByText(t.media.playbackNote)).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', { name: t.mediaChoice.poll })
+        ).not.toBeInTheDocument()
+        await user.click(
+          screen.getByRole('button', { name: t.mediaChoice.remove.video })
+        )
+        await user.click(
+          screen.getByRole('button', { name: t.mediaChoice.poll })
+        )
+        expect(screen.getByText(t.poll.lockedNote)).toBeInTheDocument()
+        expect(
+          within(
+            screen.getByRole('region', { name: t.poll.title })
+          ).getAllByRole('textbox')
+        ).toHaveLength(2)
+      }
+    )
+
+    it('uploads a video, shows progress and the uploaded file, and saves its id', async () => {
+      const user = userEvent.setup({ applyAccept: false })
+      renderComposer()
+      await user.type(title(), 'Clip')
+      await choose(c.mediaChoice.video)
+      const input = screen.getByTestId('post-video-input')
+      await user.upload(input, new File(['x'], 'a.mp3', { type: 'audio/mpeg' }))
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        c.media.video.typeError
+      )
+      expect(mocks.uploadMedia).not.toHaveBeenCalled()
+      mocks.mediaPending = true
+      await user.upload(
+        input,
+        new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+      )
+      const [variables, options] = lastMedia()
+      expect(variables).toMatchObject({ kind: 'video' })
+      expect(variables.file.name).toBe('clip.mp4')
+      act(() =>
+        variables.onProgress({ phase: 'uploading', sent: 50, total: 100 })
+      )
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '50'
+      )
+      mocks.mediaPending = false
+      act(() => {
+        options.onSuccess({ id: 70, name: 'clip.mp4' })
+        options.onSettled()
+      })
+      expect(await screen.findByText('clip.mp4')).toBeInTheDocument()
+      expect(screen.getByText(c.media.pendingNote)).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: c.publish }))
+      expect(lastSave()[0]).toMatchObject({
+        kind: 'video',
+        payload: { title: 'Clip', videoId: 70 },
+      })
+    })
+
+    it('cancels an upload between chunks and says so', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await choose(c.mediaChoice.audio)
+      mocks.mediaPending = true
+      await user.upload(
+        screen.getByTestId('post-audio-input'),
+        new File(['x'], 'ep.mp3', { type: 'audio/mpeg' })
+      )
+      const [variables, options] = lastMedia()
+      expect(variables.isCancelled()).toBe(false)
+      await user.click(screen.getByRole('button', { name: c.media.cancel }))
+      expect(variables.isCancelled()).toBe(true)
+      expect(
+        screen.getByRole('button', { name: c.media.cancel })
+      ).toBeDisabled()
+      expect(screen.getByRole('status')).toHaveTextContent(c.media.cancelling)
+      mocks.mediaPending = false
+      const { MediaUploadCancelledError } =
+        await import('@/features/posts/lib/media-upload')
+      act(() => {
+        options.onError(new MediaUploadCancelledError())
+        options.onSettled()
+      })
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        c.media.cancelled
+      )
+    })
+
+    it('explains an upload the server cannot take', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await choose(c.mediaChoice.video)
+      for (const [code, message] of [
+        ['INTEGRATION_NOT_CONFIGURED', c.media.unavailable],
+        ['UPLOAD_TOO_LARGE', c.media.video.sizeError],
+        ['CONTENT_UPLOAD_NOT_FOUND', c.media.uploadError],
+      ] as const) {
+        await user.upload(
+          screen.getByTestId('post-video-input'),
+          new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+        )
+        act(() =>
+          lastMedia()[1].onError(
+            new ApiError({ message: 'x', status: 400, code })
+          )
+        )
+        expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      }
+    })
+
+    it('needs the file before publishing a video post, not before a draft', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Clip')
+      await choose(c.mediaChoice.video)
+      await user.click(screen.getByRole('button', { name: c.publish }))
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        c.media.video.required
+      )
+      expect(mocks.save).not.toHaveBeenCalled()
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      expect(lastSave()[0]).toMatchObject({ kind: 'video' })
+      expect(lastSave()[0]).not.toHaveProperty('payload.videoId')
+    })
+
+    it('writes a poll with its options and choice mode, and needs two options to publish', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Vote')
+      await choose(c.mediaChoice.poll)
+      const option = (index: number) =>
+        screen.getByRole('textbox', {
+          name: c.poll.optionLabel.replace('{index, number}', String(index)),
+        })
+      await user.type(option(1), 'Tea')
+      await user.click(screen.getByRole('button', { name: c.publish }))
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        c.poll.required.replace('{count, number}', '2')
+      )
+      expect(mocks.save).not.toHaveBeenCalled()
+      await user.type(option(2), 'Coffee')
+      await user.click(screen.getByRole('button', { name: c.poll.addOption }))
+      await user.type(option(3), 'Water')
+      await user.click(
+        screen.getByRole('button', {
+          name: c.poll.removeOption.replace('{index, number}', '3'),
+        })
+      )
+      await user.click(screen.getByRole('switch', { name: c.poll.multiSelect }))
+      await user.click(screen.getByRole('button', { name: c.publish }))
+      expect(lastSave()[0]).toMatchObject({
+        kind: 'poll',
+        payload: {
+          options: [{ option: 'Tea' }, { option: 'Coffee' }],
+          typeSelect: true,
+        },
+      })
+    })
+
+    it('shows a saved video without replacing it, and offers no other block', () => {
+      renderComposer(
+        studioPost({ type: 'video', videos: [{ id: 70, name: 'clip.mp4' }] })
+      )
+      expect(screen.getByText('clip.mp4')).toBeInTheDocument()
+      expect(screen.getByText(c.media.savedNote)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: c.media.video.add })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: c.mediaChoice.remove.video })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: c.mediaChoice.image })
+      ).not.toBeInTheDocument()
+    })
+
+    it('opens a saved poll with its options, and a saved text post without the poll choice', () => {
+      const { unmount } = renderComposer(
+        studioPost({
+          type: 'poll',
+          poll: {
+            multiSelect: true,
+            closesAt: null,
+            options: [
+              { id: 1, label: 'Tea' },
+              { id: 2, label: 'Coffee' },
+            ],
+          },
+        })
+      )
+      expect(screen.getByDisplayValue('Coffee')).toBeInTheDocument()
+      expect(
+        screen.getByRole('switch', { name: c.poll.multiSelect })
+      ).toBeChecked()
+      unmount()
+      renderComposer(studioPost())
+      expect(
+        screen.getByRole('button', { name: c.mediaChoice.video })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: c.mediaChoice.poll })
+      ).not.toBeInTheDocument()
+    })
+
+    it('says why a poll with votes cannot be saved', async () => {
+      const user = userEvent.setup()
+      renderComposer(
+        studioPost({
+          type: 'poll',
+          poll: {
+            multiSelect: false,
+            closesAt: null,
+            options: [
+              { id: 1, label: 'Tea' },
+              { id: 2, label: 'Coffee' },
+            ],
+          },
+        })
+      )
+      await user.click(screen.getByRole('button', { name: c.saveChanges }))
+      expect(lastSave()[0]).toMatchObject({ postId: 12, kind: 'poll' })
+      act(() =>
+        (lastSave()[1]?.onError as (error: ApiError) => void)(
+          new ApiError({
+            message: 'x',
+            status: 400,
+            code: 'CONTENT_POLL_LOCKED',
+          })
+        )
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        en.posts.errors.pollLocked
+      )
+    })
+
+    it('keeps a file a draft save attached, even when the post has not refetched yet', async () => {
+      const user = userEvent.setup()
+      renderComposer(studioPost({ publishedAt: null }))
+      await choose(c.mediaChoice.video)
+      await user.upload(
+        screen.getByTestId('post-video-input'),
+        new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+      )
+      act(() => lastMedia()[1].onSuccess({ id: 70, name: 'clip.mp4' }))
+      expect(
+        screen.getByRole('button', { name: c.mediaChoice.remove.video })
+      ).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      expect(lastSave()[0]).toMatchObject({ kind: 'video' })
+      // The save answered before its refetch: `saved` still says text.
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: StudioPost) => void)(
+          studioPost({
+            type: 'video',
+            publishedAt: null,
+            videos: [{ id: 70, name: 'clip.mp4' }],
+          })
+        )
+      )
+      expect(await screen.findByText(c.media.savedNote)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: c.mediaChoice.remove.video })
+      ).not.toBeInTheDocument()
+    })
+
+    it('opens a draft poll saved with fewer than two options on two inputs', () => {
+      renderComposer(
+        studioPost({
+          type: 'poll',
+          poll: { multiSelect: false, closesAt: null, options: [] },
+        })
+      )
+      expect(
+        within(screen.getByRole('region', { name: c.poll.title })).getAllByRole(
+          'textbox'
+        )
+      ).toHaveLength(2)
+    })
   })
 })

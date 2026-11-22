@@ -120,7 +120,7 @@ describe('PostsManager', () => {
     expect(screen.queryByText('Morning notes')).not.toBeInTheDocument()
   })
 
-  it('shows access and status from the owner’s own choices, and edit only for text and image', () => {
+  it('shows access and status from the owner’s own choices, and edit for every composer type (FE-POST-02)', () => {
     renderManager()
     const essay = row('Members essay')
     expect(within(essay).getByText(m.list.badge.tiers)).toBeInTheDocument()
@@ -135,8 +135,10 @@ describe('PostsManager', () => {
     expect(within(notes).getByText(m.list.badge.free)).toBeInTheDocument()
     expect(within(notes).getByText(m.list.badge.published)).toBeInTheDocument()
     expect(
-      within(row('A video')).queryByRole('link', { name: /Edit/ })
-    ).not.toBeInTheDocument()
+      within(row('A video')).getByRole('link', {
+        name: m.list.editTitle.replace('{title}', 'A video'),
+      })
+    ).toHaveAttribute('href', '/studio/posts/3/edit')
   })
 
   it('searches, filters by access and clears the filters, client side', async () => {

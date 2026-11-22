@@ -2,6 +2,11 @@ import { HttpResponse, http } from 'msw'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { server } from '../../../../test/msw/server'
+import type {
+  PostWritePayload,
+  SavePostInput,
+} from '@/features/posts/types/post'
+
 import { rawPost, studioPost } from '../test/fixtures'
 
 const request = vi.hoisted(() => ({
@@ -24,10 +29,13 @@ vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
 const {
   deletePostForHook,
+  finalizeMediaUploadForHook,
   getPostForHook,
+  initMediaUploadForHook,
   listPostsForHook,
   savePostForHook,
   setPostStatusForHook,
+  uploadMediaChunkForHook,
   uploadPostAttachmentForHook,
   uploadPostImageForHook,
 } = await import('./actions')
@@ -329,6 +337,295 @@ describe('posts server boundary', () => {
     expect(await uploadPostAttachmentForHook(42, 12, body)).toEqual({
       ok: true,
       data: { id: 6, url: 'https://cdn.example/f.pdf' },
+    })
+  })
+
+  it('reads a video, an audio and a poll post as the owner sees them, creatorId accepted', async () => {
+    server.use(
+      http.get(`${apiOrigin}/content`, () =>
+        ok([
+          rawPost({
+            id: 20,
+            creatorId: 42,
+            type: 'video',
+            videos: [
+              {
+                id: 70,
+                contentId: 20,
+                videoCloudId: 'v-1',
+                videoCloudChannel: null,
+                fileNameCloud: 'clip.mp4',
+                createdAt: '2026-11-20T08:00:00.000Z',
+              },
+            ],
+          }),
+          rawPost({
+            id: 21,
+            type: 'audio',
+            audios: [
+              {
+                id: 81,
+                contentId: 21,
+                audioCloudId: 'a-1',
+                audioCloudChannel: null,
+                fileNameCloud: null,
+                status: false,
+                createdAt: '2026-11-20T08:00:00.000Z',
+              },
+            ],
+          }),
+          rawPost({
+            id: 22,
+            type: 'poll',
+            polls: [
+              {
+                id: 3,
+                typeSelect: false,
+                endDataPublished: null,
+                options: [
+                  { id: 1, pollId: 3, option: 'بله' },
+                  { id: 2, pollId: 3, option: 'خیر' },
+                ],
+              },
+            ],
+          }),
+        ])
+      )
+    )
+    expect(await listPostsForHook(42)).toEqual({
+      ok: true,
+      data: [
+        studioPost({
+          id: 20,
+          type: 'video',
+          videos: [{ id: 70, name: 'clip.mp4' }],
+        }),
+        studioPost({
+          id: 21,
+          type: 'audio',
+          audios: [{ id: 81, name: null }],
+        }),
+        studioPost({
+          id: 22,
+          type: 'poll',
+          poll: {
+            multiSelect: false,
+            closesAt: null,
+            options: [
+              { id: 1, label: 'بله' },
+              { id: 2, label: 'خیر' },
+            ],
+          },
+        }),
+      ],
+    })
+  })
+
+  it('writes video, audio and poll posts to their own routes, and refuses another route’s keys', async () => {
+    server.use(
+      http.post(
+        `${apiOrigin}/content/video`,
+        recordWrite('POST', () => ok(rawPost({ type: 'video' })))
+      ),
+      http.put(
+        `${apiOrigin}/content/poll/12`,
+        recordWrite('PUT', () => ok(rawPost({ type: 'poll' })))
+      )
+    )
+    const video = { ...textPayload, videoId: 70 }
+    const poll = {
+      ...textPayload,
+      options: [{ option: 'بله' }, { option: 'خیر' }],
+      typeSelect: true,
+      endDataPublished: '2026-12-01T10:00:00.000Z',
+    }
+    expect(
+      await savePostForHook(42, { kind: 'video', payload: video })
+    ).toMatchObject({ ok: true })
+    expect(
+      await savePostForHook(42, { postId: 12, kind: 'poll', payload: poll })
+    ).toMatchObject({ ok: true })
+    const refused: Array<[SavePostInput['kind'], PostWritePayload]> = [
+      ['text', video],
+      ['audio', video],
+      ['video', { ...textPayload, audioId: 1 }],
+      ['poll', textPayload],
+      ['text', poll],
+      ['poll', { ...poll, options: [{ option: '  ' }] }],
+      ['poll', { ...poll, options: [{ option: 'x'.repeat(161) }] }],
+    ]
+    for (const [kind, payload] of refused) {
+      expect(await savePostForHook(42, { kind, payload })).toMatchObject({
+        ok: false,
+        status: 400,
+      })
+    }
+    expect(writes).toEqual([
+      { method: 'POST', path: '/content/video', body: video },
+      { method: 'PUT', path: '/content/poll/12', body: poll },
+    ])
+  })
+
+  it('runs the Arvan upload through the API: init, chunk with its query, finalize', async () => {
+    const chunks: Array<{ query: Record<string, string>; size: number }> = []
+    server.use(
+      http.post(
+        `${apiOrigin}/content/upload/init`,
+        recordWrite('POST', () =>
+          ok({
+            fileId: 'abc==',
+            uploadUrl: 'https://napi.arvancloud.ir/vod/2.0/files/abc%3D%3D',
+            uploadToken: 'upload-token',
+          })
+        )
+      ),
+      http.post(
+        `${apiOrigin}/content/upload/chunk`,
+        async ({ request: up }) => {
+          expect(up.headers.get('authorization')).toBe(`Bearer ${token()}`)
+          const body = await up.formData()
+          const file = body.get('file')
+          expect([...body.keys()]).toEqual(['file'])
+          chunks.push({
+            query: Object.fromEntries(new URL(up.url).searchParams),
+            // MSW's parser makes its own File class, so no `instanceof`.
+            size: typeof file === 'object' && file ? file.size : -1,
+          })
+          return ok('')
+        }
+      ),
+      http.post(
+        `${apiOrigin}/content/upload/finalize-video`,
+        recordWrite('POST', () =>
+          ok({
+            id: 70,
+            videoCloudId: 'v-1',
+            videoCloudChannel: 'ch',
+            fileNameCloud: 'clip.mp4',
+            status: 'Converting',
+          })
+        )
+      )
+    )
+    const start = { fileName: 'clip.mp4', fileSize: 3, fileType: 'video/mp4' }
+    expect(await initMediaUploadForHook(42, start)).toEqual({
+      ok: true,
+      data: {
+        fileId: 'abc==',
+        uploadUrl: 'https://napi.arvancloud.ir/vod/2.0/files/abc%3D%3D',
+        uploadToken: 'upload-token',
+      },
+    })
+    const form = new FormData()
+    form.append('file', new Blob([new Uint8Array(3)]), 'chunk')
+    form.append(
+      'uploadUrl',
+      'https://napi.arvancloud.ir/vod/2.0/files/abc%3D%3D'
+    )
+    form.append('uploadToken', 'upload-token')
+    form.append('offset', '0')
+    expect(await uploadMediaChunkForHook(42, form)).toEqual({
+      ok: true,
+      data: null,
+    })
+    expect(chunks).toEqual([
+      {
+        query: {
+          upload_url: 'https://napi.arvancloud.ir/vod/2.0/files/abc%3D%3D',
+          upload_offset: '0',
+          upload_token: 'upload-token',
+        },
+        size: 3,
+      },
+    ])
+    expect(
+      await finalizeMediaUploadForHook(42, {
+        kind: 'video',
+        fileId: 'abc==',
+        uploadToken: 'upload-token',
+      })
+    ).toEqual({ ok: true, data: { id: 70, name: 'clip.mp4' } })
+    expect(writes).toEqual([
+      { method: 'POST', path: '/content/upload/init', body: start },
+      {
+        method: 'POST',
+        path: '/content/upload/finalize-video',
+        body: { file_id: 'abc==', upload_token: 'upload-token' },
+      },
+    ])
+  })
+
+  it('refuses a bad upload start or chunk before calling the API, and an init with no upload URL', async () => {
+    let calls = 0
+    server.use(
+      http.post(`${apiOrigin}/content/upload/init`, () => {
+        calls++
+        return ok({ fileId: 'abc', uploadToken: 't' })
+      }),
+      http.post(`${apiOrigin}/content/upload/chunk`, () => {
+        calls++
+        return ok('')
+      })
+    )
+    for (const start of [
+      { fileName: 'a.svg', fileSize: 3, fileType: 'image/svg+xml' },
+      { fileName: '  ', fileSize: 3, fileType: 'video/mp4' },
+      { fileName: 'a.mp4', fileSize: 0, fileType: 'video/mp4' },
+      { fileName: 'a.mp4', fileSize: 2 * 1024 ** 3 + 1, fileType: 'video/mp4' },
+    ]) {
+      expect(await initMediaUploadForHook(42, start)).toMatchObject({
+        ok: false,
+        status: 400,
+      })
+    }
+    const chunk = (size: number, offset = '0') => {
+      const form = new FormData()
+      form.append('file', new Blob([new Uint8Array(size)]), 'chunk')
+      form.append('uploadUrl', 'https://napi.arvancloud.ir/vod/2.0/files/a')
+      form.append('uploadToken', 't')
+      form.append('offset', offset)
+      return form
+    }
+    for (const form of [chunk(0), chunk(4 * 1024 * 1024 + 1), chunk(1, '-1')]) {
+      expect(await uploadMediaChunkForHook(42, form)).toMatchObject({
+        ok: false,
+        status: 400,
+      })
+    }
+    expect(calls).toBe(0)
+    expect(
+      await initMediaUploadForHook(42, {
+        fileName: 'a.mp4',
+        fileSize: 3,
+        fileType: 'video/mp4',
+      })
+    ).toMatchObject({ ok: false, code: 'INVALID_POST_RESPONSE' })
+  })
+
+  it('passes the API’s upload refusals through with their codes', async () => {
+    server.use(
+      http.post(`${apiOrigin}/content/upload/finalize-audio`, () =>
+        HttpResponse.json(
+          {
+            data: null,
+            errors: [
+              { message: 'Upload not found', code: 'CONTENT_UPLOAD_NOT_FOUND' },
+            ],
+          },
+          { status: 404 }
+        )
+      )
+    )
+    expect(
+      await finalizeMediaUploadForHook(42, {
+        kind: 'audio',
+        fileId: 'abc',
+        uploadToken: 'stale',
+      })
+    ).toMatchObject({
+      ok: false,
+      status: 404,
+      code: 'CONTENT_UPLOAD_NOT_FOUND',
     })
   })
 })
