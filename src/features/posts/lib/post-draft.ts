@@ -35,7 +35,7 @@ export type DraftPoll = {
   /** As typed; blank ones are dropped when saving. */
   options: string[]
   multiSelect: boolean
-  /** The stored closing time, resent untouched (the studio does not edit it). */
+  /** The stored closing time, resent untouched (the panel does not edit it). */
   closesAt: string | null
 }
 
@@ -186,7 +186,7 @@ export function paywallPositionOf(draft: PostDraft): number | null {
 
 /**
  * The visibility a write sends. A PUT replaces the stored one, so the preview
- * and early-access date the studio does not edit are resent, and a published
+ * and early-access date the panel does not edit are resent, and a published
  * post keeps its date (no date would publish it again "now").
  */
 export function visibilityFor(
@@ -215,10 +215,7 @@ function tierIdsFor(draft: PostDraft): number[] | undefined {
  * The route a save goes to. A post created through a media route with no
  * media yet reads `text` (api.md), so an empty image block saves as text.
  */
-function writeKindOf(
-  draft: PostDraft,
-  saved: OwnerPost | null
-): PostWriteKind {
+function writeKindOf(draft: PostDraft, saved: OwnerPost | null): PostWriteKind {
   if (
     draft.media === 'poll' ||
     draft.media === 'video' ||

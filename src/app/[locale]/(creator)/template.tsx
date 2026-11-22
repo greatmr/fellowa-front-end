@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 /**
- * A template remounts on every studio navigation, so each page enters with
+ * A template remounts on every creator navigation, so each page enters with
  * the presentation's `page-enter` (fade and 8px rise, 240ms; App.tsx view
  * change @ d843c3b). The global reduced-motion rule makes it instant.
  * No `forwards` fill: a transform kept after the animation would make this

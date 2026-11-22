@@ -20,28 +20,28 @@ describe('SidebarRail', () => {
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SidebarRail>
             <SidebarRailToggle />
-            <nav aria-label={messages.studio.mainNav}>
-              <a href="#dashboard">{messages.studio.nav.dashboard}</a>
+            <nav aria-label={messages.panel.mainNav}>
+              <a href="#dashboard">{messages.panel.nav.dashboard}</a>
             </nav>
           </SidebarRail>
         </NextIntlClientProvider>
       )
 
       const collapse = screen.getByRole('button', {
-        name: messages.studio.collapseSidebar,
+        name: messages.panel.collapseSidebar,
       })
       expect(collapse).toHaveAttribute('aria-expanded', 'true')
       await user.click(collapse)
       const expand = screen.getByRole('button', {
-        name: messages.studio.expandSidebar,
+        name: messages.panel.expandSidebar,
       })
       expect(expand).toHaveAttribute('aria-expanded', 'false')
       expect(
-        screen.getByRole('link', { name: messages.studio.nav.dashboard })
+        screen.getByRole('link', { name: messages.panel.nav.dashboard })
       ).toBeInTheDocument()
       await user.click(expand)
       expect(
-        screen.getByRole('button', { name: messages.studio.collapseSidebar })
+        screen.getByRole('button', { name: messages.panel.collapseSidebar })
       ).toHaveAttribute('aria-expanded', 'true')
     }
   )
@@ -52,15 +52,15 @@ describe('SidebarRail', () => {
       <NextIntlClientProvider locale="en" messages={en}>
         <SidebarRail>
           <SidebarRailToggle />
-          <NavGroup label={en.studio.groups.monetization}>
-            <a href="#tiers">{en.studio.nav.tiers}</a>
+          <NavGroup label={en.panel.groups.monetization}>
+            <a href="#tiers">{en.panel.nav.tiers}</a>
           </NavGroup>
         </SidebarRail>
       </NextIntlClientProvider>
     )
 
     const group = screen.getByRole('button', {
-      name: en.studio.groups.monetization,
+      name: en.panel.groups.monetization,
     })
     await user.click(group)
     expect(group).toHaveAttribute('aria-expanded', 'false')
@@ -71,12 +71,12 @@ describe('SidebarRail', () => {
     expect(content).toHaveClass('grid-rows-[0fr]')
 
     await user.click(
-      screen.getByRole('button', { name: en.studio.collapseSidebar })
+      screen.getByRole('button', { name: en.panel.collapseSidebar })
     )
     expect(content).not.toHaveAttribute('inert')
     expect(content).toHaveClass('grid-rows-[1fr]')
     await user.click(
-      screen.getByRole('button', { name: en.studio.expandSidebar })
+      screen.getByRole('button', { name: en.panel.expandSidebar })
     )
     expect(content).toHaveAttribute('inert')
   })
@@ -88,7 +88,7 @@ describe('SidebarRail', () => {
       </NextIntlClientProvider>
     )
     expect(
-      screen.queryByRole('button', { name: en.studio.collapseSidebar })
+      screen.queryByRole('button', { name: en.panel.collapseSidebar })
     ).not.toBeInTheDocument()
   })
 })

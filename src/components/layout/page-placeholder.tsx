@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/layout/page-header'
 
 export type PanelPage =
   | 'dashboard'
-  | 'page'
   | 'posts'
   | 'composer'
   | 'tiers'
@@ -20,12 +19,12 @@ export type PanelPage =
   | 'notifications'
 
 /**
- * Stand-in body for a studio route whose screen is a later FE-… task. It
+ * Stand-in body for a creator route whose screen is a later FE-… task. It
  * renders the real page title so the frame can be reviewed, and says plainly
  * that the screen is not built — never fake data.
  */
 export function PagePlaceholder({ page }: { page: PanelPage }) {
-  const t = useTranslations('studio')
+  const t = useTranslations('panel')
 
   return (
     <>

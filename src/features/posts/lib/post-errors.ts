@@ -1,6 +1,6 @@
 import type { ApiError } from '@/lib/api/errors'
 
-/** `posts.errors.*` keys, one per failure the studio explains. */
+/** `posts.errors.*` keys, one per failure the panel explains. */
 export type PostErrorKey =
   | 'generic'
   | 'sessionExpired'

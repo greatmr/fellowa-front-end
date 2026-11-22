@@ -118,10 +118,7 @@ describe('PostComposer', () => {
       expect(screen.getByText(t.access.laterTiersNote)).toBeInTheDocument()
       expect(screen.getByText(t.attachments.saveFirst)).toBeInTheDocument()
       unmount()
-      renderComposer(
-        ownerPost({ isPublic: false, paywallPosition: 3 }),
-        locale
-      )
+      renderComposer(ownerPost({ isPublic: false, paywallPosition: 3 }), locale)
       expect(screen.getByText(t.access.keepTitle)).toBeInTheDocument()
       expect(
         screen.getByRole('button', { name: t.saveChanges })
@@ -168,7 +165,7 @@ describe('PostComposer', () => {
     })
     ;(options?.onSuccess as (post: OwnerPost) => void)(ownerPost())
     expect(mocks.toastSuccess).toHaveBeenCalledWith(c.publishedToast)
-    expect(mocks.push).toHaveBeenCalledWith('/studio/posts')
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
   })
 
   it('inserts the divider at the caret and sends its offset in code points', async () => {
@@ -292,7 +289,7 @@ describe('PostComposer', () => {
       ownerPost({ id: 77, publishedAt: null })
     )
     expect(mocks.toastSuccess).toHaveBeenCalledWith(c.draftToast)
-    expect(mocks.replace).toHaveBeenCalledWith('/studio/posts/77/edit')
+    expect(mocks.replace).toHaveBeenCalledWith('/posts/77/edit')
   })
 
   it('edits a limited post: keeps its tiers and date, resends the paywall', async () => {

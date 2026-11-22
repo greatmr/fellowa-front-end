@@ -15,7 +15,8 @@ import { Link } from '@/i18n/navigation'
  * Sidebar body, shared by the desktop rail and the mobile drawer
  * (presentation Sidebar @ d843c3b). Group disclosure, links, the scroll
  * indicator and the account menu are client leaves; labels and icons render
- * on the server. `account` is the signed-in account row (SidebarAccount).
+ * on the server. `account` is the signed-in account row (SidebarAccount);
+ * `ownPageHref` is the creator's public page, from the same session.
  */
 function NavIcon({ item }: { item: AppNavItem }) {
   const Icon = item.icon
@@ -24,14 +25,21 @@ function NavIcon({ item }: { item: AppNavItem }) {
   )
 }
 
-export function AppSidebar({ account }: { account?: ReactNode }) {
-  const t = useTranslations('studio')
+export function AppSidebar({
+  account,
+  ownPageHref,
+}: {
+  account?: ReactNode
+  /** The creator's public page (`/creators/:id`); its item is left out without it. */
+  ownPageHref?: string
+}) {
+  const t = useTranslations('panel')
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center justify-between gap-1 px-3 group-data-[collapsed=true]/sidebar:h-auto group-data-[collapsed=true]/sidebar:flex-col group-data-[collapsed=true]/sidebar:justify-start group-data-[collapsed=true]/sidebar:gap-1.5 group-data-[collapsed=true]/sidebar:py-3">
         <Link
-          href="/studio"
+          href="/dashboard"
           title={t('label')}
           className="rounded-md px-2 py-1.5 transition-[background-color,transform] outline-none group-data-[collapsed=true]/sidebar:px-1 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-95"
         >
@@ -45,22 +53,26 @@ export function AppSidebar({ account }: { account?: ReactNode }) {
           {appNav.map((section, index) => {
             const links = (
               <ul className="space-y-0.5">
-                {section.items.map((item) => (
-                  <li key={item.href}>
-                    <NavLink
-                      href={item.href}
-                      exact={item.exact}
-                      icon={<NavIcon item={item} />}
-                      trailing={
-                        item.external ? (
-                          <OpenPageIcon className="size-3.5 text-ink-400 transition-colors group-hover:text-ink-700 dark:group-hover:text-white" />
-                        ) : undefined
-                      }
-                    >
-                      {t(`nav.${item.label}`)}
-                    </NavLink>
-                  </li>
-                ))}
+                {section.items.map((item) => {
+                  const href = item.href ?? ownPageHref
+                  if (!href) return null
+                  return (
+                    <li key={item.label}>
+                      <NavLink
+                        href={href}
+                        exact={item.exact}
+                        icon={<NavIcon item={item} />}
+                        trailing={
+                          item.external ? (
+                            <OpenPageIcon className="size-3.5 text-ink-400 transition-colors group-hover:text-ink-700 dark:group-hover:text-white" />
+                          ) : undefined
+                        }
+                      >
+                        {t(`nav.${item.label}`)}
+                      </NavLink>
+                    </li>
+                  )
+                })}
               </ul>
             )
 
@@ -86,7 +98,7 @@ export function AppSidebar({ account }: { account?: ReactNode }) {
           variant="inverse"
           className="group/cta create-cta w-full font-semibold group-data-[collapsed=true]/sidebar:px-0"
         >
-          <Link href="/studio/posts/new" title={t('newPost')}>
+          <Link href="/posts/new" title={t('newPost')}>
             {/* Ambient sweep, and a second sweep on hover (d843c3b). */}
             <span
               className="pointer-events-none absolute inset-y-0 start-0 w-2/3 animate-cta-glint bg-linear-to-r from-transparent via-white/25 to-transparent motion-reduce:hidden dark:via-black/15"

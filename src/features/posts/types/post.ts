@@ -1,7 +1,7 @@
 /**
  * The owner's own posts, as `GET /content`, `GET /content/:id` and every
  * write route return them (`content-format.ts` `formatForOwner`, back-end
- * `acffdb2`). Only the keys the studio reads.
+ * `acffdb2`). Only the keys the panel reads.
  */
 
 /** A stored image or attachment: `{id, url}`; `url` is `null` when unusable. */
@@ -40,7 +40,7 @@ export type OwnerPost = {
 
 /**
  * A video or audio on a post: `{id, fileNameCloud}`. No playable URL exists
- * in any response (FE-CONT-01), so the studio shows the name only.
+ * in any response (FE-CONT-01), so the panel shows the name only.
  */
 export type PostMedia = { id: number; name: string | null }
 

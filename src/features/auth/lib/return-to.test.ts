@@ -12,18 +12,27 @@ import {
 } from './return-to'
 
 describe('safeReturnTo', () => {
-  it.each(['/studio', '/studio/posts/new', '/memberships', '/settings'])(
+  it.each(['/dashboard', '/posts/new', '/memberships', '/settings'])(
     'accepts existing private route %s',
     (path) => expect(safeReturnTo(path)).toBe(path)
   )
 
+  it.each([
+    ['/studio', '/dashboard'],
+    ['/studio/posts/new', '/posts/new'],
+    ['/en/studio/tiers', '/tiers'],
+    ['/studio/page', '/dashboard'],
+  ])('maps the retired %s to its current address (FE-SHELL-05)', (path, to) =>
+    expect(safeReturnTo(path)).toBe(to)
+  )
+
   it('no longer accepts the retired /onboarding (FE-ONB-02)', () => {
-    expect(safeReturnTo('/onboarding')).toBe('/studio')
+    expect(safeReturnTo('/onboarding')).toBe('/dashboard')
   })
 
-  it.each(['/en/studio/tiers', '/fa/studio/tiers'])(
+  it.each(['/en/tiers', '/fa/tiers'])(
     'canonicalizes locale-prefixed %s',
-    (path) => expect(safeReturnTo(path)).toBe('/studio/tiers')
+    (path) => expect(safeReturnTo(path)).toBe('/tiers')
   )
 
   it.each([
@@ -33,15 +42,15 @@ describe('safeReturnTo', () => {
     '//attacker.example',
     '/\\attacker.example',
     '/%2f%2fattacker.example',
-    '/studio/%2e%2e/auth/login',
-    '/studio/../auth/login',
-    '/studio?next=https://attacker.example',
-    '/studio#fragment',
-    '/studio\n',
-    '/studio\u0000',
+    '/dashboard/%2e%2e/auth/login',
+    '/dashboard/../auth/login',
+    '/dashboard?next=https://attacker.example',
+    '/dashboard#fragment',
+    '/dashboard\n',
+    '/dashboard\u0000',
     '/auth/login',
     '/creator/example',
-    '/studio/not-implemented',
+    '/dashboard/not-implemented',
     '/creators',
     '/creators/',
     '/creators/0',
@@ -61,7 +70,7 @@ describe('safeReturnTo', () => {
     '/creators/12/posts/5/edit',
     '/creators/12/posts/12345678901',
   ])('falls back for unsafe or unknown destination %j', (path) => {
-    expect(safeReturnTo(path)).toBe('/studio')
+    expect(safeReturnTo(path)).toBe('/dashboard')
   })
 
   it.each([
@@ -85,8 +94,8 @@ describe('phoneSignInDestination', () => {
     [{ isNewUser: false, needsProfile: true }, undefined, '/auth/account'],
     [{ isNewUser: false, needsProfile: false }, '/creators/5', '/creators/5'],
     [{ isNewUser: false, needsProfile: false }, '/settings', '/settings'],
-    [{ isNewUser: false, needsProfile: false }, '//evil.example', '/studio'],
-    [{ isNewUser: false, needsProfile: false }, undefined, '/studio'],
+    [{ isNewUser: false, needsProfile: false }, '//evil.example', '/dashboard'],
+    [{ isNewUser: false, needsProfile: false }, undefined, '/dashboard'],
   ])('%o with returnTo %s → %s', (result, returnTo, expected) => {
     expect(phoneSignInDestination(result, returnTo)).toEqual(expected)
   })
@@ -97,7 +106,7 @@ describe('requestedReturnTo', () => {
     [undefined, undefined],
     [['/settings'], undefined],
     ['/creators/5', '/creators/5'],
-    ['//evil.example', '/studio'],
+    ['//evil.example', '/dashboard'],
   ])('%j → %j', (value, expected) => {
     expect(requestedReturnTo(value)).toBe(expected)
   })
@@ -106,11 +115,11 @@ describe('requestedReturnTo', () => {
 describe('after the account step (FQ-17)', () => {
   const newAccount = { alias: null }
   it.each([
-    // No destination asked for, or the studio: choose the page address.
+    // No destination asked for, or the dashboard: choose the page address.
     [newAccount, undefined, '/auth/url', true],
     [
       newAccount,
-      '/studio',
+      '/dashboard',
       // The default destination does not travel: a returnTo on /auth/url
       // means it was opened outside sign-up (FE-ONB-02).
       '/auth/url',
@@ -120,7 +129,7 @@ describe('after the account step (FQ-17)', () => {
     [newAccount, '/creators/5', '/creators/5', false],
     [newAccount, '/memberships', '/memberships', false],
     // Already has a page: nothing to choose.
-    [{ alias: 'sara' }, undefined, '/studio', false],
+    [{ alias: 'sara' }, undefined, '/dashboard', false],
   ])('%o with returnTo %s → %j', (user, returnTo, expected, choosesAddress) => {
     expect(afterAccountDestination(user, returnTo)).toEqual(expected)
     expect(choosesPageAddress(user, returnTo)).toBe(choosesAddress)
@@ -129,12 +138,12 @@ describe('after the account step (FQ-17)', () => {
   it('treats the address step as standalone only when opened with a returnTo (FE-ONB-02)', () => {
     expect(addressStepStandsAlone(undefined)).toBe(false)
     expect(addressStepStandsAlone('/settings')).toBe(true)
-    expect(addressStepStandsAlone('/studio')).toBe(true)
+    expect(addressStepStandsAlone('/dashboard')).toBe(true)
   })
 
-  it('only a non-studio destination counts as a page to return to', () => {
+  it('only a non-dashboard destination counts as a page to return to', () => {
     expect(returnsToPage(undefined)).toBe(false)
-    expect(returnsToPage('/studio')).toBe(false)
+    expect(returnsToPage('/dashboard')).toBe(false)
     expect(returnsToPage('//evil.example')).toBe(false)
     expect(returnsToPage('/creators/9')).toBe(true)
   })
@@ -150,7 +159,7 @@ describe('after a Google sign-in (FE-AUTH-05, FE-AUTH-06)', () => {
     [created, undefined, '/auth/url'],
     [
       created,
-      '/studio',
+      '/dashboard',
       // The default destination does not travel: a returnTo on /auth/url
       // means it was opened outside sign-up (FE-ONB-02).
       '/auth/url',
@@ -158,15 +167,15 @@ describe('after a Google sign-in (FE-AUTH-05, FE-AUTH-06)', () => {
     // Started from a page: straight back to it (FQ-17).
     [created, '/creators/5', '/creators/5'],
     // A returning account goes on, with or without a page.
-    [returning, undefined, '/studio'],
+    [returning, undefined, '/dashboard'],
     [returning, '/creators/5', '/creators/5'],
-    [returning, '//evil.example', '/studio'],
+    [returning, '//evil.example', '/dashboard'],
     // No usable name from Google: the account step first, as for phone.
     [unnamedNew, undefined, '/auth/account'],
     [
       unnamedNew,
-      '/studio',
-      { pathname: '/auth/account', query: { returnTo: '/studio' } },
+      '/dashboard',
+      { pathname: '/auth/account', query: { returnTo: '/dashboard' } },
     ],
     [
       unnamedNew,

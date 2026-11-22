@@ -31,14 +31,14 @@ import type { Tier } from '@/features/tiers/types/tier'
 type Builder = { key: number; saved: Tier | null; draft: TierDraft }
 
 /**
- * The tiers studio page (presentation `TiersView` @ d843c3b): the list or its
+ * The tiers page (presentation `TiersView` @ d843c3b): the list or its
  * empty state, the full-page builder in place of the list while open, the
  * setup guide and the delete dialog.
  */
 export function TierManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('tiers')
   const tCommon = useTranslations('common')
-  const tPanel = useTranslations('studio')
+  const tPanel = useTranslations('panel')
   const tiers = useTiersQuery(viewerId)
   const roles = useTierRolesQuery(viewerId)
   const remove = useDeleteTierMutation(viewerId)

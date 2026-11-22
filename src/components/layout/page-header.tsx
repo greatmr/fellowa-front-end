@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 /**
- * Title block at the top of a studio page (presentation Header `VIEW_TITLES`).
+ * Title block at the top of a panel page (presentation Header `VIEW_TITLES`).
  * `description` renders the hint under the title inside the same block; pass
  * `className="mb-0"` when the block sits in a row with actions beside it.
  */

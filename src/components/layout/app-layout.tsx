@@ -21,26 +21,29 @@ import { Link } from '@/i18n/navigation'
 export function AppLayout({
   children,
   account,
+  ownPageHref,
 }: {
   children: ReactNode
   account?: ReactNode
+  /** The creator's public page (`/creators/:id`), for "View my page". */
+  ownPageHref?: string
 }) {
-  const t = useTranslations('studio')
+  const t = useTranslations('panel')
 
   return (
     <div className="flex min-h-full flex-1">
       <SkipLink />
       <SidebarRail>
-        <AppSidebar account={account} />
+        <AppSidebar account={account} ownPageHref={ownPageHref} />
       </SidebarRail>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-card/90 px-3 backdrop-blur sm:px-4 lg:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <AppMobileNav>
-              <AppSidebar account={account} />
+              <AppSidebar account={account} ownPageHref={ownPageHref} />
             </AppMobileNav>
             <Link
-              href="/studio"
+              href="/dashboard"
               className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-95 lg:hidden"
             >
               <Logo />

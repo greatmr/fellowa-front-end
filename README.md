@@ -16,7 +16,8 @@ controls; locale-aware portal direction; keyboard-accessible theme selection;
 and Sonner tones derived from the same light/dark Tailwind tokens. The existing
 palette and named typography remain authoritative in `tailwind.config.ts`.
 
-`components/layout/app-layout.tsx` supplies the studio frame,
+`components/layout/app-layout.tsx` supplies the creator frame (route group
+`(creator)`: `/dashboard`, `/posts`, `/tiers`, `/audience`, `/payouts`, …),
 `default-layout.tsx` supplies the new `(public)` header/footer and home frame,
 and `error-layout.tsx` supports localized route and global error recovery.
 The public introduction has working `#why` and `#features` sections; the full
@@ -101,7 +102,7 @@ development port. These values are required for the auth server boundary;
 production must serve the application over HTTPS. Neither value is a secret.
 
 Registration and unverified login lead to real email verification and resend.
-Studio routes require a backend-validated, verified session. This rendering gate
+Creator routes require a backend-validated, verified session. This rendering gate
 does not replace authorization in future feature data helpers. API errors render
 translated feedback; password recovery and onboarding remain separate tasks.
 

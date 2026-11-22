@@ -37,7 +37,7 @@ function token(userId = 42) {
 const creator = {
   id: 4,
   alias: 'dana',
-  pageName: 'Dana Studio',
+  pageName: 'Dana Atelier',
   avatar: 'https://cdn.fellowa.test/a.png',
   header: null,
   about: {
@@ -119,7 +119,7 @@ describe('explore server boundary', () => {
           {
             id: 4,
             alias: 'dana',
-            pageName: 'Dana Studio',
+            pageName: 'Dana Atelier',
             avatarUrl: 'https://cdn.fellowa.test/a.png',
             coverUrl: null,
             bio: 'Painter',

@@ -173,13 +173,13 @@ describe('completeGoogleSignIn', () => {
   })
 
   it('sends a new account to the address step inside sign-up', async () => {
-    const { state } = await begin('/studio')
+    const { state } = await begin('/dashboard')
     const result = await completeGoogleSignIn({
       code: 'google-code',
       state,
       error: null,
     })
-    // `/studio` is the default; a returnTo would open the step standalone.
+    // `/dashboard` is the default; a returnTo would open the step standalone.
     expect(result.href).toBe('/auth/url')
   })
 
@@ -197,7 +197,7 @@ describe('completeGoogleSignIn', () => {
     ['without a page', null],
     ['with a page', 'sara'],
   ])(
-    'sends a returning account %s to the studio, not the address step',
+    'sends a returning account %s to the dashboard, not the address step',
     async (_label, alias) => {
       isNewUser = false
       profileAlias = alias
@@ -208,7 +208,7 @@ describe('completeGoogleSignIn', () => {
         error: null,
       })
       expect(jar.get(sessionCookieName)).toBe(jwt)
-      expect(result).toEqual({ href: '/studio', locale: 'en' })
+      expect(result).toEqual({ href: '/dashboard', locale: 'en' })
     }
   )
 

@@ -22,7 +22,7 @@ export default async function Page({
     return redirect({ href: '/auth/verify-email', locale: locale as Locale })
   }
   const [t, dashboard] = await Promise.all([
-    getTranslations('studio'),
+    getTranslations('panel'),
     loadDashboard(session),
   ])
 
@@ -31,11 +31,7 @@ export default async function Page({
     <CreatorDashboard
       {...dashboard}
       heading={
-        <PageHeader
-          title={t('pages.dashboard.title')}
-          category={t('pages.dashboard.category')}
-          className="mb-0"
-        />
+        <PageHeader title={t('pages.dashboard.title')} className="mb-0" />
       }
     />
   )

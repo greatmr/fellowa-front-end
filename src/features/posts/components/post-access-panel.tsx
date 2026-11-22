@@ -184,7 +184,7 @@ function TierPicker({
           {t('noTiers')}
         </p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/studio/tiers">{t('createTier')}</Link>
+          <Link href="/tiers">{t('createTier')}</Link>
         </Button>
       </div>
     )

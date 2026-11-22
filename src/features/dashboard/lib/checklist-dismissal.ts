@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react'
  * per-viewer convenience, so `sessionStorage`; when storage is unavailable
  * the dismissal lasts until the page is reloaded.
  */
-const KEY = 'fellowa:studio-checklist-dismissed'
+const KEY = 'fellowa:setup-checklist-dismissed'
 const listeners = new Set<() => void>()
 let dismissedInMemory = false
 

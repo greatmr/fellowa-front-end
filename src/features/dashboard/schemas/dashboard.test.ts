@@ -35,7 +35,7 @@ describe('parseProfile', () => {
     const parsed = parseProfile(
       profile({
         alias: ' sara ',
-        pageName: ' Sara Studio ',
+        pageName: ' Sara Atelier ',
         isPublish: true,
         images: {
           profile: 'https://cdn.fellowa.test/profile/1.jpg',
@@ -49,7 +49,7 @@ describe('parseProfile', () => {
       isPublished: true,
       hasProfileImages: true,
       identity: {
-        pageName: 'Sara Studio',
+        pageName: 'Sara Atelier',
         displayName: 'Sara',
         alias: 'sara',
         avatarUrl: 'https://cdn.fellowa.test/profile/1.jpg',

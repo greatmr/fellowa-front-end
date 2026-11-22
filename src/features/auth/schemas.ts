@@ -205,7 +205,7 @@ export const pageCategoryPayloadSchema = z.object({
   categoryId: z.number().int().min(1).max(32767),
 })
 
-/** What the backend stores for a valid alias: `Studio` reads back `studio`. */
+/** What the backend stores for a valid alias: `Atelier` reads back `atelier`. */
 export function normalizeAlias(alias: string): string {
   return alias.trim().toLowerCase()
 }

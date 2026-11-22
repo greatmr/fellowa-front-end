@@ -414,15 +414,15 @@ describe('getPersonal (BE-USER-06)', () => {
 
 describe('updatePageNameAction (FE-AUTH-03, BE-USER-07)', () => {
   it('saves the trimmed name and nothing else of the about record', async () => {
-    expect(await updatePageNameAction(42, '  Dana Studio ')).toEqual({
+    expect(await updatePageNameAction(42, '  Dana Atelier ')).toEqual({
       ok: true,
-      data: 'Dana Studio',
+      data: 'Dana Atelier',
     })
     expect(sent).toEqual([
       {
         method: 'PUT',
         path: '/api/user/about',
-        body: { pageName: 'Dana Studio' },
+        body: { pageName: 'Dana Atelier' },
         auth: `Bearer ${token()}`,
       },
     ])
@@ -463,7 +463,7 @@ describe('updatePageNameAction (FE-AUTH-03, BE-USER-07)', () => {
       )
     )
 
-    expect(await updatePageNameAction(42, 'Dana Studio')).toEqual({
+    expect(await updatePageNameAction(42, 'Dana Atelier')).toEqual({
       ok: false,
       status: 400,
       code: 'USER_ALIAS_REQUIRED',
@@ -474,7 +474,7 @@ describe('updatePageNameAction (FE-AUTH-03, BE-USER-07)', () => {
   it('refuses another signed-in account without calling the API', async () => {
     request.cookie = token(7)
 
-    expect(await updatePageNameAction(42, 'Dana Studio')).toEqual({
+    expect(await updatePageNameAction(42, 'Dana Atelier')).toEqual({
       ok: false,
       status: 401,
       code: 'SESSION_CHANGED',
@@ -507,13 +507,13 @@ describe('getPageName (BE-USER-07)', () => {
     server.use(
       http.get(`${apiOrigin}/user/about`, ({ request: r }) => {
         auth = r.headers.get('authorization')
-        return about(3, 'Dana Studio')
+        return about(3, 'Dana Atelier')
       })
     )
 
     expect(await getPageName(token())).toEqual({
       hasPage: true,
-      pageName: 'Dana Studio',
+      pageName: 'Dana Atelier',
     })
     expect(auth).toBe(`Bearer ${token()}`)
   })

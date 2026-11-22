@@ -38,16 +38,23 @@ export type AccountMenuProps = {
   /** Email or `@alias`; omitted when it would repeat the name. */
   subtitle?: string
   initial: string
+  /** The creator's public page (`/creators/:id`); the item is left out without it. */
+  ownPageHref?: string
 }
 
 /**
- * The studio sidebar's account row and its menu (presentation Sidebar
+ * The creator sidebar's account row and its menu (presentation Sidebar
  * "Account row & popover", d843c3b). The menu opens beside the rail on its
  * logical end side. Identity comes from the session; there is no avatar
  * image source yet, so the avatar is the name's initial.
  */
-export function AccountMenu({ name, subtitle, initial }: AccountMenuProps) {
-  const t = useTranslations('studio.account')
+export function AccountMenu({
+  name,
+  subtitle,
+  initial,
+  ownPageHref,
+}: AccountMenuProps) {
+  const t = useTranslations('panel.account')
   const tTheme = useTranslations('theme')
   const tAuth = useTranslations('auth')
   const direction = getDirection(useLocale())
@@ -154,13 +161,15 @@ export function AccountMenu({ name, subtitle, initial }: AccountMenuProps) {
 
         <DropdownMenuSeparator className="my-1.5" />
 
-        <DropdownMenuItem asChild className={itemClass}>
-          <Link href="/studio/page">
-            <ProfileMeIcon className="size-4 text-ink-500" />
-            <span className="flex-1">{t('viewPage')}</span>
-            <OpenPageIcon className="size-4 text-ink-400" />
-          </Link>
-        </DropdownMenuItem>
+        {ownPageHref ? (
+          <DropdownMenuItem asChild className={itemClass}>
+            <Link href={ownPageHref}>
+              <ProfileMeIcon className="size-4 text-ink-500" />
+              <span className="flex-1">{t('viewPage')}</span>
+              <OpenPageIcon className="size-4 text-ink-400" />
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild className={itemClass}>
           <Link href="/memberships">
             <WalletIcon className="size-4 text-ink-500" />

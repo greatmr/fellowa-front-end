@@ -24,7 +24,7 @@ const envelope = (data: unknown) => ({ data, errors: null })
 const profile = {
   id: 4,
   alias: 'dana',
-  pageName: 'Dana Studio',
+  pageName: 'Dana Atelier',
   avatar: 'https://cdn.fellowa.test/a.png',
   header: 'avatars/4/h.png',
   about: {
@@ -45,7 +45,7 @@ describe('creator page responses (FE-PAGE-01)', () => {
     expect(parseCreatorProfile(envelope(profile))).toEqual({
       id: 4,
       alias: 'dana',
-      pageName: 'Dana Studio',
+      pageName: 'Dana Atelier',
       avatarUrl: 'https://cdn.fellowa.test/a.png',
       coverUrl: null,
       bio: 'Painter',
@@ -71,7 +71,7 @@ describe('creator page responses (FE-PAGE-01)', () => {
   })
 
   it.each([
-    ['a string', 'Dana Studio', 'Dana Studio'],
+    ['a string', 'Dana Atelier', 'Dana Atelier'],
     ['null', null, null],
     ['missing', undefined, null],
   ])('maps a page name that is %s (BE-USER-07)', (_name, pageName, mapped) => {

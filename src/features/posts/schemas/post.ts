@@ -35,7 +35,7 @@ const invalid = () => new InvalidPostResponseError()
 
 const id = z.number().int().positive().safe()
 
-// ---- Raw responses (`formatForOwner`, only the keys the studio reads) ------
+// ---- Raw responses (`formatForOwner`, only the keys the panel reads) ------
 
 const rawFileSchema = z.object({ id, url: z.string().nullable() })
 

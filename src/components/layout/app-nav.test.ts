@@ -13,31 +13,30 @@ vi.mock('@/i18n/navigation', () => ({
 const { isPathActive } = await import('@/components/layout/nav-link')
 
 describe('isPathActive', () => {
-  it('matches the studio root only exactly', () => {
-    expect(isPathActive('/studio', '/studio', true)).toBe(true)
-    expect(isPathActive('/studio', '/studio/posts', true)).toBe(false)
+  it('matches the dashboard only exactly', () => {
+    expect(isPathActive('/dashboard', '/dashboard', true)).toBe(true)
+    expect(isPathActive('/dashboard', '/posts', true)).toBe(false)
   })
 
   it('keeps a section active on its sub-routes but not on look-alike paths', () => {
-    expect(isPathActive('/studio/posts', '/studio/posts')).toBe(true)
-    expect(isPathActive('/studio/posts', '/studio/posts/new')).toBe(true)
-    expect(isPathActive('/studio/posts', '/studio/postsx')).toBe(false)
-    expect(isPathActive('/studio/page', '/studio/payouts')).toBe(false)
+    expect(isPathActive('/posts', '/posts')).toBe(true)
+    expect(isPathActive('/posts', '/posts/new')).toBe(true)
+    expect(isPathActive('/posts', '/dashboard/postsx')).toBe(false)
   })
 })
 
-describe('studio navigation', () => {
+describe('creator navigation', () => {
   const items = appNav.flatMap((group) => group.items)
 
   it('has a label in both locales for every entry and group', () => {
     for (const item of items) {
-      expect(fa.studio.nav).toHaveProperty(item.label)
-      expect(en.studio.nav).toHaveProperty(item.label)
+      expect(fa.panel.nav).toHaveProperty(item.label)
+      expect(en.panel.nav).toHaveProperty(item.label)
     }
     for (const { group } of appNav) {
       if (group) {
-        expect(fa.studio.groups).toHaveProperty(group)
-        expect(en.studio.groups).toHaveProperty(group)
+        expect(fa.panel.groups).toHaveProperty(group)
+        expect(en.panel.groups).toHaveProperty(group)
       }
     }
   })
@@ -46,32 +45,39 @@ describe('studio navigation', () => {
     const hrefs = items.map((item) => item.href)
     expect(new Set(hrefs).size).toBe(hrefs.length)
   })
+
+  it('leaves the own-page address to the session (FE-SHELL-05)', () => {
+    expect(items.find((item) => item.label === 'page')?.href).toBeNull()
+  })
+
+  it('has no /studio route (FE-SHELL-05)', () => {
+    for (const { href } of items) expect(href ?? '').not.toMatch(/studio/i)
+  })
 })
 
 describe('panelPageForPath', () => {
-  it('names the page each studio route shows, most specific first', () => {
-    expect(panelPageForPath('/studio')).toBe('dashboard')
-    expect(panelPageForPath('/studio/posts/new')).toBe('composer')
-    expect(panelPageForPath('/studio/posts')).toBe('posts')
-    expect(panelPageForPath('/studio/posts/12')).toBe('posts')
+  it('names the page each creator route shows, most specific first', () => {
+    expect(panelPageForPath('/dashboard')).toBe('dashboard')
+    expect(panelPageForPath('/posts/new')).toBe('composer')
+    expect(panelPageForPath('/posts')).toBe('posts')
+    expect(panelPageForPath('/posts/12')).toBe('posts')
     expect(panelPageForPath('/memberships')).toBe('payments')
     expect(panelPageForPath('/chats')).toBe('chats')
   })
 
   it('returns null outside the known routes', () => {
-    expect(panelPageForPath('/studio/unknown')).toBeNull()
+    expect(panelPageForPath('/dashboard/unknown')).toBeNull()
     expect(panelPageForPath('/chatsx')).toBeNull()
   })
 
   it('has a header title and category in both locales for every page', () => {
     for (const path of [
-      '/studio',
-      '/studio/page',
-      '/studio/posts',
-      '/studio/posts/new',
-      '/studio/tiers',
-      '/studio/audience',
-      '/studio/payouts',
+      '/dashboard',
+      '/posts',
+      '/posts/new',
+      '/tiers',
+      '/audience',
+      '/payouts',
       '/memberships',
       '/settings',
       '/explore',
@@ -81,17 +87,21 @@ describe('panelPageForPath', () => {
     ]) {
       const page = panelPageForPath(path)
       expect(page).not.toBeNull()
-      expect(fa.studio.pages).toHaveProperty(`${page}.title`)
-      expect(en.studio.pages).toHaveProperty(`${page}.category`)
+      expect(fa.panel.pages).toHaveProperty(`${page}.title`)
+      expect(en.panel.pages).toHaveProperty(`${page}.title`)
+      if (page !== 'dashboard') {
+        expect(fa.panel.pages).toHaveProperty(`${page}.category`)
+        expect(en.panel.pages).toHaveProperty(`${page}.category`)
+      }
     }
   })
 })
 
 describe('re-ported labels (presentation d843c3b)', () => {
   it("uses the design's Persian navigation labels", () => {
-    expect(fa.studio.nav.tiers).toBe('پلن‌ها')
-    expect(fa.studio.nav.explore).toBe('کاوش')
-    expect(fa.studio.nav.feed).toBe('تازه‌ها')
-    expect(fa.studio.nav.chats).toBe('گفتگوها')
+    expect(fa.panel.nav.tiers).toBe('پلن‌ها')
+    expect(fa.panel.nav.explore).toBe('کاوش')
+    expect(fa.panel.nav.feed).toBe('تازه‌ها')
+    expect(fa.panel.nav.chats).toBe('گفتگوها')
   })
 })

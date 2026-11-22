@@ -14,8 +14,8 @@ export default async function Page({
 }) {
   const { locale } = await params
   setRequestLocale(locale)
-  const t = await getTranslations('studio')
-  // The studio layout's SessionGate already requires a session here; the
+  const t = await getTranslations('panel')
+  // The creator layout's SessionGate already requires a session here; the
   // viewer only narrows the list (their own page is left out).
   const [viewerId, categories] = await Promise.all([
     getSession().then(

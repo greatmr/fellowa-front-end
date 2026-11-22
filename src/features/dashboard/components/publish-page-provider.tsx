@@ -37,7 +37,7 @@ export function PublishPageProvider({
   viewerId: number
   children: ReactNode
 }) {
-  const t = useTranslations('studio.dashboard')
+  const t = useTranslations('panel.dashboard')
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   // `pending` reaches the buttons only after a render; this stops a second

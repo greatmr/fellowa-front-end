@@ -317,7 +317,7 @@ html .toaster[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
   }
 }
 
-/* The studio "create post" button (presentation `.sidebar-create-btn` and
+/* The sidebar "create post" button (presentation `.sidebar-create-btn` and
  * `.btn-icon-anim`, d843c3b): a springy lift on hover, a press, and the icon
  * tilting. Mark the icon with `cta-icon`. Reduced motion keeps the colours
  * and shadows and drops every transform.

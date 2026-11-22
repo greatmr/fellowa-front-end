@@ -47,7 +47,7 @@ const record = (req: Request) =>
 const rawCreator = {
   id: 4,
   alias: 'dana',
-  pageName: 'Dana Studio',
+  pageName: 'Dana Atelier',
   avatar: 'https://cdn.test/avatar.png',
   header: null,
   about: null,
@@ -193,7 +193,7 @@ describe('loadReaderPost (FE-CONT-01)', () => {
       post: { creatorId: 4 },
       creator: {
         id: 4,
-        pageName: 'Dana Studio',
+        pageName: 'Dana Atelier',
         alias: 'dana',
         avatarUrl: 'https://cdn.test/avatar.png',
       },

@@ -43,7 +43,7 @@ export function publishBlockedBy(
 }
 
 /**
- * The `studio.dashboard` message saying why publish is held back, shared by
+ * The `panel.dashboard` message saying why publish is held back, shared by
  * the banner and the checklist's publish row.
  */
 export function publishBlockedMessageKey(

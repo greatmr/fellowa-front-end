@@ -42,7 +42,7 @@ export function returnsFromInterests(from: unknown): boolean {
 
 /**
  * The back target for `pathname` (locale-free), keeping the destination. The
- * address step opened from a page rather than sign-up (settings, the studio
+ * address step opened from a page rather than sign-up (settings, the dashboard
  * checklist; FE-ONB-02) goes back to that page, not to the account step. In
  * its return mode (`from`) it goes back to the interests: the account step
  * would end sign-up there, skipping the interests and the category.

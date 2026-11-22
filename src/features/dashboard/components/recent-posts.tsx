@@ -32,7 +32,7 @@ export const RECENT_POSTS_LIMIT = 5
  * box, share and stats. No like or comment counts: `GET /content` carries none.
  */
 export function RecentPosts({ result }: { result: RecentPostsResult }) {
-  const t = useTranslations('studio.dashboard.posts')
+  const t = useTranslations('panel.dashboard.posts')
   const format = useFormatter()
 
   let body: ReactNode
@@ -118,7 +118,7 @@ export function RecentPosts({ result }: { result: RecentPostsResult }) {
             variant="link"
             className="justify-self-start"
           >
-            <Link href="/studio/posts">{t('seeAll')}</Link>
+            <Link href="/posts">{t('seeAll')}</Link>
           </Button>
         ) : null}
       </>
@@ -134,7 +134,7 @@ export function RecentPosts({ result }: { result: RecentPostsResult }) {
 }
 
 function RecentPostsHeader() {
-  const t = useTranslations('studio.dashboard.posts')
+  const t = useTranslations('panel.dashboard.posts')
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2
@@ -144,7 +144,7 @@ function RecentPostsHeader() {
         {t('title')}
       </h2>
       <Button asChild size="sm" variant="inverse">
-        <Link href="/studio/posts/new">
+        <Link href="/posts/new">
           <SquarePenIcon aria-hidden />
           {t('create')}
         </Link>

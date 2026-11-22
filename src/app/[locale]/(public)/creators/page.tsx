@@ -7,7 +7,7 @@ import { ExploreView } from '@/features/explore/components/explore-view'
 /**
  * Public explore (FE-EXPL-02; owner decision 2026-10-30): anyone can search
  * and open a creator's public page; anything further asks them to sign in.
- * The list is the anonymous one — the signed-in studio explore is `/explore`.
+ * The list is the anonymous one — the signed-in explore is `/explore`.
  */
 export default async function Page({
   params,

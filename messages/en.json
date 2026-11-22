@@ -198,7 +198,7 @@
         "welcomeBack": "Welcome back!",
         "saved": "Saved.",
         "skipped": "Password skipped. You can set one later in settings.",
-        "pageCreated": "Your studio page is ready!",
+        "pageCreated": "Your page is ready!",
         "interestsSaved": "Your interests are saved!"
       }
     },
@@ -641,7 +641,7 @@
     },
     "deletedToast": "Tier “{title}” deleted"
   },
-  "studio": {
+  "panel": {
     "mainNav": "Main menu",
     "openMenu": "Open menu",
     "newPost": "New post",
@@ -664,12 +664,7 @@
     },
     "pages": {
       "dashboard": {
-        "title": "Studio dashboard",
-        "category": "Studio"
-      },
-      "page": {
-        "title": "My public page",
-        "category": "Preview"
+        "title": "Dashboard"
       },
       "posts": {
         "title": "Posts and content",
@@ -720,7 +715,7 @@
       "title": "This section isn't built yet",
       "body": "This page will be built in a later step."
     },
-    "label": "Creator studio",
+    "label": "Fellowa",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "dashboard": {
@@ -961,7 +956,7 @@
     "openMenu": "Open navigation",
     "why": "Why Fellowa",
     "features": "Features",
-    "studio": "Open studio",
+    "openPanel": "Open full panel",
     "tagline": "Fellowa: a dedicated space for creators and their true fans.",
     "copyright": "© Fellowa. All rights reserved.",
     "creators": "Creators",

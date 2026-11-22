@@ -64,7 +64,7 @@ const BAD: readonly AddressStatus[] = [
 ]
 
 /**
- * Step 2 of 4 of sign-up, or on its own from settings or the studio checklist
+ * Step 2 of 4 of sign-up, or on its own from settings or the dashboard checklist
  * (presentation `OnboardingUrlScreen` @ fdb5f6c; FE-ONB-02): the page's
  * address, checked as it is typed (`GET /auth/alias/availability`, BE-AUTH-09)
  * and saved with `PUT /auth/alias`, which creates the page, or renames it when
@@ -99,7 +99,7 @@ export function PageAddressForm({
   const statusId = useId()
   const { pageName, setPageName, setPageAddress } = useAuthFlow()
   const name = profileName ?? pageName
-  // Opened from settings or the studio checklist rather than sign-up
+  // Opened from settings or the dashboard checklist rather than sign-up
   // (FE-ONB-02): no step count, and "back" returns there.
   const inSignUp = !addressStepStandsAlone(returnTo)
   // The page's own address; else a Latin page name gives a first one, as in

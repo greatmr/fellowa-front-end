@@ -27,7 +27,10 @@ Next.js 16.4 (App Router, Turbopack, **Cache Components and Partial Prefetching 
 ```
 tailwind.config.ts     brand primitives — the ONLY file with hex values
 src/
-  app/[locale]/        layout (owns <html lang dir>), page, error, loading, not-found
+  app/[locale]/        layout (owns <html lang dir>), page, error, loading, not-found;
+                       route groups (public) · (auth) · (creator) — the signed-in frame
+                       (/dashboard, /posts, /tiers, /audience, /payouts, /settings …;
+                       no "studio" in URLs or copy, FE-SHELL-05)
   app/globals.css      Tailwind entry: @config, semantic tokens per theme (via --theme()), utilities
   components/ui/       shadcn primitives (+ brand deltas): avatar badge button card dialog
                        dropdown-menu form input label separator sheet skeleton sonner tabs textarea
@@ -43,6 +46,7 @@ src/
   features/<f>/types/  plain types · schemas/ zod schemas + response parsers ·
                        lib/ pure helpers (e.g. tiers/lib/tier-draft.ts)
   lib/env.ts           zod-validated env contract
+  lib/retired-routes.ts permanent redirects from the old /studio/* addresses (next.config)
   lib/utils.ts         cn()
   stores/              Zustand stores (none yet)
   proxy.ts             next-intl locale routing — Next 16's replacement for middleware.ts; no locale in URLs, cookie-chosen, Accept-Language ignored (FE-I18N-01)

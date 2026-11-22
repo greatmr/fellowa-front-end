@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-/** Shared keyboard/focus behavior for public and studio mobile navigation. */
+/** Shared keyboard/focus behavior for public and creator mobile navigation. */
 export function NavigationDrawer({
   children,
   title,

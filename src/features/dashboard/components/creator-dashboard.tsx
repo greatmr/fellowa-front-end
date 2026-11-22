@@ -32,7 +32,7 @@ export function CreatorDashboard({
   recentPosts,
   heading,
 }: DashboardData & { heading: ReactNode }) {
-  const t = useTranslations('studio.dashboard')
+  const t = useTranslations('panel.dashboard')
   const address = publicPageAddress(env.NEXT_PUBLIC_APP_URL, viewerId)
 
   return (

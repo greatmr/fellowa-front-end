@@ -17,7 +17,7 @@ const widthClass = {
 export type PageContainerWidth = keyof typeof widthClass
 
 /**
- * Width and side gutter of one studio page (FE-SHELL-04). `AppLayout`'s
+ * Width and side gutter of one panel page (FE-SHELL-04). `AppLayout`'s
  * `<main>` is full width, so the page container centres itself and pads
  * both sides equally (logical, so it is the same in `fa` and `en`).
  */
@@ -32,7 +32,7 @@ export function PageContainer({
 }) {
   return (
     <div
-      data-slot="studio-page"
+      data-slot="page-container"
       data-width={width}
       className={cn(
         'mx-auto w-full px-gutter sm:px-gutter-wide',

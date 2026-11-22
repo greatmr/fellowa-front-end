@@ -560,22 +560,22 @@ describe('alias availability (BE-AUTH-09)', () => {
   it('asks with the session token and the alias as typed', async () => {
     respond(() =>
       availability({
-        alias: 'studio',
+        alias: 'atelier',
         available: false,
         reason: 'taken',
-        suggestions: ['studio_', 'studio_art', 'studio1405'],
+        suggestions: ['atelier_', 'atelier_art', 'atelier1405'],
       })
     )
-    expect(await aliasAvailabilityForHook({ alias: 'Studio' })).toEqual({
+    expect(await aliasAvailabilityForHook({ alias: 'Atelier' })).toEqual({
       ok: true,
       data: {
-        alias: 'studio',
+        alias: 'atelier',
         available: false,
         reason: 'taken',
-        suggestions: ['studio_', 'studio_art', 'studio1405'],
+        suggestions: ['atelier_', 'atelier_art', 'atelier1405'],
       },
     })
-    expect(asked).toEqual([{ alias: 'Studio', auth: `Bearer ${token()}` }])
+    expect(asked).toEqual([{ alias: 'Atelier', auth: `Bearer ${token()}` }])
   })
 
   it('passes on an available alias with no reason', async () => {

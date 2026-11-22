@@ -14,7 +14,7 @@ export function useSidebarRailCollapsed() {
   return useContext(SidebarRailContext).collapsed
 }
 
-const railBodyId = 'desktop-studio-navigation'
+const railBodyId = 'desktop-panel-navigation'
 
 /** Only the desktop rail's disclosure is client-owned; its body stays server-rendered. */
 export function SidebarRail({ children }: { children: ReactNode }) {
@@ -45,7 +45,7 @@ export function SidebarRail({ children }: { children: ReactNode }) {
  * desktop rail; the mobile drawer has no icon mode.
  */
 export function SidebarRailToggle() {
-  const t = useTranslations('studio')
+  const t = useTranslations('panel')
   const { collapsed, toggle } = useContext(SidebarRailContext)
   if (!toggle) return null
   const Icon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon

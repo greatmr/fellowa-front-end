@@ -86,7 +86,7 @@ describe('PostsManager', () => {
       expect(
         screen.getByRole('heading', {
           level: 1,
-          name: messages[locale].studio.pages.posts.title,
+          name: messages[locale].panel.pages.posts.title,
         })
       ).toBeInTheDocument()
       await user.click(
@@ -130,7 +130,7 @@ describe('PostsManager', () => {
       within(essay).getByRole('link', {
         name: m.list.editTitle.replace('{title}', 'Members essay'),
       })
-    ).toHaveAttribute('href', '/studio/posts/2/edit')
+    ).toHaveAttribute('href', '/posts/2/edit')
     const notes = row('Morning notes')
     expect(within(notes).getByText(m.list.badge.free)).toBeInTheDocument()
     expect(within(notes).getByText(m.list.badge.published)).toBeInTheDocument()
@@ -138,7 +138,7 @@ describe('PostsManager', () => {
       within(row('A video')).getByRole('link', {
         name: m.list.editTitle.replace('{title}', 'A video'),
       })
-    ).toHaveAttribute('href', '/studio/posts/3/edit')
+    ).toHaveAttribute('href', '/posts/3/edit')
   })
 
   it('searches, filters by access and clears the filters, client side', async () => {
@@ -230,7 +230,7 @@ describe('PostsManager', () => {
     expect(screen.getByText(m.list.empty.title)).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: m.list.empty.action })
-    ).toHaveAttribute('href', '/studio/posts/new')
+    ).toHaveAttribute('href', '/posts/new')
     unmount()
 
     loaded([published])

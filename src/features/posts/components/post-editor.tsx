@@ -30,7 +30,7 @@ export function PostEditor({
 
   const back = (
     <Button asChild variant="outline">
-      <Link href="/studio/posts">{t('back')}</Link>
+      <Link href="/posts">{t('back')}</Link>
     </Button>
   )
 

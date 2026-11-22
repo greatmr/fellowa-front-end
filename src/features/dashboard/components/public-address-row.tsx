@@ -23,7 +23,7 @@ export function PublicAddressRow({
   url: string | null
   isPublished: boolean
 }) {
-  const t = useTranslations('studio.dashboard.address')
+  const t = useTranslations('panel.dashboard.address')
   const canCopy = isPublished && url !== null
 
   async function copy() {

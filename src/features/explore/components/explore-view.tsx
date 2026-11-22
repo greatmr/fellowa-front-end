@@ -42,7 +42,7 @@ function uniqueById(items: ExploreCreator[]) {
 
 /**
  * Explore (FE-EXPL-01; presentation `ExploreView` @ dc8467f), shared by the
- * signed-in studio explore and the public one. Ranked list by default, alias
+ * signed-in explore and the public one. Ranked list by default, alias
  * search via `?q=`, category chips via `?category=` (BE-LAND-07/08). The
  * interests card is not ported (FQ-4). `viewerId` null is the anonymous list.
  */

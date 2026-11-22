@@ -22,9 +22,7 @@ export function AliasRequiredNotice() {
         </p>
       </div>
       <Button asChild variant="outline" size="sm">
-        <Link
-          href={{ pathname: '/auth/url', query: { returnTo: '/studio/tiers' } }}
-        >
+        <Link href={{ pathname: '/auth/url', query: { returnTo: '/tiers' } }}>
           {t('action')}
         </Link>
       </Button>

@@ -1,11 +1,12 @@
+import { currentPanelPath } from '@/lib/retired-routes'
+
 const privatePaths = new Set([
-  '/studio',
-  '/studio/posts',
-  '/studio/posts/new',
-  '/studio/audience',
-  '/studio/tiers',
-  '/studio/page',
-  '/studio/payouts',
+  '/dashboard',
+  '/posts',
+  '/posts/new',
+  '/audience',
+  '/tiers',
+  '/payouts',
   '/memberships',
   '/settings',
   '/feed',
@@ -43,7 +44,7 @@ export function authHref(
  * post-authentication destination.
  */
 export function safeReturnTo(value: unknown): string {
-  if (typeof value !== 'string') return '/studio'
+  if (typeof value !== 'string') return '/dashboard'
 
   const creatorPage = value.replace(/^\/(?:fa|en)(?=\/)/, '')
   if (creatorPagePath.test(creatorPage)) return creatorPage
@@ -51,11 +52,14 @@ export function safeReturnTo(value: unknown): string {
   // Do not decode or normalize untrusted input into an accepted URL. Encoded
   // separators, control characters, queries and fragments are all unnecessary.
   if (!/^\/(?:[a-z]+(?:-[a-z]+)?\/)*[a-z]+$/.test(value)) {
-    return '/studio'
+    return '/dashboard'
   }
 
   const withoutLocale = value.replace(/^\/(?:fa|en)(?=\/)/, '')
-  return privatePaths.has(withoutLocale) ? withoutLocale : '/studio'
+  // A destination saved before FE-SHELL-05 (`/studio/tiers`) maps to its
+  // current address.
+  const current = currentPanelPath(withoutLocale) ?? withoutLocale
+  return privatePaths.has(current) ? current : '/dashboard'
 }
 
 /**
@@ -68,11 +72,11 @@ export function requestedReturnTo(value: unknown): string | undefined {
 
 /**
  * FQ-17 ("Back to the page"): an account that started from somewhere other
- * than the studio, such as a creator page, goes back there after sign-up and
+ * than the dashboard, such as a creator page, goes back there after sign-up and
  * does not choose its own page address first.
  */
 export function returnsToPage(returnTo?: string): boolean {
-  return returnTo !== undefined && safeReturnTo(returnTo) !== '/studio'
+  return returnTo !== undefined && safeReturnTo(returnTo) !== '/dashboard'
 }
 
 /**
@@ -93,7 +97,7 @@ export function afterAccountDestination(
 
 /**
  * FE-ONB-02: the address step opened from a page rather than from sign-up
- * (settings' "no page" link → `/settings`, the studio checklist → `/studio`).
+ * (settings' "no page" link → `/settings`, the dashboard checklist → `/dashboard`).
  * It then shows no step count, and "back" and "done" both return there.
  */
 export function addressStepStandsAlone(returnTo?: string): boolean {
@@ -114,7 +118,7 @@ export function choosesPageAddress(
  * first, as a phone sign-in does. A new account goes on to the page address
  * step, as in the prototype (Google gave the name), or back to the page it
  * started from (FQ-17). A returning account goes to its destination, page or
- * not: the studio checklist asks for the address.
+ * not: the dashboard checklist asks for the address.
  */
 export function googleSignInDestination(
   result: { isNewUser: boolean; needsProfile: boolean },
@@ -129,7 +133,7 @@ export function googleSignInDestination(
 /**
  * Where a phone sign-in lands: a new account, or one without a display name,
  * completes its account first (keeping the destination); anyone else goes to
- * the requested page, or the studio.
+ * the requested page, or the dashboard.
  */
 export function phoneSignInDestination(
   result: { isNewUser: boolean; needsProfile: boolean },

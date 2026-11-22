@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
  * d843c3b): a full-width band with the page's name centred and the tabs
  * centred under it. The page is named by its public name, then the owner's
  * own display name (this view is the owner's alone), then `@alias`. Tabs:
- * home (this page) and memberships, a link to `/studio/tiers` (FQ-27); the
+ * home (this page) and memberships, a link to `/tiers` (FQ-27); the
  * collections, shop and recommendations tabs are not ported (FQ-27). No
  * avatar: the design has none (FQ-29 default).
  */
@@ -19,7 +19,7 @@ export function CreatorIdentityRow({
 }: {
   identity: CreatorIdentity
 }) {
-  const t = useTranslations('studio.dashboard.identity')
+  const t = useTranslations('panel.dashboard.identity')
   const name =
     identity.pageName ??
     identity.displayName ??
@@ -49,10 +49,14 @@ export function CreatorIdentityRow({
           aria-label={t('tabsLabel')}
           className="mt-5 flex items-center justify-start gap-6 overflow-x-auto text-body sm:justify-center sm:gap-8"
         >
-          <Link href="/studio" aria-current="page" className={tabClass(true)}>
+          <Link
+            href="/dashboard"
+            aria-current="page"
+            className={tabClass(true)}
+          >
             {t('home')}
           </Link>
-          <Link href="/studio/tiers" className={tabClass(false)}>
+          <Link href="/tiers" className={tabClass(false)}>
             {t('memberships')}
           </Link>
         </nav>

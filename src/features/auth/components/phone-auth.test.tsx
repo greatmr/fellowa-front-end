@@ -668,12 +668,14 @@ describe('password (PhonePasswordLoginScreen)', () => {
     await screen.findByRole('heading', { name: t.password.title })
   }
 
-  it('signs in and goes to the studio', async () => {
+  it('signs in and goes to the atelier', async () => {
     const user = setup()
     await toPasswordScreen(user)
     await user.type(screen.getByLabelText(t.password.label), 'a-password')
     await user.click(screen.getByRole('button', { name: t.password.submit }))
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
+    )
     expect(mocked.actions.phoneLoginForHook).toHaveBeenCalledWith({
       phone,
       password: 'a-password',

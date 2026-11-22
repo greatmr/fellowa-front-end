@@ -99,7 +99,7 @@ describe('PublishBanner (FE-STUDIO-02 row 1)', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Choose a username' })
-    ).toHaveAttribute('href', '/auth/url?returnTo=%2Fstudio')
+    ).toHaveAttribute('href', '/auth/url?returnTo=%2Fdashboard')
   })
 
   it('holds publish back with its reason before there is a tier', () => {
@@ -302,7 +302,7 @@ describe('PublicAddressRow (FE-STUDIO-03 row 4)', () => {
 })
 
 const identity: CreatorIdentity = {
-  pageName: 'Sara Studio',
+  pageName: 'Sara Atelier',
   displayName: 'Sara',
   alias: 'sara',
   avatarUrl: null,
@@ -312,7 +312,7 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
   it('centres the page name and alias, with home and memberships tabs and no avatar', () => {
     renderWithIntl(<CreatorIdentityRow identity={identity} />, strictEn)
 
-    expect(screen.getByRole('region', { name: 'Sara Studio' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Sara Atelier' })).toBeVisible()
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
     expect(screen.getByText('@sara')).toBeInTheDocument()
     const tabs = screen.getByRole('navigation', { name: 'Page sections' })
@@ -322,7 +322,7 @@ describe('CreatorIdentityRow (FE-STUDIO-03 row 2)', () => {
     )
     expect(
       within(tabs).getByRole('link', { name: 'Memberships' })
-    ).toHaveAttribute('href', '/studio/tiers')
+    ).toHaveAttribute('href', '/tiers')
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
@@ -418,7 +418,7 @@ describe('RecentPosts (FE-STUDIO-02 row 4)', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Create a new post' })
-    ).toHaveAttribute('href', '/studio/posts/new')
+    ).toHaveAttribute('href', '/posts/new')
     // No counts: GET /content carries none, so none are shown.
     expect(screen.queryByLabelText(/like/i)).not.toBeInTheDocument()
   })
@@ -433,7 +433,7 @@ describe('RecentPosts (FE-STUDIO-02 row 4)', () => {
     expect(screen.queryByText('Post 6')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'All posts' })).toHaveAttribute(
       'href',
-      '/studio/posts'
+      '/posts'
     )
   })
 

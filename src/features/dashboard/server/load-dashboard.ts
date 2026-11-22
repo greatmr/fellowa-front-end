@@ -21,7 +21,7 @@ export type DashboardData = {
 }
 
 /**
- * What `/studio` renders for the signed-in account (FE-STUDIO-01/02). The
+ * What `/dashboard` renders for the signed-in account (FE-STUDIO-01/02). The
  * profile, tiers and payout reads fail the page as before (route error); a
  * failed `GET /content` stays inside the posts widget and leaves the
  * checklist's "first post" step unticked.

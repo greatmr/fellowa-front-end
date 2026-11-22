@@ -36,13 +36,13 @@ describe('CreatorDashboard (FE-STUDIO-03)', () => {
           isPublished: false,
         }}
         identity={{
-          pageName: 'Sara Studio',
+          pageName: 'Sara Atelier',
           displayName: null,
           alias: 'sara',
           avatarUrl: null,
         }}
         recentPosts={{ ok: true, posts: [] }}
-        heading={<h1>Studio dashboard</h1>}
+        heading={<h1>Dashboard</h1>}
       />,
       { locale: 'en', strict: true }
     )

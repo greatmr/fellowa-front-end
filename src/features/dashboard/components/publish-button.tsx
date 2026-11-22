@@ -22,7 +22,7 @@ export function PublishButton({
   variant?: 'default' | 'inverse'
   withIcon?: boolean
 }) {
-  const t = useTranslations('studio.dashboard')
+  const t = useTranslations('panel.dashboard')
   const { publish, pending } = usePublishPage()
 
   return (

@@ -64,7 +64,7 @@ const isOneOf = <T extends string>(
 ): value is T => (list as readonly string[]).includes(value)
 
 /**
- * The posts studio page (presentation `PostsView` @ d843c3b): tabs, search,
+ * The posts page (presentation `PostsView` @ d843c3b): tabs, search,
  * access filter and sort over `GET /content` (FQ-30 (4)), and per-row edit,
  * publish or unpublish and delete (FQ-30 (5)). Not ported (FQ-31): the
  * collections tab, button, filter and cell, the single-post purchase filter
@@ -72,7 +72,7 @@ const isOneOf = <T extends string>(
  */
 export function PostsManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('posts')
-  const tPanel = useTranslations('studio')
+  const tPanel = useTranslations('panel')
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const posts = usePostsQuery(viewerId)
@@ -124,7 +124,7 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
 
   const createButton = (
     <Button asChild>
-      <Link href="/studio/posts/new">
+      <Link href="/posts/new">
         <SquarePen aria-hidden />
         {t('list.create')}
       </Link>
@@ -157,7 +157,7 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
         description={t('list.empty.body')}
         action={
           <Button asChild>
-            <Link href="/studio/posts/new">
+            <Link href="/posts/new">
               <SquarePen aria-hidden />
               {t('list.empty.action')}
             </Link>
@@ -370,7 +370,7 @@ function NoRows({
       description={t(`${copy}.body`)}
       action={
         <Button asChild variant="outline" size="sm">
-          <Link href="/studio/posts/new">{t(`${copy}.action`)}</Link>
+          <Link href="/posts/new">{t(`${copy}.action`)}</Link>
         </Button>
       }
     />
@@ -443,7 +443,7 @@ function PostTable({
                       <div className="min-w-0">
                         {editable ? (
                           <Link
-                            href={`/studio/posts/${post.id}/edit`}
+                            href={`/posts/${post.id}/edit`}
                             dir="auto"
                             className="block max-w-full truncate text-body font-semibold text-foreground transition-colors hover:text-link"
                           >
@@ -511,7 +511,7 @@ function PostTable({
                       {editable ? (
                         <Button asChild variant="outline" size="sm">
                           <Link
-                            href={`/studio/posts/${post.id}/edit`}
+                            href={`/posts/${post.id}/edit`}
                             aria-label={t('editTitle', { title })}
                           >
                             {t('edit')}

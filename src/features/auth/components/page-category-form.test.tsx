@@ -68,7 +68,7 @@ function renderStep({
     <PageCategoryForm
       viewerId={viewerId}
       currentCategoryId={currentCategoryId}
-      destination={returnTo ?? '/studio'}
+      destination={returnTo ?? '/dashboard'}
       returnTo={returnTo}
     />,
     { locale }
@@ -184,7 +184,9 @@ describe('page category (OnboardingTopicsScreen, FE-AUTH-08 / FQ-23)', () => {
     await group()
     await user.click(radio('پادکست'))
     await user.click(submit())
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
+    )
     expect(mocked.auth.setPageCategoryForHook).toHaveBeenCalledWith(viewerId, {
       categoryId: 2,
     })
@@ -196,7 +198,7 @@ describe('page category (OnboardingTopicsScreen, FE-AUTH-08 / FQ-23)', () => {
     renderStep({ currentCategoryId: 7 })
     await group()
     await user.click(submit())
-    expect(mocked.replace).toHaveBeenCalledWith('/studio')
+    expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
     expect(mocked.auth.setPageCategoryForHook).not.toHaveBeenCalled()
   })
 
@@ -226,7 +228,9 @@ describe('page category (OnboardingTopicsScreen, FE-AUTH-08 / FQ-23)', () => {
     await user.click(skip())
     expect(mocked.auth.setPageCategoryForHook).toHaveBeenCalledTimes(1)
     save.resolve(ok(null))
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
+    )
     expect(mocked.replace).toHaveBeenCalledTimes(1)
   })
 
@@ -325,6 +329,8 @@ describe('page category (OnboardingTopicsScreen, FE-AUTH-08 / FQ-23)', () => {
     )
     expect(mocked.replace).not.toHaveBeenCalled()
     await user.click(submit())
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
+    )
   })
 })

@@ -26,7 +26,7 @@ export function PublishBanner({
   viewerId: number
   facts: SetupFacts
 }) {
-  const t = useTranslations('studio.dashboard')
+  const t = useTranslations('panel.dashboard')
   const blockedBy = publishBlockedBy(facts)
   const blockedKey = publishBlockedMessageKey(blockedBy)
 
@@ -56,7 +56,7 @@ export function PublishBanner({
                 <Link
                   href={{
                     pathname: '/auth/url',
-                    query: { returnTo: '/studio' },
+                    query: { returnTo: '/dashboard' },
                   }}
                 >
                   {t('chooseUsername')}

@@ -36,8 +36,10 @@ export async function AuthNavigation() {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Button asChild className="rounded-full px-5.5 shadow-brand">
-        <Link href={session.user.isVerified ? '/studio' : '/auth/verify-email'}>
-          {session.user.isVerified ? publicT('studio') : t('verify.title')}
+        <Link
+          href={session.user.isVerified ? '/dashboard' : '/auth/verify-email'}
+        >
+          {session.user.isVerified ? publicT('openPanel') : t('verify.title')}
         </Link>
       </Button>
       <LogoutButton />

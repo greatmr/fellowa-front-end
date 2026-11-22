@@ -12,7 +12,7 @@ import { usePathname } from '@/i18n/navigation'
  * Any link click inside closes the drawer.
  */
 export function AppMobileNav({ children }: { children: ReactNode }) {
-  const t = useTranslations('studio')
+  const t = useTranslations('panel')
   const tCommon = useTranslations('common')
   const pathname = usePathname()
 

@@ -14,7 +14,7 @@ export function LogoGlyph({ className }: { className?: string }) {
 }
 
 /**
- * `default`: the studio sidebar's mark (presentation Sidebar header @
+ * `default`: the creator sidebar's mark (presentation Sidebar header @
  * fdb5f6c). `auth`: the auth frame's larger solid tile, black wordmark and
  * hover lift (presentation `AuthLayout` @ 01fb04d); its hover follows the
  * nearest `group`, the link around it. `public`: the landing header and

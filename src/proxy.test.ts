@@ -80,7 +80,7 @@ describe('proxy (FE-I18N-01)', () => {
   it.each([
     ['/en/creators/7?q=a&b=1', '/creators/7?q=a&b=1', 'en'],
     ['/en', '/', 'en'],
-    ['/fa/auth?returnTo=%2Fstudio', '/auth?returnTo=%2Fstudio', 'fa'],
+    ['/fa/auth?returnTo=%2Fdashboard', '/auth?returnTo=%2Fdashboard', 'fa'],
   ])(
     'redirects the old prefixed %s to %s and keeps its language',
     (from, to, cookie) => {
@@ -94,7 +94,9 @@ describe('proxy (FE-I18N-01)', () => {
   )
 
   it('switches an English visitor back to Persian through an old /fa link', () => {
-    const response = proxy(request('/fa/studio', { cookie: 'NEXT_LOCALE=en' }))
+    const response = proxy(
+      request('/fa/dashboard', { cookie: 'NEXT_LOCALE=en' })
+    )
 
     expect(response.status).toBe(307)
     expect(localeCookie(response)).toBe('fa')

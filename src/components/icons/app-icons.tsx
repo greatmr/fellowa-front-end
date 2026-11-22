@@ -1,7 +1,7 @@
 /**
  * The product's custom icon set, ported from presentation
  * `src/components/icons/AppIcons.tsx` @ d843c3b (FQ-15 answered 2026-11-18:
- * use the design's SVG icons). Only the icons the studio shell uses are here;
+ * use the design's SVG icons). Only the icons the creator shell uses are here;
  * page-only icons arrive with their pages.
  *
  * Every icon draws in `currentColor`, sizes with a className (default

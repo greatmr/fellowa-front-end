@@ -22,7 +22,10 @@ import {
   publishBlockedBy,
   publishBlockedMessageKey,
 } from '@/features/dashboard/lib/setup-steps'
-import type { SetupFacts, SetupStepId } from '@/features/dashboard/types/dashboard'
+import type {
+  SetupFacts,
+  SetupStepId,
+} from '@/features/dashboard/types/dashboard'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -37,8 +40,8 @@ type Href = ComponentProps<typeof Link>['href']
  */
 const STEP_HREFS: Partial<Record<SetupStepId, Href>> = {
   profile: '/settings',
-  firstTier: '/studio/tiers',
-  firstPost: '/studio/posts/new',
+  firstTier: '/tiers',
+  firstPost: '/posts/new',
 }
 
 /**
@@ -51,7 +54,7 @@ const STEP_HREFS: Partial<Record<SetupStepId, Href>> = {
  * Not ported: confetti (FQ-10); the address row is `PublicAddressRow`.
  */
 export function SetupChecklist({ facts }: { facts: SetupFacts }) {
-  const t = useTranslations('studio.dashboard')
+  const t = useTranslations('panel.dashboard')
   const format = useFormatter()
   const { publish, pending } = usePublishPage()
   const dismissed = useChecklistDismissed()

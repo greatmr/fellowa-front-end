@@ -94,10 +94,10 @@ describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
     ).toHaveAttribute('href', '/settings')
     expect(
       screen.getByRole('link', { name: /Create your first membership tier/ })
-    ).toHaveAttribute('href', '/studio/tiers')
+    ).toHaveAttribute('href', '/tiers')
     expect(
       screen.getByRole('link', { name: /Publish your first post/ })
-    ).toHaveAttribute('href', '/studio/posts/new')
+    ).toHaveAttribute('href', '/posts/new')
     expect(
       screen.queryByRole('link', { name: /Add your payout details/ })
     ).not.toBeInTheDocument()
@@ -137,7 +137,7 @@ describe('SetupChecklist (FE-STUDIO-02 re-port, CP-04)', () => {
     renderChecklist(fresh)
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
     expect(
-      window.sessionStorage.getItem('fellowa:studio-checklist-dismissed')
+      window.sessionStorage.getItem('fellowa:setup-checklist-dismissed')
     ).toBe('1')
   })
 

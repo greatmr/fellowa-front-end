@@ -26,15 +26,15 @@ beforeEach(() => {
 describe('mobile navigation route changes', () => {
   it.each([
     {
-      frame: 'studio',
-      initial: '/studio',
-      next: '/studio/posts',
-      openLabel: en.studio.openMenu,
+      frame: 'panel',
+      initial: '/dashboard',
+      next: '/posts',
+      openLabel: en.panel.openMenu,
     },
     {
       frame: 'public',
       initial: '/',
-      next: '/studio',
+      next: '/dashboard',
       openLabel: en.publicLayout.openMenu,
     },
   ])(
@@ -45,7 +45,7 @@ describe('mobile navigation route changes', () => {
         <NextIntlClientProvider locale="en" messages={en}>
           <ThemeProvider attribute="class" defaultTheme="light">
             <button type="button">Outside action</button>
-            {frame === 'studio' ? (
+            {frame === 'panel' ? (
               <AppMobileNav>
                 <a href="#dashboard">Dashboard</a>
               </AppMobileNav>

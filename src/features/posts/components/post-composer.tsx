@@ -145,14 +145,14 @@ export function PostComposer({ viewerId, saved }: Props) {
         if (intent === 'publish') {
           setLeaving(true)
           toast.success(isPublished ? t('savedToast') : t('publishedToast'))
-          router.push('/studio/posts')
+          router.push('/posts')
           return
         }
         toast.success(t('draftToast'))
         if (!saved) {
           // Keep writing on the saved draft, where attachments can be added.
           setLeaving(true)
-          router.replace(`/studio/posts/${post.id}/edit`)
+          router.replace(`/posts/${post.id}/edit`)
           return
         }
         setDraftState((current) => ({
@@ -183,7 +183,7 @@ export function PostComposer({ viewerId, saved }: Props) {
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm">
-          <Link href="/studio/posts" aria-label={t('back')} title={t('back')}>
+          <Link href="/posts" aria-label={t('back')} title={t('back')}>
             <ArrowLeft aria-hidden className="rtl:rotate-180" />
           </Link>
         </Button>

@@ -20,7 +20,7 @@ export default async function Page({
     return redirect({ href: '/auth', locale: locale as Locale })
   }
   const [t, settings] = await Promise.all([
-    getTranslations('studio'),
+    getTranslations('panel'),
     loadSettings(session),
   ])
 
