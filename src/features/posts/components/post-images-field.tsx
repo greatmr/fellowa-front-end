@@ -167,6 +167,10 @@ export function PostImagesField({
         )}
         {uploading ? t('uploading') : t('add')}
       </Button>
+      {/* Announces the upload; the button above shows it. */}
+      <p role="status" className="sr-only">
+        {uploading ? t('uploading') : null}
+      </p>
       {images.length > 0 ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((image, index) => (

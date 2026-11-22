@@ -1425,7 +1425,7 @@ describe('PostComposer', () => {
     /** Every delete or remove button rendered before `node`. */
     const removalsBefore = (node: HTMLElement) =>
       screen
-        .getAllByRole('button', { name: removal })
+        .queryAllByRole('button', { name: removal })
         .filter(
           (button) =>
             button.compareDocumentPosition(node) &
@@ -1444,6 +1444,7 @@ describe('PostComposer', () => {
       )
       const loader = screen.getByRole('button', { name: c.images.uploading })
       expect(loader).toBeDisabled()
+      expect(screen.getByRole('status')).toHaveTextContent(c.images.uploading)
       expect(removalsBefore(loader)).toEqual([])
       expect(
         screen.queryByRole('button', { name: 'Remove image 1' })
@@ -1470,7 +1471,8 @@ describe('PostComposer', () => {
       )
       const file = new File(['x'], 'clip.mp4', { type: 'video/mp4' })
       await user.upload(screen.getByTestId('post-video-picker'), file)
-      // In the pick's own render, before the mutation reports pending.
+      // From local state set in the pick (the mocked mutation never reports
+      // pending), so it does not wait for the observer.
       const status = screen.getByRole('status')
       expect(status).toHaveTextContent(c.media.video.uploading)
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
