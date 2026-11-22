@@ -145,15 +145,19 @@ export function useDeletePostImageMutation(viewerId: number) {
   )
 }
 
-export function useUploadPostAttachmentMutation(
-  viewerId: number,
-  postId: number
-) {
-  return usePostMutation('attachment', viewerId, (file: File) => {
-    const form = new FormData()
-    form.append('file', file)
-    return uploadPostAttachmentForHook(viewerId, postId, form)
-  })
+export type AttachmentUploadVariables = { postId: number; file: File }
+
+/** The post id travels with each file: a new post's queue gets it on save. */
+export function useUploadPostAttachmentMutation(viewerId: number) {
+  return usePostMutation(
+    'attachment',
+    viewerId,
+    ({ postId, file }: AttachmentUploadVariables) => {
+      const form = new FormData()
+      form.append('file', file)
+      return uploadPostAttachmentForHook(viewerId, postId, form)
+    }
+  )
 }
 
 export function useDeletePostAttachmentMutation(viewerId: number) {

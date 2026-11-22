@@ -14,12 +14,14 @@ import {
   MAX_MEDIA_UPLOAD_BYTES,
   MEDIA_TYPES_BY_KIND,
 } from '@/features/posts/lib/media-upload-limits'
-import { NO_PAGE } from '@/features/posts/lib/post-errors'
+import { sharedUploadLine } from '@/features/posts/lib/post-errors'
 import type { DraftUpload } from '@/features/posts/lib/post-draft'
 import { fileProblem } from '@/features/posts/lib/upload-limits'
 import type { MediaUploadKind } from '@/features/posts/types/post'
+import { uploadProblem, type UploadProblem } from '@/lib/api/upload-problem'
 
-type Problem = 'type' | 'size' | 'unavailable' | 'upload' | 'cancelled' | null
+type Problem =
+  Exclude<UploadProblem, 'noPage' | 'sessionExpired'> | 'cancelled' | null
 
 type Props = {
   viewerId: number
@@ -54,6 +56,7 @@ export function PostMediaField({
 }: Props) {
   const t = useTranslations(`posts.composer.media.${kind}`)
   const tMedia = useTranslations('posts.composer.media')
+  const tUpload = useTranslations('posts.composer.uploadErrors')
   const format = useFormatter()
   const input = useRef<HTMLInputElement>(null)
   const cancelled = useRef(false)
@@ -96,13 +99,14 @@ export function PostMediaField({
         onError: (error) => {
           if (error instanceof MediaUploadCancelledError) {
             setProblem('cancelled')
-          } else if (error.code === NO_PAGE) onNoPage()
-          else if (error.status === 401) onSessionExpired()
-          else if (error.code === 'UPLOAD_TOO_LARGE') setProblem('size')
-          else if (error.code === 'UPLOAD_TYPE_NOT_ALLOWED') setProblem('type')
-          else if (error.code === 'INTEGRATION_NOT_CONFIGURED')
-            setProblem('unavailable')
-          else setProblem('upload')
+            return
+          }
+          // Only a 503 `INTEGRATION_NOT_CONFIGURED` (no Arvan key) reads as
+          // "not available"; every other failure keeps its own line.
+          const problem = uploadProblem(error)
+          if (problem === 'noPage') onNoPage()
+          else if (problem === 'sessionExpired') onSessionExpired()
+          else setProblem(problem)
         },
         onSettled: () => {
           setProgress(null)
@@ -110,6 +114,15 @@ export function PostMediaField({
         },
       }
     )
+  }
+
+  function problemLine(problem: Exclude<Problem, null>): string {
+    if (problem === 'type') return t('typeError')
+    if (problem === 'size') return t('sizeError')
+    if (problem === 'unavailable') return tMedia('unavailable')
+    if (problem === 'cancelled') return tMedia('cancelled')
+    const shared = sharedUploadLine(problem)
+    return shared ? tUpload(shared) : tMedia('uploadError')
   }
 
   const active = mutation.isPending ? progress : null
@@ -231,9 +244,7 @@ export function PostMediaField({
 
       {problem ? (
         <p role="alert" className="text-label text-destructive">
-          {problem === 'type' || problem === 'size'
-            ? t(problemKey[problem])
-            : tMedia(problemKey[problem])}
+          {problemLine(problem)}
         </p>
       ) : showRequired && !upload ? (
         <p role="alert" className="text-label text-destructive">
@@ -243,11 +254,3 @@ export function PostMediaField({
     </section>
   )
 }
-
-const problemKey = {
-  type: 'typeError',
-  size: 'sizeError',
-  unavailable: 'unavailable',
-  upload: 'uploadError',
-  cancelled: 'cancelled',
-} as const

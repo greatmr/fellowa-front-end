@@ -1096,21 +1096,32 @@
         "sizeError": "An image can be at most 10 MB.",
         "uploadError": "The image did not upload. Please try again.",
         "deleteError": "The image was not deleted. Please try again.",
-        "pendingNote": "New images join the post when you save it."
+        "pendingNote": "New images join the post when you save it.",
+        "unavailable": "Image uploads are unavailable right now. You can save the post without images and add them later."
       },
       "attachments": {
         "title": "Attachments",
         "hint": "PDF, ZIP, text, MP3, Office documents or images, up to 10 MB each.",
         "add": "Add attachment",
-        "uploading": "Uploading attachment…",
         "remove": "Delete attachment {index}",
         "file": "Attachment {index}",
-        "saveFirst": "You can add attachments after the post is saved for the first time.",
         "typeError": "This file type is not accepted as an attachment.",
         "sizeError": "An attachment can be at most 10 MB.",
         "uploadError": "The attachment did not upload. Please try again.",
         "deleteError": "The attachment was not deleted. Please try again.",
-        "empty": "No attachments yet."
+        "empty": "No attachments yet.",
+        "queuedNote": "These files upload as soon as you save the post for the first time, as a draft or published.",
+        "unavailable": "Attachment uploads are unavailable right now. You can save the post without them and add attachments later.",
+        "status": {
+          "queued": "Waiting for the first save",
+          "uploading": "Uploading…",
+          "sent": "Uploaded"
+        },
+        "retry": "Retry uploading {name}",
+        "retryShort": "Retry",
+        "discard": "Remove {name}",
+        "savedButFailed": "{intent, select, publish {The post was published} other {The draft was saved}}, but {count, plural, one {# attachment} other {# attachments}} did not upload. Retry or remove {count, plural, one {it} other {them}}, or continue without {count, plural, one {it} other {them}} and add attachments later from the editor.",
+        "continueWithout": "Continue without them"
       },
       "access": {
         "title": "Who can access this post?",
@@ -1166,7 +1177,7 @@
         "cancelling": "Cancelling after the current part…",
         "cancelled": "The upload was cancelled.",
         "playbackNote": "Readers will be able to play it once playback opens; the file is converted after upload.",
-        "unavailable": "Video and audio uploads are not available yet. Please try again later.",
+        "unavailable": "Video and audio uploads are unavailable right now. You can save the post as a draft and upload the file later.",
         "uploadError": "The file did not upload. Please try again.",
         "video": {
           "title": "Video",
@@ -1202,6 +1213,12 @@
         "closesAt": "Voting closes {date}.",
         "lockedNote": "Once someone votes, the poll can no longer be edited.",
         "required": "A poll needs at least {count, number} options to publish."
+      },
+      "uploadErrors": {
+        "sessionExpired": "Your session ended. Sign in again, then retry.",
+        "storage": "The file could not be stored. Try again in a moment.",
+        "requestRefused": "This request could not be verified. Open Fellowa at its usual address, reload the page and try again.",
+        "accountRefused": "Your account cannot upload files yet. Verify your account or sign in again."
       }
     }
   },

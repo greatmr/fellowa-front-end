@@ -10,7 +10,7 @@ import {
   useDeletePostImageMutation,
   useUploadPostImageMutation,
 } from '@/features/posts/api/post-hooks'
-import { NO_PAGE } from '@/features/posts/lib/post-errors'
+import { sharedUploadLine } from '@/features/posts/lib/post-errors'
 import type { DraftImage } from '@/features/posts/lib/post-draft'
 import {
   MAX_POST_IMAGE_BYTES,
@@ -18,8 +18,10 @@ import {
   fileProblem,
 } from '@/features/posts/lib/upload-limits'
 import type { ApiError } from '@/lib/api/errors'
+import { uploadProblem, type UploadProblem } from '@/lib/api/upload-problem'
 
-type Problem = 'type' | 'size' | 'upload' | 'delete' | null
+/** An upload's failure (the shared table) or a delete's. */
+type Problem = UploadProblem | 'delete' | null
 
 type Props = {
   viewerId: number
@@ -45,17 +47,27 @@ export function PostImagesField({
   onSessionExpired,
 }: Props) {
   const t = useTranslations('posts.composer.images')
+  const tUpload = useTranslations('posts.composer.uploadErrors')
   const input = useRef<HTMLInputElement>(null)
   const upload = useUploadPostImageMutation(viewerId)
   const remove = useDeletePostImageMutation(viewerId)
   const [problem, setProblem] = useState<Problem>(null)
 
-  function failed(error: ApiError, fallback: Problem) {
-    if (error.code === NO_PAGE) onNoPage()
-    else if (error.status === 401) onSessionExpired()
-    else if (error.code === 'UPLOAD_TOO_LARGE') setProblem('size')
-    else if (error.code === 'UPLOAD_TYPE_NOT_ALLOWED') setProblem('type')
-    else setProblem(fallback)
+  function failed(error: ApiError, during: 'upload' | 'delete') {
+    const problem = uploadProblem(error)
+    if (problem === 'noPage') onNoPage()
+    else if (problem === 'sessionExpired') onSessionExpired()
+    // A delete's 403 or 500 is still "not deleted"; the table is for uploads.
+    else setProblem(during === 'upload' ? problem : 'delete')
+  }
+
+  function problemLine(problem: Exclude<Problem, null>): string {
+    if (problem === 'delete') return t('deleteError')
+    if (problem === 'size') return t('sizeError')
+    if (problem === 'type') return t('typeError')
+    if (problem === 'unavailable') return t('unavailable')
+    const shared = sharedUploadLine(problem)
+    return shared ? tUpload(shared) : t('uploadError')
   }
 
   function choose(event: ChangeEvent<HTMLInputElement>) {
@@ -165,16 +177,9 @@ export function PostImagesField({
       ) : null}
       {problem ? (
         <p role="alert" className="text-label text-destructive">
-          {t(problemKey[problem])}
+          {problemLine(problem)}
         </p>
       ) : null}
     </section>
   )
 }
-
-const problemKey = {
-  type: 'typeError',
-  size: 'sizeError',
-  upload: 'uploadError',
-  delete: 'deleteError',
-} as const
