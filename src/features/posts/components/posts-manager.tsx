@@ -71,7 +71,7 @@ import {
   filterPosts,
   hasActiveFilters,
   isDraft,
-  searchableText,
+  previewText,
   snippetOf,
   tabCounts,
   type AccessFilter,
@@ -85,7 +85,7 @@ import type { OwnerCollection } from '@/features/posts/types/collection'
 import type { OwnerPost } from '@/features/posts/types/post'
 import { Link } from '@/i18n/navigation'
 import type { ApiError } from '@/lib/api/errors'
-import { cn } from '@/lib/utils'
+import { cn, isOneOf } from '@/lib/utils'
 
 type Confirm =
   | { kind: 'delete' | 'unpublish'; post: OwnerPost }
@@ -94,11 +94,6 @@ type Confirm =
 
 /** A dialog's target; `nonce` remounts it so its form starts fresh. */
 type Opened<T> = { target: T; open: boolean; nonce: number }
-
-const isOneOf = <T extends string>(
-  list: readonly T[],
-  value: string
-): value is T => (list as readonly string[]).includes(value)
 
 const confirmKinds: Record<Confirm['kind'], ConfirmKind> = {
   delete: 'confirmDelete',
@@ -886,7 +881,7 @@ function PostTable({
           <tbody className="divide-y">
             {posts.map((post) => {
               const title = post.title || t('untitled')
-              const snippet = snippetOf(searchableText(post))
+              const snippet = snippetOf(previewText(post))
               const editable = isEditableType(post.type)
               const isSelected = selectedIds.has(post.id)
               const inCollections = post.collectionIds.flatMap((id) => {

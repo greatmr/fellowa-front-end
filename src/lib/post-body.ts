@@ -30,3 +30,54 @@ export function postBodyFromApi(
     ? { format: 'html', html: text as ServerHtml }
     : { format: 'plain', text }
 }
+
+/** A tag, with quoted attribute values that may hold `>`. */
+const TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/g
+/** A comment, removed before tags so its contents never become text. */
+const COMMENT = /<!--[\s\S]*?(?:-->|$)/g
+const ENTITY = /&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  zwnj: '‌',
+  zwj: '‍',
+}
+
+function decodeEntity(
+  entity: string,
+  decimal: string | undefined,
+  hex: string | undefined,
+  name: string | undefined
+): string {
+  const code =
+    decimal !== undefined
+      ? Number.parseInt(decimal, 10)
+      : hex !== undefined
+        ? Number.parseInt(hex, 16)
+        : null
+  if (code === null) {
+    return name === undefined
+      ? entity
+      : (NAMED_ENTITIES[name.toLowerCase()] ?? entity)
+  }
+  return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity
+}
+
+/**
+ * An html body's text, for matching and estimating only; never rendered and
+ * never parsed into a document. Comments and tags (attribute values with
+ * them) become spaces, the common entities are decoded after the tags are
+ * gone, and whitespace runs collapse to one space.
+ */
+export function htmlToSearchText(html: string): string {
+  return html
+    .replace(COMMENT, ' ')
+    .replace(TAG, ' ')
+    .replace(ENTITY, decodeEntity)
+    .replace(/\s+/g, ' ')
+    .trim()
+}

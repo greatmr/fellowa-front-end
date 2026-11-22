@@ -40,3 +40,11 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+/** Narrows a string (a select's value) to one of a list's literals. */
+export function isOneOf<T extends string>(
+  list: readonly T[],
+  value: string
+): value is T {
+  return (list as readonly string[]).includes(value)
+}
