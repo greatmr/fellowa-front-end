@@ -131,6 +131,10 @@ function ownPost(id: number, overrides: Record<string, unknown> = {}) {
     type: 'text',
     title: `Post ${id}`,
     text: 'Body',
+    bodyFormat: 'plain',
+    excerpt: 'Body',
+    creatorId: 42,
+    collectionIds: [],
     tags: null,
     isApprove: true,
     visibility: {
@@ -233,6 +237,7 @@ describe('getRecentPosts', () => {
       {
         id: 12,
         title: 'Post 12',
+        body: { format: 'plain', text: 'Body' },
         excerpt: 'Body',
         publishedAt: null,
         createdAt: '2026-11-21T08:00:00.000Z',
@@ -241,6 +246,7 @@ describe('getRecentPosts', () => {
       {
         id: 9,
         title: 'Post 9',
+        body: { format: 'plain', text: 'Body' },
         excerpt: 'Body',
         publishedAt: '2026-11-20T08:00:00.000Z',
         createdAt: '2026-11-20T08:00:00.000Z',

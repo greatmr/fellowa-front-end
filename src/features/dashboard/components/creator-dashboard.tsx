@@ -22,8 +22,8 @@ import { env } from '@/lib/env'
  * the heading with "edit page", the public address, the setup checklist and
  * recent posts. The banner and the checklist share one publish action. No
  * earnings or audience cards: the design has none, and nothing here computes
- * money. Out (FQ-27, FQ-2/FQ-3): the other tabs, the "more" button, post
- * search, likes and comments, the stream overlay and the goal card.
+ * money. Out (FQ-27, FQ-2/FQ-3): the other tabs, the "more" button, likes
+ * and comments, the stream overlay and the goal card.
  */
 export function CreatorDashboard({
   viewerId,
@@ -60,7 +60,11 @@ export function CreatorDashboard({
             isPublished={facts.isPublished}
           />
           <SetupChecklist facts={facts} />
-          <RecentPosts result={recentPosts} />
+          <RecentPosts
+            result={recentPosts}
+            pageUrl={address.url}
+            isPublished={facts.isPublished}
+          />
         </PageContainer>
       </div>
     </PublishPageProvider>
