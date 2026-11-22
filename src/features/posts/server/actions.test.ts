@@ -7,7 +7,7 @@ import type {
   SavePostInput,
 } from '@/features/posts/types/post'
 
-import { rawPost, studioPost } from '../test/fixtures'
+import { rawPost, ownerPost } from '../test/fixtures'
 
 const request = vi.hoisted(() => ({
   origin: 'https://fellowa.test',
@@ -123,8 +123,8 @@ describe('posts server boundary', () => {
     expect(result).toEqual({
       ok: true,
       data: [
-        studioPost(),
-        studioPost({
+        ownerPost(),
+        ownerPost({
           id: 13,
           type: 'image',
           text: '',
@@ -165,7 +165,7 @@ describe('posts server boundary', () => {
     )
     expect(await getPostForHook(42, 12)).toEqual({
       ok: true,
-      data: studioPost(),
+      data: ownerPost(),
     })
     expect(await getPostForHook(42, 99)).toMatchObject({
       ok: false,
@@ -395,17 +395,17 @@ describe('posts server boundary', () => {
     expect(await listPostsForHook(42)).toEqual({
       ok: true,
       data: [
-        studioPost({
+        ownerPost({
           id: 20,
           type: 'video',
           videos: [{ id: 70, name: 'clip.mp4' }],
         }),
-        studioPost({
+        ownerPost({
           id: 21,
           type: 'audio',
           audios: [{ id: 81, name: null }],
         }),
-        studioPost({
+        ownerPost({
           id: 22,
           type: 'poll',
           poll: {

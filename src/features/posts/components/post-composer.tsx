@@ -36,7 +36,7 @@ import {
 } from '@/features/posts/lib/post-draft'
 import { NO_PAGE, postErrorKey } from '@/features/posts/lib/post-errors'
 import { MAX_POST_TITLE } from '@/features/posts/schemas/post'
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 type Props = {
   viewerId: number
   /** The post being edited, kept fresh by its query; `null` creates one. */
-  saved: StudioPost | null
+  saved: OwnerPost | null
 }
 
 const mediaChoices = [

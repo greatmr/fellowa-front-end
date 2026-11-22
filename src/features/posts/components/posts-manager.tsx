@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
-import { StudioPageHeader } from '@/components/layout/studio-page-header'
+import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,11 +52,11 @@ import {
   type PostTab,
   type SortOrder,
 } from '@/features/posts/lib/post-list'
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 import { Link } from '@/i18n/navigation'
 import type { ApiError } from '@/lib/api/errors'
 
-type Confirm = { kind: 'delete' | 'unpublish'; post: StudioPost }
+type Confirm = { kind: 'delete' | 'unpublish'; post: OwnerPost }
 
 const isOneOf = <T extends string>(
   list: readonly T[],
@@ -72,7 +72,7 @@ const isOneOf = <T extends string>(
  */
 export function PostsManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('posts')
-  const tStudio = useTranslations('studio')
+  const tPanel = useTranslations('studio')
   const tCommon = useTranslations('common')
   const locale = useLocale()
   const posts = usePostsQuery(viewerId)
@@ -87,14 +87,14 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
 
   const errorText = (error: ApiError) => t(`errors.${postErrorKey(error)}`)
 
-  function publish(post: StudioPost) {
+  function publish(post: OwnerPost) {
     status.mutate(statusInput(post, 'publish'), {
       onSuccess: () => toast.success(t('list.publishedToast')),
       onError: (error) => toast.error(errorText(error)),
     })
   }
 
-  function openConfirm(kind: Confirm['kind'], post: StudioPost) {
+  function openConfirm(kind: Confirm['kind'], post: OwnerPost) {
     setConfirmError(null)
     setConfirm({ kind, post })
     setConfirmOpen(true)
@@ -220,9 +220,9 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <StudioPageHeader
-          title={tStudio('pages.posts.title')}
-          category={tStudio('pages.posts.category')}
+        <PageHeader
+          title={tPanel('pages.posts.title')}
+          category={tPanel('pages.posts.category')}
           description={t('list.hint')}
           className="mb-0"
         />
@@ -384,11 +384,11 @@ function PostTable({
   onUnpublish,
   onDelete,
 }: {
-  posts: StudioPost[]
+  posts: OwnerPost[]
   busy: boolean
-  onPublish: (post: StudioPost) => void
-  onUnpublish: (post: StudioPost) => void
-  onDelete: (post: StudioPost) => void
+  onPublish: (post: OwnerPost) => void
+  onUnpublish: (post: OwnerPost) => void
+  onDelete: (post: OwnerPost) => void
 }) {
   const t = useTranslations('posts.list')
   const format = useFormatter()

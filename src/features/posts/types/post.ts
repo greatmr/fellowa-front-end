@@ -7,7 +7,7 @@
 /** A stored image or attachment: `{id, url}`; `url` is `null` when unusable. */
 export type PostFile = { id: number; url: string | null }
 
-export type StudioPost = {
+export type OwnerPost = {
   id: number
   /**
    * Derived by the server from what the post holds: `text`, `image`, `video`,

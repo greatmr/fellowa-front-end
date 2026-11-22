@@ -13,7 +13,7 @@ import type {
   CreatorTier,
 } from '@/features/creator-page/types/creator-page'
 import { loadExploreCategories } from '@/features/explore/server'
-import { publicPageAddress } from '@/features/studio'
+import { publicPageAddress } from '@/features/dashboard'
 import { ApiError } from '@/lib/api/errors'
 import { env } from '@/lib/env'
 

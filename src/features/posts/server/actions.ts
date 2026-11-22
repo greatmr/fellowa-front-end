@@ -40,7 +40,7 @@ import type {
   PostMedia,
   PostStatusInput,
   SavePostInput,
-  StudioPost,
+  OwnerPost,
 } from '@/features/posts/types/post'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 import { ApiError } from '@/lib/api/errors'
@@ -88,7 +88,7 @@ function validId(value: unknown): value is number {
 
 export async function listPostsForHook(
   viewerId: number
-): Promise<ApiActionResult<StudioPost[]>> {
+): Promise<ApiActionResult<OwnerPost[]>> {
   if (!validId(viewerId)) return invalidRequest
   return execute(async () => listOwnPosts(await authorizedToken(viewerId)))
 }
@@ -96,7 +96,7 @@ export async function listPostsForHook(
 export async function getPostForHook(
   viewerId: number,
   postId: number
-): Promise<ApiActionResult<StudioPost>> {
+): Promise<ApiActionResult<OwnerPost>> {
   if (!validId(viewerId) || !validId(postId)) return invalidRequest
   return execute(async () =>
     getOwnPost(await authorizedToken(viewerId), postId)
@@ -106,7 +106,7 @@ export async function getPostForHook(
 export async function savePostForHook(
   viewerId: number,
   input: SavePostInput
-): Promise<ApiActionResult<StudioPost>> {
+): Promise<ApiActionResult<OwnerPost>> {
   return mutation(async () => {
     const parsed = savePostSchema.safeParse(input)
     if (!parsed.success) invalidPost()
@@ -117,7 +117,7 @@ export async function savePostForHook(
 export async function setPostStatusForHook(
   viewerId: number,
   input: PostStatusInput
-): Promise<ApiActionResult<StudioPost>> {
+): Promise<ApiActionResult<OwnerPost>> {
   return mutation(async () => {
     const parsed = postStatusSchema.safeParse(input)
     if (!parsed.success) invalidPost()

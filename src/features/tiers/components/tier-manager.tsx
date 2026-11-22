@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { ErrorState } from '@/components/common/error-state'
-import { StudioPageHeader } from '@/components/layout/studio-page-header'
+import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import {
   useDeleteTierMutation,
@@ -38,7 +38,7 @@ type Builder = { key: number; saved: Tier | null; draft: TierDraft }
 export function TierManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('tiers')
   const tCommon = useTranslations('common')
-  const tStudio = useTranslations('studio')
+  const tPanel = useTranslations('studio')
   const tiers = useTiersQuery(viewerId)
   const roles = useTierRolesQuery(viewerId)
   const remove = useDeleteTierMutation(viewerId)
@@ -120,9 +120,9 @@ export function TierManager({ viewerId }: { viewerId: number }) {
         data-testid="tiers-list-header"
         className="flex flex-wrap items-center justify-between gap-4"
       >
-        <StudioPageHeader
-          title={tStudio('pages.tiers.title')}
-          category={tStudio('pages.tiers.category')}
+        <PageHeader
+          title={tPanel('pages.tiers.title')}
+          category={tPanel('pages.tiers.category')}
           description={t('overviewHint')}
           className="mb-0"
         />

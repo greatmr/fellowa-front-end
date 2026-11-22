@@ -8,7 +8,7 @@ import type {
   MediaUploadSession,
   PostFile,
   PostMedia,
-  StudioPost,
+  OwnerPost,
 } from '@/features/posts/types/post'
 import { parseEnvelope } from '@/lib/api/envelope'
 import { httpUrlOrNull } from '@/lib/url'
@@ -85,7 +85,7 @@ const toMedia = (media: z.infer<typeof rawCloudMediaSchema>): PostMedia => ({
   name: media.fileNameCloud,
 })
 
-function toPost(raw: RawPost): StudioPost {
+function toPost(raw: RawPost): OwnerPost {
   const poll = raw.polls[0]
   return {
     id: raw.id,
@@ -116,12 +116,12 @@ function toPost(raw: RawPost): StudioPost {
 }
 
 /** `GET /content`: the owner's posts, newest first, drafts included. */
-export function parsePostList(value: unknown): StudioPost[] {
+export function parsePostList(value: unknown): OwnerPost[] {
   return parseEnvelope(z.array(rawPostSchema), value, invalid).map(toPost)
 }
 
 /** `GET /content/:id` and every create/update route (owner view). */
-export function parsePost(value: unknown): StudioPost {
+export function parsePost(value: unknown): OwnerPost {
   return toPost(parseEnvelope(rawPostSchema, value, invalid))
 }
 
