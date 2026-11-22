@@ -1,26 +1,35 @@
 import type { OwnerPost } from '@/features/posts/types/post'
 
 /**
- * Tabs, search, access filter and sort, all over the one `GET /content` list
- * (FQ-30 (4)): the route has no query parameters for any of them.
+ * Tabs, search, access and collection filters and sort, all over the one
+ * `GET /content` list (FQ-30 (4)). The collection filter reads each post's
+ * `collectionIds` (BE-CONT-15) rather than `?collectionId=`: one list, one
+ * key, and "no collection" has no query parameter at all.
  */
 
 export type PostTab = 'all' | 'published' | 'draft'
+/** The page's tabs: the three post tabs and the collections grid. */
+export type ManagerTab = PostTab | 'collections'
 export type AccessFilter = 'all' | 'free' | 'locked'
+/** Every post, posts in no collection, or one collection's id. */
+export type CollectionFilter = 'all' | 'none' | number
 export type SortOrder = 'newest' | 'title'
 export type ListFilters = {
   query: string
   access: AccessFilter
+  collection: CollectionFilter
   sort: SortOrder
 }
 
 export const POST_TABS: readonly PostTab[] = ['all', 'published', 'draft']
+export const MANAGER_TABS: readonly ManagerTab[] = [...POST_TABS, 'collections']
 export const ACCESS_FILTERS: readonly AccessFilter[] = ['all', 'free', 'locked']
 export const SORT_ORDERS: readonly SortOrder[] = ['newest', 'title']
 
 export const defaultListFilters: ListFilters = {
   query: '',
   access: 'all',
+  collection: 'all',
   sort: 'newest',
 }
 
@@ -38,7 +47,31 @@ export function tabCounts(posts: OwnerPost[]): Record<PostTab, number> {
 }
 
 export function hasActiveFilters(filters: ListFilters): boolean {
-  return filters.query.trim() !== '' || filters.access !== 'all'
+  return (
+    filters.query.trim() !== '' ||
+    filters.access !== 'all' ||
+    filters.collection !== 'all'
+  )
+}
+
+function inCollection(post: OwnerPost, filter: CollectionFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'none') return post.collectionIds.length === 0
+  return post.collectionIds.includes(filter)
+}
+
+/**
+ * The filter as it applies: a collection that is gone (deleted here or in
+ * another tab) no longer narrows the list.
+ */
+export function effectiveFilters(
+  filters: ListFilters,
+  collectionIds: readonly number[]
+): ListFilters {
+  return typeof filters.collection === 'number' &&
+    !collectionIds.includes(filters.collection)
+    ? { ...filters, collection: 'all' }
+    : filters
 }
 
 function inTab(post: OwnerPost, tab: PostTab): boolean {
@@ -58,6 +91,7 @@ export function filterPosts(
       inTab(post, tab) &&
       (filters.access === 'all' ||
         (filters.access === 'free') === post.isPublic) &&
+      inCollection(post, filters.collection) &&
       (!query ||
         post.title.toLocaleLowerCase(locale).includes(query) ||
         searchableText(post).toLocaleLowerCase(locale).includes(query))

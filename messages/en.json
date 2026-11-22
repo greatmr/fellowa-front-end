@@ -976,7 +976,8 @@
       "tabs": {
         "all": "All",
         "published": "Published",
-        "draft": "Drafts"
+        "draft": "Drafts",
+        "collections": "Collections"
       },
       "searchLabel": "Search posts",
       "searchPlaceholder": "Search post titles or text…",
@@ -997,7 +998,9 @@
         "title": "Post title",
         "access": "Access",
         "status": "Status",
-        "actions": "Actions"
+        "actions": "Actions",
+        "select": "Select",
+        "collections": "Collection"
       },
       "badge": {
         "free": "Free",
@@ -1009,7 +1012,8 @@
       "empty": {
         "title": "You have not created any posts yet",
         "body": "Publish your first post: text, images, a video, an audio or a poll. You can keep part of it free and link the rest to your membership tiers.",
-        "action": "Create your first post"
+        "action": "Create your first post",
+        "manageCollections": "Manage collections"
       },
       "noMatch": {
         "title": "No posts match these filters",
@@ -1035,7 +1039,26 @@
       "publishedToast": "Post published",
       "unpublishedToast": "Post moved to drafts",
       "deletedToast": "Post deleted",
-      "untitled": "Untitled"
+      "untitled": "Untitled",
+      "createCollection": "Create collection",
+      "collectionLabel": "Collection",
+      "collection": {
+        "all": "All collections",
+        "none": "No collection"
+      },
+      "selectAll": "Select all shown posts",
+      "selectRow": "Select “{title}”",
+      "cell": {
+        "add": "Add to collection",
+        "change": "Change",
+        "addNamed": "Add “{title}” to a collection",
+        "changeNamed": "Change the collections of “{title}”"
+      },
+      "banner": {
+        "showing": "Showing the posts of the collection <b>“{title}”</b>",
+        "addPosts": "Add posts to this collection",
+        "clear": "Remove the collection filter"
+      }
     },
     "confirmDelete": {
       "title": "Delete “{title}”?",
@@ -1059,7 +1082,9 @@
       "imageNotFound": "One of the images is no longer available. Remove it and upload it again.",
       "network": "Could not connect. Check your internet connection and try again.",
       "mediaNotFound": "The uploaded file is no longer available. Remove it and upload it again.",
-      "pollLocked": "Someone has already voted, so this poll can no longer be edited."
+      "pollLocked": "Someone has already voted, so this poll can no longer be edited.",
+      "collectionNotFound": "This collection was not found; it may have been deleted.",
+      "collectionTitleTaken": "You already have a collection with this title."
     },
     "aliasRequired": {
       "title": "Choose your page address first",
@@ -1235,6 +1260,117 @@
         "storage": "The file could not be stored. Try again in a moment.",
         "requestRefused": "This request could not be verified. Open Fellowa at its usual address, reload the page and try again.",
         "accountRefused": "Your account cannot upload files yet. Verify your account or sign in again."
+      },
+      "collections": {
+        "title": "Collections",
+        "hint": "File this post in one or more collections.",
+        "new": "New collection",
+        "newLabel": "Collection name",
+        "newPlaceholder": "Collection name…",
+        "add": "Add",
+        "adding": "Adding…",
+        "createFirst": "Create your first collection",
+        "listLabel": "Collections for this post",
+        "loading": "Loading collections…",
+        "loadError": "Collections could not be loaded.",
+        "syncFailed": "The post was saved, but its collections were not updated: {reason}"
+      }
+    },
+    "collections": {
+      "loading": "Loading collections…",
+      "loadError": "Collections could not be loaded",
+      "empty": {
+        "title": "You have not created any collections yet",
+        "body": "Collections keep related posts together, such as podcast seasons, courses or projects, so they are easier to find.",
+        "create": "Create your first collection",
+        "createPost": "Create your first post"
+      },
+      "postCount": "{count, plural, one {# post} other {# posts}}",
+      "noDescription": "No description for this collection.",
+      "editNamed": "Edit the collection “{title}”",
+      "deleteNamed": "Delete the collection “{title}”",
+      "managePosts": "Add / manage posts",
+      "viewPosts": "View posts",
+      "deletedToast": "Collection “{title}” deleted",
+      "confirmDelete": {
+        "title": "Delete the collection “{title}”?",
+        "body": "The collection is deleted. Its posts stay as they are, published or draft; only their link to this collection goes.",
+        "confirm": "Delete collection",
+        "pending": "Deleting…"
+      },
+      "dialog": {
+        "createTitle": "Create a new collection",
+        "editTitle": "Edit collection and posts",
+        "titleLabel": "Collection title",
+        "titlePlaceholder": "For example: Digital design course",
+        "titleRequired": "Enter a collection title.",
+        "descriptionLabel": "Short description (optional)",
+        "descriptionPlaceholder": "Write a short note about what this collection holds…",
+        "postsLabel": "Posts in this collection ({count})",
+        "noPosts": "You have not created any posts yet. Once you have, you can add them to this collection.",
+        "searchLabel": "Search posts",
+        "searchPlaceholder": "Search posts to add…",
+        "noMatch": "No post with this name.",
+        "tooManyPosts": "A collection can hold at most {max} posts.",
+        "create": "Create collection",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "createdToast": "New collection created",
+        "savedToast": "Collection updated"
+      },
+      "assign": {
+        "title": "Add to collection",
+        "selected": "{count, plural, one {# post selected} other {# posts selected}}",
+        "newLabel": "New collection name",
+        "newPlaceholder": "New collection name…",
+        "create": "Create",
+        "creating": "Creating…",
+        "listLabel": "Collections",
+        "empty": "You have no collections yet; create the first one above.",
+        "pickOne": "Choose at least one collection.",
+        "tooMany": "Choose at most {max} collections.",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "replacedToast": "The post’s collections were updated",
+        "addedToast": "The selected posts were added to the collections",
+        "createdToast": "Collection “{title}” created"
+      }
+    },
+    "bulk": {
+      "barLabel": "Bulk actions",
+      "selected": "{count, plural, one {# post selected} other {# posts selected}}",
+      "addToCollection": "Add to collection",
+      "publish": "Publish",
+      "draft": "Draft",
+      "delete": "Delete",
+      "cancel": "Clear selection",
+      "running": {
+        "publish": "Publishing {done} of {total}…",
+        "draft": "Moving to drafts {done} of {total}…",
+        "delete": "Deleting {done} of {total}…"
+      },
+      "doneToast": {
+        "publish": "{count, plural, one {# post published} other {# posts published}}",
+        "draft": "{count, plural, one {# post moved to drafts} other {# posts moved to drafts}}",
+        "delete": "{count, plural, one {# post deleted} other {# posts deleted}}"
+      },
+      "summary": {
+        "title": "{done} of {total} done; {failed} failed:",
+        "item": "{title}: {reason}",
+        "kept": "The posts that failed stay selected, so you can try again.",
+        "dismiss": "Dismiss"
+      },
+      "confirmDelete": {
+        "title": "{count, plural, one {Delete # post?} other {Delete # posts?}}",
+        "body": "The posts, their images and their attachments are deleted and no longer shown to anyone.",
+        "confirm": "Delete posts",
+        "pending": "Deleting…"
+      },
+      "confirmUnpublish": {
+        "title": "{count, plural, one {Move # post back to drafts?} other {Move # posts back to drafts?}}",
+        "body": "These posts leave your page, and no one but you can read them, members of their tiers included. Memberships and payments do not change.",
+        "confirm": "Move to drafts",
+        "pending": "Working…"
       }
     }
   },

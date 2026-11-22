@@ -77,6 +77,8 @@ const rawPostSchema = z.object({
   bodyFormat: bodyFormatSchema.optional(),
   // BE-CONT-14, owner reads only.
   excerpt: z.string().nullish(),
+  // BE-CONT-15, owner reads only.
+  collectionIds: z.array(id).optional(),
 })
 
 type RawPost = z.infer<typeof rawPostSchema>
@@ -120,6 +122,7 @@ function toPost(raw: RawPost): OwnerPost {
           })),
         }
       : null,
+    collectionIds: raw.collectionIds ?? [],
   }
 }
 

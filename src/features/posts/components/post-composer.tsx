@@ -16,9 +16,14 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { postKeys, useSavePostMutation } from '@/features/posts/api/post-hooks'
+import {
+  postKeys,
+  useSavePostMutation,
+  useSetPostCollectionsMutation,
+} from '@/features/posts/api/post-hooks'
 import { PostAccessPanel } from '@/features/posts/components/post-access-panel'
 import { PostAttachments } from '@/features/posts/components/post-attachments'
+import { PostCollectionsField } from '@/features/posts/components/post-collections-field'
 import { PostImagesField } from '@/features/posts/components/post-images-field'
 import { PostMediaField } from '@/features/posts/components/post-media-field'
 import { PostPollField } from '@/features/posts/components/post-poll-field'
@@ -39,7 +44,7 @@ import { NO_PAGE, postErrorKey } from '@/features/posts/lib/post-errors'
 import { MAX_POST_TITLE } from '@/features/posts/schemas/post'
 import type { OwnerPost } from '@/features/posts/types/post'
 import { Link, useRouter } from '@/i18n/navigation'
-import type { ApiError } from '@/lib/api/errors'
+import { ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -81,10 +86,10 @@ const mediaChoices = [
  * with its toolbar and the paywall divider (FE-POST-03, saved as `html`), one
  * media block (images, a video, an audio or a poll: FQ-30, one media type per
  * post, FE-POST-02), attachments (a new post's wait for its first save:
- * FE-POST-05), access, and publish or save as draft (no date: Q-18). Not
- * ported (FQ-31, FQ-30): the single-post purchase switch and the collections
- * picker, the "upload error" demo button, and the "saved automatically" line
- * (nothing autosaves).
+ * FE-POST-05), access, collections (FE-POST-04, sent after the post saves),
+ * and publish or save as draft (no date: Q-18). Not ported (FQ-31, FQ-30):
+ * the single-post purchase switch, the "upload error" demo button, and the
+ * "saved automatically" line (nothing autosaves).
  */
 export function PostComposer({ viewerId, saved }: Props) {
   const t = useTranslations('posts.composer')
@@ -92,6 +97,7 @@ export function PostComposer({ viewerId, saved }: Props) {
   const router = useRouter()
   const ids = useId()
   const save = useSavePostMutation(viewerId)
+  const setCollections = useSetPostCollectionsMutation(viewerId)
   // A save waits for image uploads and deletes, or it would send an id that
   // is not there yet or is going away.
   const imagesBusy =
@@ -109,6 +115,11 @@ export function PostComposer({ viewerId, saved }: Props) {
     before: draft.before,
     after: draft.after,
   }))
+  // The collections ticked here; sent once the post itself has saved.
+  const [collectionIds, setCollectionIds] = useState<number[]>(
+    () => saved?.collectionIds ?? []
+  )
+  const [syncing, setSyncing] = useState(false)
   const [checkedFor, setCheckedFor] = useState<SaveIntent | null>(null)
   const [serverTierError, setServerTierError] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -144,7 +155,7 @@ export function PostComposer({ viewerId, saved }: Props) {
     (choice) => saved === null || choice.kind !== 'poll'
   )
   const pending = save.isPending
-  const busy = pending || imagesBusy || leaving || created !== null
+  const busy = pending || syncing || imagesBusy || leaving || created !== null
 
   function setDraft(patch: Partial<PostDraft>) {
     setDraftState((current) => ({ ...current, ...patch }))
@@ -182,34 +193,79 @@ export function PostComposer({ viewerId, saved }: Props) {
     setPendingIntent(intent)
     save.mutate(saveInputFromDraft(draft, intent, saved), {
       onSuccess: (post) => {
-        if (intent === 'publish') {
-          toast.success(isPublished ? t('savedToast') : t('publishedToast'))
-          if (saved) {
-            setLeaving(true)
-            router.push('/posts')
-          } else leaveNewPost(post.id, intent)
+        const wanted = collectionsToSend(post)
+        if (wanted === null) {
+          afterSave(post, intent)
           return
         }
-        toast.success(t('draftToast'))
-        if (!saved) {
-          leaveNewPost(post.id, intent)
-          return
-        }
-        setDraftState((current) => ({
-          ...current,
-          images: post.images.map((image) => ({ ...image, attached: true })),
-          upload: savedUpload(post) ?? current.upload,
-          // Saved as free, the post lost its tier links: nothing to keep.
-          tiers:
-            post.isPublic && current.tiers.mode === 'keep'
-              ? { mode: 'pick', ids: [] }
-              : current.tiers,
-        }))
-        setCheckedFor(null)
+        setSyncing(true)
+        void syncCollections(post.id, wanted).then(() => {
+          setSyncing(false)
+          afterSave(post, intent)
+        })
       },
       onError: failed,
       onSettled: () => setPendingIntent(null),
     })
+  }
+
+  /** The collections to send, or `null` when the server holds them already. */
+  function collectionsToSend(post: OwnerPost): number[] | null {
+    const wanted = [...new Set(collectionIds)]
+    const held = new Set(post.collectionIds)
+    return wanted.length === held.size && wanted.every((id) => held.has(id))
+      ? null
+      : wanted
+  }
+
+  /**
+   * The post saved: send its collections (`PUT /content/:id/collections`
+   * replaces them). A failure here does not undo the save; it is said, and
+   * the composer moves on.
+   */
+  async function syncCollections(postId: number, wanted: number[]) {
+    try {
+      await setCollections.mutateAsync({ postId, collectionIds: wanted })
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        sessionExpired()
+        return
+      }
+      toast.error(
+        t('collections.syncFailed', {
+          reason: tErrors(
+            error instanceof ApiError ? postErrorKey(error) : 'generic'
+          ),
+        })
+      )
+    }
+  }
+
+  function afterSave(post: OwnerPost, intent: SaveIntent) {
+    if (intent === 'publish') {
+      toast.success(isPublished ? t('savedToast') : t('publishedToast'))
+      if (saved) {
+        setLeaving(true)
+        router.push('/posts')
+      } else leaveNewPost(post.id, intent)
+      return
+    }
+    toast.success(t('draftToast'))
+    if (!saved) {
+      leaveNewPost(post.id, intent)
+      return
+    }
+    setDraftState((current) => ({
+      ...current,
+      images: post.images.map((image) => ({ ...image, attached: true })),
+      upload: savedUpload(post) ?? current.upload,
+      // Saved as free, the post lost its tier links: nothing to keep.
+      tiers:
+        post.isPublic && current.tiers.mode === 'keep'
+          ? { mode: 'pick', ids: [] }
+          : current.tiers,
+    }))
+    setCheckedFor(null)
   }
 
   /**
@@ -462,6 +518,14 @@ export function PostComposer({ viewerId, saved }: Props) {
                 onAccessChange={(access) => setDraft({ access })}
                 onTiersChange={(tiers) => setDraft({ tiers })}
               />
+              <div className="mt-5">
+                <PostCollectionsField
+                  viewerId={viewerId}
+                  value={collectionIds}
+                  onChange={setCollectionIds}
+                  onNoPage={() => setNoPage(true)}
+                />
+              </div>
             </fieldset>
             {formError ? (
               <p
