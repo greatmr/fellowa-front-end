@@ -829,7 +829,8 @@
       "posts": "پست‌ها",
       "tiers": "پلن‌های عضویت",
       "about": "درباره من",
-      "withCount": "{label} ({count})"
+      "withCount": "{label} ({count})",
+      "collections": "مجموعه‌ها"
     },
     "emptyPosts": "هنوز پستی منتشر نشده.",
     "emptyTiers": "هنوز پلنی نیست.",
@@ -878,7 +879,16 @@
     "tierCoverAlt": "تصویر پلن {title}",
     "aboutHeading": "داستان من و هدف این صفحه",
     "linksHeading": "کانال‌های ارتباطی رسمی",
-    "postsUnavailable": "پست‌ها بارگذاری نشد. کمی بعد دوباره امتحان کن."
+    "postsUnavailable": "پست‌ها بارگذاری نشد. کمی بعد دوباره امتحان کن.",
+    "collections": {
+      "postCount": "{count, plural, other {{formatted} پست}}",
+      "open": "مشاهده پست‌ها",
+      "openNamed": "مشاهده پست‌های «{title}»",
+      "back": "همه مجموعه‌ها",
+      "loadingPosts": "در حال بارگذاری پست‌ها…",
+      "postsUnavailable": "پست‌های این مجموعه بارگذاری نشد.",
+      "emptyPosts": "هنوز پست منتشرشده‌ای در این مجموعه نیست."
+    }
   },
   "settings": {
     "account": {

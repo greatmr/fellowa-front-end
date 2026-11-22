@@ -829,7 +829,8 @@
       "posts": "Posts",
       "tiers": "Membership tiers",
       "about": "About",
-      "withCount": "{label} ({count})"
+      "withCount": "{label} ({count})",
+      "collections": "Collections"
     },
     "emptyPosts": "No posts yet.",
     "emptyTiers": "No tiers yet.",
@@ -878,7 +879,16 @@
     "tierCoverAlt": "Cover of {title}",
     "aboutHeading": "My story and the goal of this page",
     "linksHeading": "Official channels",
-    "postsUnavailable": "Posts couldn't be loaded. Try again later."
+    "postsUnavailable": "Posts couldn't be loaded. Try again later.",
+    "collections": {
+      "postCount": "{count, plural, one {{formatted} post} other {{formatted} posts}}",
+      "open": "View posts",
+      "openNamed": "View the posts of “{title}”",
+      "back": "All collections",
+      "loadingPosts": "Loading posts…",
+      "postsUnavailable": "This collection's posts couldn't be loaded.",
+      "emptyPosts": "No published posts in this collection yet."
+    }
   },
   "settings": {
     "account": {

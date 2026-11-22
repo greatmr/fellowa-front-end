@@ -2,7 +2,10 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 
-import { listCreatorPostsAction } from '@/features/creator-page/server/actions'
+import {
+  listCreatorCollectionPostsAction,
+  listCreatorPostsAction,
+} from '@/features/creator-page/server/actions'
 import type { CreatorPostPage } from '@/features/creator-page/types/creator-page'
 import { unwrapApiActionResult } from '@/lib/api/action-result'
 import type { ApiError } from '@/lib/api/errors'
@@ -10,6 +13,8 @@ import type { ApiError } from '@/lib/api/errors'
 /** The public list is the same for every viewer (FQ-33 A): no viewer key. */
 export const creatorPageKeys = {
   posts: (creatorId: number) => ['creator-page', creatorId, 'posts'] as const,
+  collectionPosts: (creatorId: number, collectionId: number) =>
+    ['creator-page', creatorId, 'collections', collectionId, 'posts'] as const,
 }
 
 /**
@@ -39,6 +44,36 @@ export function useCreatorPostsQuery(
     // Dropped once the page unmounts: coming back starts again from the
     // first page the server just rendered, so the list and the counts beside
     // it agree, instead of reviving pages read minutes ago.
+    gcTime: 0,
+    getNextPageParam: (last) => last.nextPage ?? undefined,
+  })
+}
+
+/**
+ * One collection's public posts, page by page (BE-CONT-15), read when the
+ * visitor opens the collection. Dropped once it closes, as the main list.
+ */
+export function useCreatorCollectionPostsQuery(
+  creatorId: number,
+  collectionId: number
+) {
+  return useInfiniteQuery<
+    CreatorPostPage,
+    ApiError,
+    { pages: CreatorPostPage[] },
+    ReturnType<typeof creatorPageKeys.collectionPosts>,
+    number
+  >({
+    queryKey: creatorPageKeys.collectionPosts(creatorId, collectionId),
+    queryFn: async ({ pageParam }) =>
+      unwrapApiActionResult(
+        await listCreatorCollectionPostsAction({
+          creatorId,
+          collectionId,
+          page: pageParam,
+        })
+      ),
+    initialPageParam: 1,
     gcTime: 0,
     getNextPageParam: (last) => last.nextPage ?? undefined,
   })

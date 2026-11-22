@@ -3,6 +3,7 @@
 import { z } from 'zod'
 
 import {
+  getCreatorCollectionPostPage,
   getCreatorPostPage,
   setFollowing,
 } from '@/features/creator-page/api/creator-page-api'
@@ -68,6 +69,33 @@ export async function listCreatorPostsAction(input: {
   }
   return runApiAction(
     () => getCreatorPostPage(parsed.data.creatorId, parsed.data.page),
+    (error) =>
+      error instanceof InvalidCreatorPageResponseError
+        ? { code: 'INVALID_CREATOR_PAGE_RESPONSE' }
+        : undefined
+  )
+}
+
+const collectionPageSchema = postPageSchema.extend({
+  collectionId: z.number().int().positive().max(2_147_483_647),
+})
+
+/**
+ * A page of one collection's public posts (BE-CONT-15). Public data with no
+ * token, the same for every viewer (FQ-33 A).
+ */
+export async function listCreatorCollectionPostsAction(input: {
+  creatorId: number
+  collectionId: number
+  page: number
+}): Promise<ApiActionResult<CreatorPostPage>> {
+  const parsed = collectionPageSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  const { creatorId, collectionId, page } = parsed.data
+  return runApiAction(
+    () => getCreatorCollectionPostPage(creatorId, collectionId, page),
     (error) =>
       error instanceof InvalidCreatorPageResponseError
         ? { code: 'INVALID_CREATOR_PAGE_RESPONSE' }

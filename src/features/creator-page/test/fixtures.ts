@@ -60,3 +60,18 @@ export function rawPostPage(
 }
 
 export const ok = (data: unknown) => ({ data, errors: null })
+
+/**
+ * One `PublicCollection` (`GET /landing/creators/:id/collections`,
+ * BE-CONT-15): no `pageId`, no `updatedAt`.
+ */
+export function rawCollection(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 7,
+    title: 'Podcast',
+    description: 'Weekly episodes',
+    postCount: 3,
+    createdAt: '2026-11-22T08:00:00.000Z',
+    ...overrides,
+  }
+}

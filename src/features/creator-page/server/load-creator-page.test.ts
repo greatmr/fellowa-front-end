@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   profile: vi.fn(),
   tiers: vi.fn(),
   posts: vi.fn(),
+  collections: vi.fn(),
   session: vi.fn(),
   categories: vi.fn(),
 }))
@@ -17,6 +18,7 @@ vi.mock('@/features/creator-page/api/creator-page-api', () => ({
   getCreatorProfile: api.profile,
   getCreatorTiers: api.tiers,
   getCreatorPostPage: api.posts,
+  getCreatorCollections: api.collections,
 }))
 vi.mock('@/features/auth/server', () => ({
   readOptionalSessionToken: api.session,
@@ -39,6 +41,7 @@ beforeEach(() => {
   api.profile.mockResolvedValue(profile)
   api.tiers.mockResolvedValue([])
   api.posts.mockResolvedValue(firstPage)
+  api.collections.mockResolvedValue([])
   api.session.mockResolvedValue(null)
   api.categories.mockResolvedValue([{ id: 2, title: 'Music' }])
 })
@@ -49,6 +52,7 @@ describe('loadCreatorPage (FE-PAGE-01/02/03)', () => {
       profile,
       tiers: [],
       posts: firstPage,
+      collections: [],
       categoryTitle: 'Music',
       viewer: 'anonymous',
       pageUrl: 'https://fellowa.test/creators/4',
@@ -130,4 +134,19 @@ describe('loadCreatorPage (FE-PAGE-01/02/03)', () => {
 
     await expect(loadCreatorPage('4')).rejects.toMatchObject({ status: 500 })
   })
+
+  it.each([
+    ['a 404', () => new ApiError({ message: 'x', status: 404 })],
+    ['a 500', () => new ApiError({ message: 'x', status: 500 })],
+  ])(
+    'hides only the collections when they cannot be read (%s)',
+    async (_, error) => {
+      api.collections.mockRejectedValue(error())
+      expect(await loadCreatorPage('4')).toMatchObject({
+        profile,
+        collections: null,
+        posts: firstPage,
+      })
+    }
+  )
 })
