@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '@/lib/api/errors'
 
@@ -16,7 +16,7 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/features/creator-page/api/creator-page-api', () => ({
   getCreatorProfile: api.profile,
   getCreatorTiers: api.tiers,
-  getCreatorPosts: api.posts,
+  getCreatorPostPage: api.posts,
 }))
 vi.mock('@/features/auth/server', () => ({
   readOptionalSessionToken: api.session,
@@ -25,7 +25,12 @@ vi.mock('@/features/explore/server', () => ({
   loadExploreCategories: api.categories,
 }))
 
+vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.fellowa.test/api')
+vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test/')
 const { loadCreatorPage } = await import('./load-creator-page')
+afterAll(() => vi.unstubAllEnvs())
+
+const firstPage = { items: [], total: 0, nextPage: null }
 
 const profile = { id: 4, alias: 'dana', categoryId: 2, viewerFollows: null }
 const notFound = () => new ApiError({ message: 'Not found', status: 404 })
@@ -33,21 +38,24 @@ const notFound = () => new ApiError({ message: 'Not found', status: 404 })
 beforeEach(() => {
   api.profile.mockResolvedValue(profile)
   api.tiers.mockResolvedValue([])
-  api.posts.mockResolvedValue([])
+  api.posts.mockResolvedValue(firstPage)
   api.session.mockResolvedValue(null)
   api.categories.mockResolvedValue([{ id: 2, title: 'Music' }])
 })
 
-describe('loadCreatorPage (FE-PAGE-01/02)', () => {
+describe('loadCreatorPage (FE-PAGE-01/02/03)', () => {
   it('reads everything for a canonical id and names the category', async () => {
     expect(await loadCreatorPage('4')).toMatchObject({
       profile,
       tiers: [],
-      posts: [],
+      posts: firstPage,
       categoryTitle: 'Music',
       viewer: 'anonymous',
+      pageUrl: 'https://fellowa.test/creators/4',
     })
     expect(api.profile).toHaveBeenCalledWith(4, undefined)
+    // The first page of the public list, read with no token (Q-51).
+    expect(api.posts).toHaveBeenCalledWith(4, 1)
   })
 
   it("sends the cookie's token with the profile read", async () => {
@@ -107,6 +115,12 @@ describe('loadCreatorPage (FE-PAGE-01/02)', () => {
     api.tiers.mockRejectedValue(new Error('invalid price'))
 
     expect(await loadCreatorPage('4')).toMatchObject({ profile, tiers: null })
+  })
+
+  it('degrades only the posts when they cannot be read', async () => {
+    api.posts.mockRejectedValue(new ApiError({ message: 'boom', status: 500 }))
+
+    expect(await loadCreatorPage('4')).toMatchObject({ profile, posts: null })
   })
 
   it('lets any other failure reach the error boundary', async () => {

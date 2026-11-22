@@ -2,7 +2,12 @@
 
 import { z } from 'zod'
 
-import { setFollowing } from '@/features/creator-page/api/creator-page-api'
+import {
+  getCreatorPostPage,
+  setFollowing,
+} from '@/features/creator-page/api/creator-page-api'
+import { InvalidCreatorPageResponseError } from '@/features/creator-page/schemas/creator-page'
+import type { CreatorPostPage } from '@/features/creator-page/types/creator-page'
 import { readSession, validAuthRequestOrigin } from '@/features/auth/server'
 import { runApiAction, type ApiActionResult } from '@/lib/api/action-result'
 
@@ -41,4 +46,31 @@ export async function setFollowingAction(input: {
     await setFollowing(session.token, creatorId, follow)
     return { isFollowing: follow }
   })
+}
+
+const postPageSchema = z.object({
+  creatorId: z.number().int().positive().max(2_147_483_647),
+  page: z.number().int().positive().max(100_000),
+})
+
+/**
+ * A page of the creator's public post list (Q-51), for "load more" and a
+ * refetch. Public data with no token, the same for every viewer (FQ-33 A);
+ * the first page arrives with the page itself.
+ */
+export async function listCreatorPostsAction(input: {
+  creatorId: number
+  page: number
+}): Promise<ApiActionResult<CreatorPostPage>> {
+  const parsed = postPageSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, status: 400, code: 'INVALID_REQUEST' }
+  }
+  return runApiAction(
+    () => getCreatorPostPage(parsed.data.creatorId, parsed.data.page),
+    (error) =>
+      error instanceof InvalidCreatorPageResponseError
+        ? { code: 'INVALID_CREATOR_PAGE_RESPONSE' }
+        : undefined
+  )
 }

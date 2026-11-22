@@ -3,10 +3,20 @@ import { describe, expect, it } from 'vitest'
 import {
   InvalidCreatorPageResponseError,
   creatorIdSchema,
-  parseCreatorPosts,
+  parseCreatorPostPage,
   parseCreatorProfile,
   parseCreatorTiers,
 } from './creator-page'
+import {
+  FREE_BODY,
+  OPEN_PART,
+  PREVIEW,
+  ok,
+  rawFull,
+  rawPartial,
+  rawPostPage,
+  rawTeaser,
+} from '../test/fixtures'
 
 const envelope = (data: unknown) => ({ data, errors: null })
 
@@ -108,28 +118,77 @@ describe('creator page responses (FE-PAGE-01)', () => {
     }
   })
 
-  it('accepts only FULL posts', () => {
-    const post = {
-      id: 9,
-      type: 'text',
-      title: 'Hello',
-      text: null,
-      tags: null,
-      createdAt: '2026-10-30T10:00:00.000Z',
-      access: 'FULL',
-    }
-    expect(parseCreatorPosts(envelope([post]))).toEqual([
-      {
-        id: 9,
-        title: 'Hello',
-        text: null,
-        tags: [],
-        createdAt: '2026-10-30T10:00:00.000Z',
-      },
-    ])
-    expect(() =>
-      parseCreatorPosts(envelope([{ ...post, access: 'TEASER' }]))
-    ).toThrow(InvalidCreatorPageResponseError)
+  describe('the public post list (Q-51, FE-PAGE-03)', () => {
+    it("keeps only each level's keys and the page", () => {
+      const page = parseCreatorPostPage(
+        ok(
+          rawPostPage([rawFull(), rawPartial(), rawTeaser()], {
+            total: 41,
+            next: 2,
+          })
+        ),
+        4
+      )
+
+      expect(page).toEqual({
+        total: 41,
+        nextPage: 2,
+        items: [
+          {
+            id: 9,
+            title: 'Hello world',
+            createdAt: '2026-10-30T10:00:00.000Z',
+            access: 'FULL',
+            text: FREE_BODY,
+          },
+          {
+            id: 10,
+            title: 'Half open',
+            createdAt: '2026-10-30T10:00:00.000Z',
+            access: 'PARTIAL',
+            text: OPEN_PART,
+          },
+          {
+            id: 11,
+            title: 'Members video',
+            createdAt: '2026-10-30T10:00:00.000Z',
+            access: 'TEASER',
+            textPreview: PREVIEW,
+          },
+        ],
+      })
+    })
+
+    it('drops a body a gated level should not carry', () => {
+      const page = parseCreatorPostPage(
+        ok(rawPostPage([{ ...rawTeaser(), text: 'LEAKEDBODY' }])),
+        4
+      )
+
+      expect(JSON.stringify(page)).not.toContain('LEAKEDBODY')
+    })
+
+    it('reads an absent opening or preview as null', () => {
+      const page = parseCreatorPostPage(
+        ok(rawPostPage([rawPartial(10, null), rawTeaser(11, null)])),
+        4
+      )
+
+      expect(page.items).toMatchObject([
+        { access: 'PARTIAL', text: null },
+        { access: 'TEASER', textPreview: null },
+      ])
+    })
+
+    it.each([
+      ['DENY level', { ...rawFull(), access: 'DENY' }],
+      ['missing creatorId', { ...rawFull(), creatorId: undefined }],
+      ['another creator', { ...rawFull(), creatorId: 5 }],
+    ])('refuses an item with a %s', (_name, item) => {
+      expect(() => parseCreatorPostPage(ok(rawPostPage([item])), 4)).toThrow(
+        InvalidCreatorPageResponseError
+      )
+    })
   })
 
   it.each([

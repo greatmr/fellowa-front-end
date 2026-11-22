@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { server } from '../../../../test/msw/server'
+import { ok, rawPostPage, rawTeaser } from '../test/fixtures'
 
 const request = vi.hoisted(() => ({
   origin: 'https://fellowa.test',
@@ -21,7 +22,7 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { setFollowingAction } = await import('./actions')
+const { listCreatorPostsAction, setFollowingAction } = await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -197,4 +198,51 @@ describe('follow server boundary (FE-PAGE-02)', () => {
       expect(calls).toEqual([])
     }
   )
+})
+
+describe('listCreatorPostsAction (FE-PAGE-03)', () => {
+  it('reads a page of the public list with no token, whoever is signed in', async () => {
+    let seen: { query: string; auth: string | null } | null = null
+    server.use(
+      http.get(`${apiOrigin}/landing/creators/4/posts`, ({ request: r }) => {
+        seen = {
+          query: new URL(r.url).search,
+          auth: r.headers.get('authorization'),
+        }
+        return HttpResponse.json(
+          ok(rawPostPage([rawTeaser()], { total: 21, next: 3 }))
+        )
+      })
+    )
+
+    const result = await listCreatorPostsAction({ creatorId: 4, page: 2 })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: { total: 21, nextPage: 3, items: [{ id: 11, access: 'TEASER' }] },
+    })
+    expect(seen).toEqual({ query: '?page=2&pageSize=20', auth: null })
+  })
+
+  it('refuses a malformed request without calling the API', async () => {
+    expect(
+      await listCreatorPostsAction({ creatorId: 4, page: 0 })
+    ).toMatchObject({ ok: false, status: 400 })
+    expect(
+      await listCreatorPostsAction({ creatorId: -1, page: 2 })
+    ).toMatchObject({ ok: false, status: 400 })
+  })
+
+  it('names a response that does not match the contract', async () => {
+    server.use(
+      http.get(`${apiOrigin}/landing/creators/4/posts`, () =>
+        HttpResponse.json(ok(rawPostPage([{ ...rawTeaser(), creatorId: 9 }])))
+      )
+    )
+
+    expect(await listCreatorPostsAction({ creatorId: 4, page: 2 })).toEqual({
+      ok: false,
+      code: 'INVALID_CREATOR_PAGE_RESPONSE',
+    })
+  })
 })

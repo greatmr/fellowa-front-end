@@ -2,18 +2,20 @@ import 'server-only'
 
 import { readOptionalSessionToken } from '@/features/auth/server'
 import {
-  getCreatorPosts,
+  getCreatorPostPage,
   getCreatorProfile,
   getCreatorTiers,
 } from '@/features/creator-page/api/creator-page-api'
 import { creatorIdSchema } from '@/features/creator-page/schemas/creator-page'
 import type {
-  CreatorPost,
+  CreatorPostPage,
   CreatorProfile,
   CreatorTier,
 } from '@/features/creator-page/types/creator-page'
 import { loadExploreCategories } from '@/features/explore/server'
+import { publicPageAddress } from '@/features/studio'
 import { ApiError } from '@/lib/api/errors'
+import { env } from '@/lib/env'
 
 /**
  * Who is looking, for the action row only. `owner` is a display choice: the
@@ -25,9 +27,18 @@ export type CreatorPageData = {
   profile: CreatorProfile
   /** `null` when the tier list could not be read: only that tab degrades. */
   tiers: CreatorTier[] | null
-  posts: CreatorPost[]
+  /**
+   * The first page of the public list (Q-51); the rest loads on demand.
+   * `null` when it could not be read: only that tab degrades.
+   */
+  posts: CreatorPostPage | null
   categoryTitle: string | null
   viewer: CreatorPageViewer
+  /**
+   * The page's absolute address to copy (`NEXT_PUBLIC_APP_URL` +
+   * `/creators/:id`); `null` when the origin is not configured.
+   */
+  pageUrl: string | null
 }
 
 const isNotFound = (error: unknown) =>
@@ -54,7 +65,10 @@ export async function loadCreatorPage(
         if (isNotFound(error)) throw error
         return null
       }),
-      getCreatorPosts(id.data),
+      getCreatorPostPage(id.data, 1).catch((error: unknown) => {
+        if (isNotFound(error)) throw error
+        return null
+      }),
       loadExploreCategories(),
     ])
     return {
@@ -63,6 +77,7 @@ export async function loadCreatorPage(
       posts,
       categoryTitle:
         categories.find((c) => c.id === profile.categoryId)?.title ?? null,
+      pageUrl: publicPageAddress(env.NEXT_PUBLIC_APP_URL, profile.id).url,
       viewer:
         profile.viewerFollows === null || !session
           ? 'anonymous'
