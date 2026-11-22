@@ -887,7 +887,8 @@
       "back": "All collections",
       "loadingPosts": "Loading posts…",
       "postsUnavailable": "This collection's posts couldn't be loaded.",
-      "emptyPosts": "No published posts in this collection yet."
+      "emptyPosts": "No published posts in this collection yet.",
+      "gone": "This collection is no longer available."
     }
   },
   "settings": {

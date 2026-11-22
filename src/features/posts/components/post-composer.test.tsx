@@ -291,6 +291,36 @@ describe('PostComposer', () => {
     expect(mocks.push).toHaveBeenCalledWith('/posts')
   })
 
+  it('drops a collection deleted meanwhile instead of failing every save', async () => {
+    const user = userEvent.setup()
+    // 99 was deleted: the server no longer lists it nor holds the link.
+    renderComposer(ownerPost({ collectionIds: [7, 99] }))
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+      ownerPost({ collectionIds: [7] })
+    )
+    expect(mocks.setCollections).not.toHaveBeenCalled()
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
+  })
+
+  it('says only that the session ended when it ends during the collections write', async () => {
+    const user = userEvent.setup()
+    mocks.setCollections.mockRejectedValue(
+      new ApiError({ message: 'x', status: 401 })
+    )
+    renderComposer(ownerPost({ collectionIds: [] }))
+    await user.click(screen.getByRole('checkbox', { name: 'Podcast' }))
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    await act(async () => {
+      ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(ownerPost())
+    })
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      en.posts.errors.sessionExpired
+    )
+    expect(mocks.toastSuccess).not.toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
   it('creates a collection on the spot and ticks it', async () => {
     const user = userEvent.setup()
     renderComposer()

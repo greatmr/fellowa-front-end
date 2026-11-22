@@ -18,7 +18,8 @@ type Props = {
   viewerId: number
   /** The collections ticked for this post. */
   value: number[]
-  onChange: (value: number[]) => void
+  /** An updater: a quick create resolves after other ticks may have changed. */
+  onChange: (update: (current: number[]) => number[]) => void
   onNoPage: () => void
 }
 
@@ -45,10 +46,10 @@ export function PostCollectionsField({
   const [error, setError] = useState<string | null>(null)
 
   function toggle(collectionId: number, checked: boolean) {
-    onChange(
+    onChange((current) =>
       checked
-        ? [...value, collectionId]
-        : value.filter((id) => id !== collectionId)
+        ? [...current, collectionId]
+        : current.filter((id) => id !== collectionId)
     )
   }
 
@@ -60,7 +61,7 @@ export function PostCollectionsField({
       { title: trimmed, description: null },
       {
         onSuccess: (collection) => {
-          onChange([...value, collection.id])
+          onChange((current) => [...current, collection.id])
           setTitle('')
           setAdding(false)
         },

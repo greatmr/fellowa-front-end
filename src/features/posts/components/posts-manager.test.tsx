@@ -617,6 +617,33 @@ describe('PostsManager', () => {
       expect(mocks.toastSuccess).not.toHaveBeenCalled()
     })
 
+    it('keeps the failed posts selected even after a tab change during the run', async () => {
+      const user = userEvent.setup()
+      renderManager()
+      await user.click(check('Morning notes'))
+      await user.click(screen.getByRole('button', { name: b.delete }))
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: b.confirmDelete.confirm,
+        })
+      )
+      const [variables, options] = mocks.bulk.mock.calls[0]! as [
+        { posts: OwnerPost[] },
+        Record<string, unknown>,
+      ]
+      await user.click(screen.getByRole('tab', { name: /Published/ }))
+      act(() => {
+        ;(options.onSuccess as (outcomes: unknown) => void)([
+          {
+            item: variables.posts[0],
+            error: new ApiError({ message: 'x', isNetworkError: true }),
+          },
+        ])
+        ;(options.onSettled as () => void)()
+      })
+      expect(check('Morning notes')).toBeChecked()
+    })
+
     it('publishes only the selected drafts, without a confirm', async () => {
       const user = userEvent.setup()
       renderManager()

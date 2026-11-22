@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   postKeys,
+  useCollectionsQuery,
   useSavePostMutation,
   useSetPostCollectionsMutation,
 } from '@/features/posts/api/post-hooks'
@@ -98,6 +99,8 @@ export function PostComposer({ viewerId, saved }: Props) {
   const ids = useId()
   const save = useSavePostMutation(viewerId)
   const setCollections = useSetPostCollectionsMutation(viewerId)
+  // The same key as the picker's: one read, shared.
+  const collections = useCollectionsQuery(viewerId)
   // A save waits for image uploads and deletes, or it would send an id that
   // is not there yet or is going away.
   const imagesBusy =
@@ -199,9 +202,10 @@ export function PostComposer({ viewerId, saved }: Props) {
           return
         }
         setSyncing(true)
-        void syncCollections(post.id, wanted).then(() => {
+        void syncCollections(post.id, wanted).then((sessionEnded) => {
           setSyncing(false)
-          afterSave(post, intent)
+          // The post is saved; with the session gone, say only that.
+          if (!sessionEnded) afterSave(post, intent)
         })
       },
       onError: failed,
@@ -209,9 +213,18 @@ export function PostComposer({ viewerId, saved }: Props) {
     })
   }
 
-  /** The collections to send, or `null` when the server holds them already. */
+  /**
+   * The collections to send, or `null` when the server holds them already.
+   * Only collections that still exist: one deleted meanwhile cannot be
+   * unticked in the picker, and would make every save answer 404.
+   */
   function collectionsToSend(post: OwnerPost): number[] | null {
-    const wanted = [...new Set(collectionIds)]
+    const known = collections.data
+      ? new Set(collections.data.map((collection) => collection.id))
+      : null
+    const wanted = [...new Set(collectionIds)].filter(
+      (id) => known === null || known.has(id)
+    )
     const held = new Set(post.collectionIds)
     return wanted.length === held.size && wanted.every((id) => held.has(id))
       ? null
@@ -221,15 +234,18 @@ export function PostComposer({ viewerId, saved }: Props) {
   /**
    * The post saved: send its collections (`PUT /content/:id/collections`
    * replaces them). A failure here does not undo the save; it is said, and
-   * the composer moves on.
+   * the composer moves on. Resolves `true` when the session ended.
    */
-  async function syncCollections(postId: number, wanted: number[]) {
+  async function syncCollections(
+    postId: number,
+    wanted: number[]
+  ): Promise<boolean> {
     try {
       await setCollections.mutateAsync({ postId, collectionIds: wanted })
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         sessionExpired()
-        return
+        return true
       }
       toast.error(
         t('collections.syncFailed', {
@@ -239,6 +255,7 @@ export function PostComposer({ viewerId, saved }: Props) {
         })
       )
     }
+    return false
   }
 
   function afterSave(post: OwnerPost, intent: SaveIntent) {

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, FileTextIcon, FolderOpen } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/error-state'
@@ -35,7 +35,15 @@ export function CreatorCollections({
   const t = useTranslations('creatorPage.collections')
   const format = useFormatter()
   const [openId, setOpenId] = useState<number | null>(null)
+  // The card to give focus back to after "All collections".
+  const [returnId, setReturnId] = useState<number | null>(null)
   const open = collections.find((c) => c.id === openId)
+
+  useEffect(() => {
+    if (openId === null && returnId !== null) {
+      document.getElementById(openButtonId(returnId))?.focus()
+    }
+  }, [openId, returnId])
 
   if (open) {
     return (
@@ -43,7 +51,10 @@ export function CreatorCollections({
         creatorId={creatorId}
         collection={open}
         author={author}
-        onBack={() => setOpenId(null)}
+        onBack={() => {
+          setReturnId(open.id)
+          setOpenId(null)
+        }}
       />
     )
   }
@@ -84,6 +95,7 @@ export function CreatorCollections({
               </p>
             ) : null}
             <Button
+              id={openButtonId(collection.id)}
               type="button"
               variant="outline"
               size="sm"
@@ -100,6 +112,9 @@ export function CreatorCollections({
   )
 }
 
+const openButtonId = (collectionId: number) =>
+  `creator-collection-open-${collectionId}`
+
 function CollectionPosts({
   creatorId,
   collection,
@@ -114,6 +129,12 @@ function CollectionPosts({
   const t = useTranslations('creatorPage.collections')
   const tPosts = useTranslations('creatorPage.posts')
   const query = useCreatorCollectionPostsQuery(creatorId, collection.id)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  // The list it replaced is gone: focus the collection's heading.
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
 
   // Offset pages: a post repeated across two reads is kept once.
   const posts = [
@@ -125,7 +146,21 @@ function CollectionPosts({
   ]
 
   let list
-  if (query.data === undefined) {
+  if (query.data === undefined && query.error?.status === 404) {
+    // Deleted since the page loaded (CONTENT_COLLECTION_NOT_FOUND): a retry
+    // cannot help.
+    list = (
+      <EmptyState
+        icon={<FolderOpen />}
+        title={t('gone')}
+        action={
+          <Button type="button" variant="outline" size="sm" onClick={onBack}>
+            {t('back')}
+          </Button>
+        }
+      />
+    )
+  } else if (query.data === undefined) {
     list = query.isError ? (
       <ErrorState
         title={t('postsUnavailable')}
@@ -203,9 +238,11 @@ function CollectionPosts({
           {t('back')}
         </Button>
         <h3
+          ref={headingRef}
+          tabIndex={-1}
           id={`collection-${collection.id}`}
           dir="auto"
-          className="text-title-sm font-black text-foreground"
+          className="text-title-sm font-black text-foreground outline-none"
         >
           {collection.title}
         </h3>

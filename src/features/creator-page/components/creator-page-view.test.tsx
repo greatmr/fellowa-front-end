@@ -748,6 +748,35 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
       ).toBeVisible()
     })
 
+    it('says a collection deleted since the page loaded is gone, with a way back, and moves focus', async () => {
+      const user = userEvent.setup()
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: false,
+        status: 404,
+        code: 'CONTENT_COLLECTION_NOT_FOUND',
+      })
+      renderPage('anonymous', {
+        collections: collections(),
+        initialTab: 'collections',
+      })
+      await user.click(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      )
+      expect(
+        page().getByRole('heading', { name: 'Podcast', level: 3 })
+      ).toHaveFocus()
+      expect(
+        await screen.findByText('This collection is no longer available.')
+      ).toBeVisible()
+      expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+      await user.click(
+        screen.getAllByRole('button', { name: 'All collections' })[0]!
+      )
+      expect(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      ).toHaveFocus()
+    })
+
     it('renders in Persian with every key present', async () => {
       const user = userEvent.setup()
       actions.listCreatorCollectionPostsAction.mockResolvedValue({

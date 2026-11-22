@@ -219,11 +219,13 @@ export function PostsManager({ viewerId }: { viewerId: number }) {
         onSuccess: (outcomes) => {
           const failures = outcomes.filter((o) => o.error !== null)
           const failedIds = new Set(failures.map((o) => o.item.id))
-          // The posts that went through leave the selection; the failed stay.
+          // The posts that went through leave the selection; the failed
+          // stay, even if a tab change cleared it during the run.
           setSelectedIds((current) => {
             const next = new Set(current)
             for (const post of targets) {
-              if (!failedIds.has(post.id)) next.delete(post.id)
+              if (failedIds.has(post.id)) next.add(post.id)
+              else next.delete(post.id)
             }
             return next
           })
@@ -894,12 +896,9 @@ function PostTable({
               return (
                 <tr
                   key={post.id}
-                  aria-selected={isSelected}
                   className={cn(
                     'transition-colors',
-                    isSelected
-                      ? 'bg-brand-50/40 dark:bg-brand-500/5'
-                      : 'hover:bg-muted/40'
+                    isSelected ? 'bg-accent' : 'hover:bg-muted/40'
                   )}
                 >
                   <td className="px-4 py-3.5 align-middle">

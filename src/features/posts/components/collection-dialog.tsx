@@ -44,7 +44,12 @@ type Props = {
   onNoPage: () => void
 }
 
-/** The ids of the posts in `collectionId`, from each post's `collectionIds`. */
+/**
+ * The ids of the posts in `collectionId`, from each post's `collectionIds`.
+ * `GET /content` lists approved posts only (`content.service.ts`); nothing
+ * sets approval today (O-7), so the set is complete. If that changes, an
+ * edit that resends the set would unlink an unapproved post.
+ */
 function postsIn(posts: OwnerPost[], collectionId: number): Set<number> {
   return new Set(
     posts
