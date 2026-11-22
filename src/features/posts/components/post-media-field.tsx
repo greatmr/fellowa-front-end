@@ -1,6 +1,14 @@
 'use client'
 
-import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type Ref,
+} from 'react'
 import { Headphones, Video, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 
@@ -14,6 +22,7 @@ import {
   MAX_MEDIA_UPLOAD_BYTES,
   MEDIA_TYPES_BY_KIND,
 } from '@/features/posts/lib/media-upload-limits'
+import type { MediaPickerHandle } from '@/features/posts/lib/media-picker'
 import { sharedUploadLine } from '@/features/posts/lib/post-errors'
 import type { DraftUpload } from '@/features/posts/lib/post-draft'
 import { fileProblem } from '@/features/posts/lib/upload-limits'
@@ -32,6 +41,8 @@ type Props = {
   onSessionExpired: () => void
   /** The composer's "upload the file first" check, on publish. */
   showRequired: boolean
+  /** Lets the composer hand over a file picked from its chooser button. */
+  ref?: Ref<MediaPickerHandle>
 }
 
 const icons = { video: Video, audio: Headphones } as const
@@ -53,6 +64,7 @@ export function PostMediaField({
   onNoPage,
   onSessionExpired,
   showRequired,
+  ref,
 }: Props) {
   const t = useTranslations(`posts.composer.media.${kind}`)
   const tMedia = useTranslations('posts.composer.media')
@@ -80,7 +92,12 @@ export function PostMediaField({
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
-    if (!file) return
+    if (file) start(file)
+  }
+
+  function start(file: File) {
+    // One file per block: a saved or uploaded file is shown, not replaced.
+    if (upload || mutation.isPending) return
     const refused = fileProblem(file, types, MAX_MEDIA_UPLOAD_BYTES)
     setProblem(refused)
     if (refused) return
@@ -128,6 +145,8 @@ export function PostMediaField({
   const active = mutation.isPending ? progress : null
   const uploading = active !== null
   const ratio = active && active.total > 0 ? active.sent / active.total : 0
+
+  useImperativeHandle(ref, () => ({ kind, start }))
 
   return (
     <section aria-labelledby={headingId} className="grid gap-3">

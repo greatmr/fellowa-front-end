@@ -1,6 +1,12 @@
 'use client'
 
-import { useRef, useState, type ChangeEvent } from 'react'
+import {
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type Ref,
+} from 'react'
 import Image from 'next/image'
 import { ImageIcon, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -11,6 +17,7 @@ import {
   useUploadPostImageMutation,
 } from '@/features/posts/api/post-hooks'
 import { sharedUploadLine } from '@/features/posts/lib/post-errors'
+import type { MediaPickerHandle } from '@/features/posts/lib/media-picker'
 import type { DraftImage } from '@/features/posts/lib/post-draft'
 import {
   MAX_POST_IMAGE_BYTES,
@@ -30,6 +37,8 @@ type Props = {
   onUpdate: (update: (images: DraftImage[]) => DraftImage[]) => void
   onNoPage: () => void
   onSessionExpired: () => void
+  /** Lets the composer hand over a file picked from its chooser button. */
+  ref?: Ref<MediaPickerHandle>
 }
 
 /**
@@ -45,6 +54,7 @@ export function PostImagesField({
   onUpdate,
   onNoPage,
   onSessionExpired,
+  ref,
 }: Props) {
   const t = useTranslations('posts.composer.images')
   const tUpload = useTranslations('posts.composer.uploadErrors')
@@ -73,7 +83,12 @@ export function PostImagesField({
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
-    if (!file) return
+    if (file) start(file)
+  }
+
+  function start(file: File) {
+    // A second mutate would drop the first upload's callbacks.
+    if (upload.isPending) return
     const refused = fileProblem(file, POST_IMAGE_TYPES, MAX_POST_IMAGE_BYTES)
     setProblem(refused)
     if (refused) return
@@ -99,6 +114,8 @@ export function PostImagesField({
   }
 
   const hasPending = images.some((image) => !image.attached)
+
+  useImperativeHandle(ref, () => ({ kind: 'image' as const, start }))
 
   return (
     <section aria-labelledby="post-images-title" className="grid gap-3">

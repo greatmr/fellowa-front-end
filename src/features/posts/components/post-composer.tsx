@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useRef, useState } from 'react'
+import { useId, useRef, useState, type ChangeEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { useIsMutating } from '@tanstack/react-query'
 import {
@@ -30,6 +30,11 @@ import { PostMediaField } from '@/features/posts/components/post-media-field'
 import { PostPollField } from '@/features/posts/components/post-poll-field'
 import { PostsAliasNotice } from '@/features/posts/components/posts-alias-notice'
 import { useAttachmentQueue } from '@/features/posts/hooks/use-attachment-queue'
+import type {
+  MediaFileKind,
+  MediaPickerHandle,
+} from '@/features/posts/lib/media-picker'
+import { MEDIA_TYPES_BY_KIND } from '@/features/posts/lib/media-upload-limits'
 import {
   draftFromPost,
   draftProblems,
@@ -42,6 +47,7 @@ import {
   type SaveIntent,
 } from '@/features/posts/lib/post-draft'
 import { NO_PAGE, postErrorKey } from '@/features/posts/lib/post-errors'
+import { POST_IMAGE_TYPES } from '@/features/posts/lib/upload-limits'
 import { MAX_POST_TITLE } from '@/features/posts/schemas/post'
 import type { OwnerPost } from '@/features/posts/types/post'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -81,6 +87,13 @@ const mediaChoices = [
   { kind: 'audio', Icon: Headphones },
   { kind: 'poll', Icon: BarChart2 },
 ] as const
+
+const pickerTypes: Record<MediaFileKind, readonly string[]> = {
+  image: POST_IMAGE_TYPES,
+  video: MEDIA_TYPES_BY_KIND.video,
+  audio: MEDIA_TYPES_BY_KIND.audio,
+}
+const fileKinds = Object.keys(pickerTypes) as MediaFileKind[]
 
 /**
  * The composer (presentation `ComposerView` @ d843c3b): title, rich-text body
@@ -139,6 +152,11 @@ export function PostComposer({ viewerId, saved }: Props) {
     intent: SaveIntent
   } | null>(null)
   const movedOn = useRef(false)
+  // The chooser opens the native picker inside its own click (as the design
+  // does), so these inputs stay mounted when the chooser gives way to the
+  // block; the picked file goes to the block through its handle.
+  const pickers = useRef<Partial<Record<MediaFileKind, HTMLInputElement>>>({})
+  const mediaBlock = useRef<MediaPickerHandle>(null)
   const attachments = useAttachmentQueue(viewerId, {
     keepSent: saved === null,
     onSessionExpired: sessionExpired,
@@ -172,6 +190,21 @@ export function PostComposer({ viewerId, saved }: Props) {
     // Leaving a block drops what it held and was not saved (FQ-30).
     setDraft({ media, images: [], upload: null, poll: emptyPoll() })
     setCheckedFor(null)
+  }
+
+  function pickMedia(media: PostMediaKind) {
+    chooseMedia(media)
+    // Synchronously, while the click still counts as a user gesture.
+    if (media !== 'poll') pickers.current[media]?.click()
+  }
+
+  function picked(kind: MediaFileKind, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    // Only the block the picker was opened for takes the file; one that
+    // changed while the dialog was open drops it (desktop dialogs are modal).
+    const block = mediaBlock.current
+    if (file && block?.kind === kind) block.start(file)
   }
 
   function sessionExpired() {
@@ -436,7 +469,7 @@ export function PostComposer({ viewerId, saved }: Props) {
                       key={kind}
                       type="button"
                       variant="outline"
-                      onClick={() => chooseMedia(kind)}
+                      onClick={() => pickMedia(kind)}
                     >
                       <Icon aria-hidden />
                       {t(`mediaChoice.${kind}`)}
@@ -471,6 +504,7 @@ export function PostComposer({ viewerId, saved }: Props) {
                     }
                     onNoPage={() => setNoPage(true)}
                     onSessionExpired={sessionExpired}
+                    ref={mediaBlock}
                   />
                 ) : draft.media === 'poll' ? (
                   <PostPollField
@@ -490,10 +524,27 @@ export function PostComposer({ viewerId, saved }: Props) {
                     onNoPage={() => setNoPage(true)}
                     onSessionExpired={sessionExpired}
                     showRequired={problems.includes('media')}
+                    ref={mediaBlock}
                   />
                 )}
               </div>
             )}
+            {fileKinds.map((kind) => (
+              <input
+                key={kind}
+                ref={(node) => {
+                  if (node) pickers.current[kind] = node
+                  else delete pickers.current[kind]
+                }}
+                type="file"
+                accept={pickerTypes[kind].join(',')}
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden
+                data-testid={`post-${kind}-picker`}
+                onChange={(event) => picked(kind, event)}
+              />
+            ))}
           </fieldset>
           <PostAttachments
             viewerId={viewerId}
