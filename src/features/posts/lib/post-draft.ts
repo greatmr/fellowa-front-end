@@ -8,7 +8,7 @@ import type {
   PostWriteKind,
   PostWritePayload,
   SavePostInput,
-  StudioPost,
+  OwnerPost,
 } from '@/features/posts/types/post'
 
 /**
@@ -35,7 +35,7 @@ export type DraftPoll = {
   /** As typed; blank ones are dropped when saving. */
   options: string[]
   multiSelect: boolean
-  /** The stored closing time, resent untouched (the studio does not edit it). */
+  /** The stored closing time, resent untouched (the panel does not edit it). */
   closesAt: string | null
 }
 
@@ -76,7 +76,7 @@ function mediaKindOf(type: string): PostMediaKind | null {
 }
 
 /** The saved video or audio; a post has one (FQ-30), the first is shown. */
-export function savedUpload(post: StudioPost): DraftUpload | null {
+export function savedUpload(post: OwnerPost): DraftUpload | null {
   const media = post.type === 'audio' ? post.audios[0] : post.videos[0]
   return media && (post.type === 'video' || post.type === 'audio')
     ? { ...media, attached: true }
@@ -91,7 +91,7 @@ export function emptyPoll(): DraftPoll {
   }
 }
 
-function pollFromPost(post: StudioPost): DraftPoll {
+function pollFromPost(post: OwnerPost): DraftPoll {
   if (!post.poll) return emptyPoll()
   const options = post.poll.options.map((option) => option.label)
   // A draft may have been saved with fewer; the editor always shows two.
@@ -122,7 +122,7 @@ export function emptyPostDraft(): PostDraft {
   }
 }
 
-export function draftFromPost(post: StudioPost): PostDraft {
+export function draftFromPost(post: OwnerPost): PostDraft {
   const parts =
     post.paywallPosition === null
       ? { before: post.text, after: null }
@@ -186,13 +186,13 @@ export function paywallPositionOf(draft: PostDraft): number | null {
 
 /**
  * The visibility a write sends. A PUT replaces the stored one, so the preview
- * and early-access date the studio does not edit are resent, and a published
+ * and early-access date the panel does not edit are resent, and a published
  * post keeps its date (no date would publish it again "now").
  */
 export function visibilityFor(
   isPublic: boolean,
   intent: SaveIntent,
-  saved: StudioPost | null
+  saved: OwnerPost | null
 ): PostVisibilityPayload {
   const visibility: PostVisibilityPayload = { type: isPublic }
   if (intent === 'draft') visibility.isDraft = true
@@ -215,10 +215,7 @@ function tierIdsFor(draft: PostDraft): number[] | undefined {
  * The route a save goes to. A post created through a media route with no
  * media yet reads `text` (api.md), so an empty image block saves as text.
  */
-function writeKindOf(
-  draft: PostDraft,
-  saved: StudioPost | null
-): PostWriteKind {
+function writeKindOf(draft: PostDraft, saved: OwnerPost | null): PostWriteKind {
   if (
     draft.media === 'poll' ||
     draft.media === 'video' ||
@@ -261,7 +258,7 @@ function mediaPayload(
 export function saveInputFromDraft(
   draft: PostDraft,
   intent: SaveIntent,
-  saved: StudioPost | null
+  saved: OwnerPost | null
 ): SavePostInput {
   const kind = writeKindOf(draft, saved)
   const tireIds = tierIdsFor(draft)
@@ -284,7 +281,7 @@ export function saveInputFromDraft(
  * visibility, so the body, tiers, paywall and media stay as they are.
  */
 export function statusInput(
-  post: StudioPost,
+  post: OwnerPost,
   intent: SaveIntent
 ): PostStatusInput {
   return {

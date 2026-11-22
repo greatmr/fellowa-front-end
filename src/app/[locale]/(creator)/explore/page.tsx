@@ -1,0 +1,43 @@
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Suspense } from 'react'
+
+import { PageContainer } from '@/components/layout/page-container'
+import { PageHeader } from '@/components/layout/page-header'
+import { getSession } from '@/features/auth/server/session'
+import { loadExploreCategories } from '@/features/explore/server'
+import { ExploreView } from '@/features/explore/components/explore-view'
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('panel')
+  // The creator layout's SessionGate already requires a session here; the
+  // viewer only narrows the list (their own page is left out).
+  const [viewerId, categories] = await Promise.all([
+    getSession().then(
+      (session) => session?.user.id ?? null,
+      () => null
+    ),
+    loadExploreCategories(),
+  ])
+  return (
+    <PageContainer>
+      <Suspense fallback={null}>
+        <ExploreView
+          viewerId={viewerId}
+          categories={categories}
+          heading={
+            <PageHeader
+              title={t('pages.explore.title')}
+              category={t('pages.explore.category')}
+            />
+          }
+        />
+      </Suspense>
+    </PageContainer>
+  )
+}

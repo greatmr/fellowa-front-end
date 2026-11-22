@@ -25,7 +25,7 @@ export function PostsAliasNotice() {
         <Link
           href={{
             pathname: '/auth/url',
-            query: { returnTo: '/studio/posts/new' },
+            query: { returnTo: '/posts/new' },
           }}
         >
           {t('action')}

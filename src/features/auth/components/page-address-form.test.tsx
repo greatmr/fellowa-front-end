@@ -111,8 +111,8 @@ const settle = () => act(() => vi.advanceTimersByTimeAsync(400))
 describe('page address (OnboardingUrlScreen)', () => {
   it('is step 2 of 4 and prefills from a Latin page name', async () => {
     setup()
-    renderStep('Studio Sara')
-    expect(await field()).toHaveValue('studiosara')
+    renderStep('Atelier Sara')
+    expect(await field()).toHaveValue('ateliersara')
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '2'
@@ -126,7 +126,7 @@ describe('page address (OnboardingUrlScreen)', () => {
 
   it('shows the address as @username, never a fellowa.ir link (FQ-18)', async () => {
     setup()
-    renderStep('Studio Sara')
+    renderStep('Atelier Sara')
     await field()
     expect(t.prefix).toBe('@')
     expect(screen.getByLabelText(t.label)).toBeInTheDocument()
@@ -237,17 +237,21 @@ describe('page address (OnboardingUrlScreen)', () => {
     const user = setup()
     mocked.actions.aliasAvailabilityForHook.mockImplementation(
       async ({ alias }: { alias: string }) =>
-        alias === 'studio'
-          ? answer('studio', 'taken', ['studio_', 'studio_art', 'studio1405'])
+        alias === 'atelier'
+          ? answer('atelier', 'taken', [
+              'atelier_',
+              'atelier_art',
+              'atelier1405',
+            ])
           : answer(alias, null)
     )
     renderStep()
-    await user.type(await field(), 'studio')
+    await user.type(await field(), 'atelier')
     await settle()
     expect(await screen.findByText(t.taken)).toBeInTheDocument()
     expect(submit()).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'studio_art' }))
-    expect(await field()).toHaveValue('studio_art')
+    await user.click(screen.getByRole('button', { name: 'atelier_art' }))
+    expect(await field()).toHaveValue('atelier_art')
     await settle()
     expect(await screen.findByText(t.available)).toBeInTheDocument()
     expect(screen.queryByText(t.taken)).not.toBeInTheDocument()
@@ -365,7 +369,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     mocked.actions.setAliasForHook.mockReturnValue(save.promise)
     renderStep('Sara', 'Sara', undefined, 'sara_art')
     await user.clear(await field())
-    await user.type(await field(), 'sara_studio')
+    await user.type(await field(), 'sara_atelier')
     await settle()
     await waitFor(() => expect(submit()).toBeEnabled())
     await user.click(submit())
@@ -383,7 +387,7 @@ describe('page address (OnboardingUrlScreen)', () => {
     const user = setup()
     renderStep('Sara', 'Sara', undefined, 'sara_art')
     await user.clear(await field())
-    await user.type(await field(), 'sara_studio')
+    await user.type(await field(), 'sara_atelier')
     await settle()
     await waitFor(() => expect(submit()).toBeEnabled())
     await user.click(submit())
@@ -391,7 +395,7 @@ describe('page address (OnboardingUrlScreen)', () => {
       expect(mocked.replace).toHaveBeenCalledWith('/auth/interests')
     )
     expect(mocked.actions.setAliasForHook).toHaveBeenCalledWith({
-      alias: 'sara_studio',
+      alias: 'sara_atelier',
     })
     expect(mocked.toast.success).toHaveBeenCalledWith(en.auth.phone.toast.saved)
   })
@@ -400,10 +404,10 @@ describe('page address (OnboardingUrlScreen)', () => {
     const user = setup()
     renderStep('Sara')
     await user.clear(await field())
-    await user.type(await field(), 'sara_studio')
+    await user.type(await field(), 'sara_atelier')
     expect(screen.getByText(en.auth.preview.badge)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Sara' })).toBeInTheDocument()
-    expect(screen.getByText('sara_studio')).toBeInTheDocument()
+    expect(screen.getByText('sara_atelier')).toBeInTheDocument()
   })
 
   it('links back to the account step', async () => {

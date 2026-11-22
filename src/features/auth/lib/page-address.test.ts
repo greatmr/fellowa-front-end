@@ -9,7 +9,7 @@ import {
 
 describe('cleanAddressInput (backend alias rules)', () => {
   it.each([
-    ['Studio', 'studio', false],
+    ['Atelier', 'atelier', false],
     ['my.name', 'myname', true],
     ['sara-art', 'saraart', true],
     ['سارا', '', true],
@@ -24,7 +24,7 @@ describe('cleanAddressInput (backend alias rules)', () => {
 
 describe('addressFromName', () => {
   it.each([
-    ['Sara Studio', 'sarastudio'],
+    ['Sara Atelier', 'saraatelier'],
     ['سارا محمدی', ''],
     ['Al', ''],
   ])('%j → %j', (name, expected) => {

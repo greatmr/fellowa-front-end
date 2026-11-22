@@ -32,7 +32,7 @@ import type {
   PostMedia,
   PostStatusInput,
   SavePostInput,
-  StudioPost,
+  OwnerPost,
 } from '@/features/posts/types/post'
 import {
   unwrapApiActionResult,
@@ -62,7 +62,7 @@ const validId = (value: number) => Number.isSafeInteger(value) && value > 0
  * own writes in other tabs, and draft or published state must not lag.
  */
 export function usePostsQuery(viewerId: number) {
-  return useQuery<StudioPost[], ApiError>({
+  return useQuery<OwnerPost[], ApiError>({
     queryKey: postKeys.list(viewerId),
     queryFn: async () =>
       unwrapApiActionResult(await listPostsForHook(viewerId)),
@@ -72,7 +72,7 @@ export function usePostsQuery(viewerId: number) {
 }
 
 export function usePostQuery(viewerId: number, postId: number) {
-  return useQuery<StudioPost, ApiError>({
+  return useQuery<OwnerPost, ApiError>({
     queryKey: postKeys.detail(viewerId, postId),
     queryFn: async () =>
       unwrapApiActionResult(await getPostForHook(viewerId, postId)),
@@ -105,7 +105,7 @@ function usePostMutation<TData, TVariables>(
 
 export function useSavePostMutation(
   viewerId: number,
-  options?: MutationOptions<StudioPost, SavePostInput>
+  options?: MutationOptions<OwnerPost, SavePostInput>
 ) {
   return usePostMutation(
     'save',
@@ -117,7 +117,7 @@ export function useSavePostMutation(
 
 export function useSetPostStatusMutation(
   viewerId: number,
-  options?: MutationOptions<StudioPost, PostStatusInput>
+  options?: MutationOptions<OwnerPost, PostStatusInput>
 ) {
   return usePostMutation(
     'status',

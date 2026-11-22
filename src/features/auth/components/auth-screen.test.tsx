@@ -105,9 +105,11 @@ describe('PageAddressScreen (/auth/url)', () => {
     })
   })
 
-  it('on a plain visit, sends an account that has a page on to the studio', async () => {
+  it('on a plain visit, sends an account that has a page on to the atelier', async () => {
     signIn()
-    expect(await redirectOf(PageAddressScreen(props()))).toEqual(to('/studio'))
+    expect(await redirectOf(PageAddressScreen(props()))).toEqual(
+      to('/dashboard')
+    )
   })
 
   it.each([{ from: 'elsewhere' }, { from: '' }])(
@@ -115,7 +117,7 @@ describe('PageAddressScreen (/auth/url)', () => {
     async (query) => {
       signIn()
       expect(await redirectOf(PageAddressScreen(props(query)))).toEqual(
-        to('/studio')
+        to('/dashboard')
       )
     }
   )
@@ -144,11 +146,11 @@ describe('PageAddressScreen (/auth/url)', () => {
 
     it('shows the step with no page, going back there afterwards', async () => {
       signIn({ alias: null })
-      const element = await PageAddressScreen(props({ returnTo: '/studio' }))
+      const element = await PageAddressScreen(props({ returnTo: '/dashboard' }))
       expect(element.type).toBe(PageAddressForm)
       expect(element.props).toMatchObject({
-        destination: '/studio',
-        returnTo: '/studio',
+        destination: '/dashboard',
+        returnTo: '/dashboard',
         currentAddress: null,
         backFromInterests: false,
       })
@@ -178,7 +180,7 @@ describe('InterestsScreen (/auth/interests)', () => {
   )
 
   it.each([
-    [{}, '/studio'],
+    [{}, '/dashboard'],
     [{ returnTo: '/creators/5' }, '/creators/5'],
   ])(
     'with no page and %j, goes on to its destination, past the category step',
@@ -206,7 +208,7 @@ describe('PageCategoryScreen (/auth/category)', () => {
   })
 
   it.each([
-    [{}, '/studio'],
+    [{}, '/dashboard'],
     [{ returnTo: '/creators/5' }, '/creators/5'],
   ])(
     'with no page and %j, goes on to %s, not to make a page',
@@ -225,7 +227,7 @@ describe('PageCategoryScreen (/auth/category)', () => {
     expect(element.props).toEqual({
       viewerId: 42,
       currentCategoryId: 7,
-      destination: '/studio',
+      destination: '/dashboard',
       returnTo: undefined,
     })
   })

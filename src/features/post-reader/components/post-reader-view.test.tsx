@@ -22,7 +22,7 @@ const fromRaw = (raw: unknown): ReaderPost => parseReaderPost(ok(raw))
 
 const byline: CreatorByline = {
   id: 4,
-  pageName: 'Dana Studio',
+  pageName: 'Dana Atelier',
   alias: 'dana',
   avatarUrl: null,
 }
@@ -225,7 +225,7 @@ describe('PostReaderSkeleton (FE-CONT-01 loading)', () => {
       renderPost(rawTeaser())
 
       expect(
-        screen.getByRole('link', { name: /Dana Studio/ }).getAttribute('href')
+        screen.getByRole('link', { name: /Dana Atelier/ }).getAttribute('href')
       ).toMatch(/\/creators\/4$/)
     })
 
@@ -248,7 +248,7 @@ describe('PostReaderSkeleton (FE-CONT-01 loading)', () => {
     it('renders no byline when the profile was not read', () => {
       renderPost(rawFullPublic(), 'anonymous', 'en', null)
 
-      expect(screen.queryByRole('link', { name: /Dana Studio/ })).toBeNull()
+      expect(screen.queryByRole('link', { name: /Dana Atelier/ })).toBeNull()
     })
   })
 })

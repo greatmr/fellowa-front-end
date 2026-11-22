@@ -159,7 +159,7 @@ function FullBody({ post }: { post: FullReaderPost }) {
             image.url ? (
               <li key={image.id}>
                 {/* No allowed host in `images.remotePatterns` yet: unoptimized,
-                    as the studio renders the same URLs. */}
+                    as the creator's own pages render the same URLs. */}
                 <Image
                   src={image.url}
                   alt={t('imageAlt', { index: index + 1 })}

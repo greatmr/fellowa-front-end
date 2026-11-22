@@ -36,7 +36,7 @@ import {
 } from '@/features/posts/lib/post-draft'
 import { NO_PAGE, postErrorKey } from '@/features/posts/lib/post-errors'
 import { MAX_POST_TITLE } from '@/features/posts/schemas/post'
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 type Props = {
   viewerId: number
   /** The post being edited, kept fresh by its query; `null` creates one. */
-  saved: StudioPost | null
+  saved: OwnerPost | null
 }
 
 const mediaChoices = [
@@ -145,14 +145,14 @@ export function PostComposer({ viewerId, saved }: Props) {
         if (intent === 'publish') {
           setLeaving(true)
           toast.success(isPublished ? t('savedToast') : t('publishedToast'))
-          router.push('/studio/posts')
+          router.push('/posts')
           return
         }
         toast.success(t('draftToast'))
         if (!saved) {
           // Keep writing on the saved draft, where attachments can be added.
           setLeaving(true)
-          router.replace(`/studio/posts/${post.id}/edit`)
+          router.replace(`/posts/${post.id}/edit`)
           return
         }
         setDraftState((current) => ({
@@ -183,7 +183,7 @@ export function PostComposer({ viewerId, saved }: Props) {
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon-sm">
-          <Link href="/studio/posts" aria-label={t('back')} title={t('back')}>
+          <Link href="/posts" aria-label={t('back')} title={t('back')}>
             <ArrowLeft aria-hidden className="rtl:rotate-180" />
           </Link>
         </Button>

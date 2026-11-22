@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { ErrorState } from '@/components/common/error-state'
-import { StudioPageHeader } from '@/components/layout/studio-page-header'
+import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import {
   useDeleteTierMutation,
@@ -31,14 +31,14 @@ import type { Tier } from '@/features/tiers/types/tier'
 type Builder = { key: number; saved: Tier | null; draft: TierDraft }
 
 /**
- * The tiers studio page (presentation `TiersView` @ d843c3b): the list or its
+ * The tiers page (presentation `TiersView` @ d843c3b): the list or its
  * empty state, the full-page builder in place of the list while open, the
  * setup guide and the delete dialog.
  */
 export function TierManager({ viewerId }: { viewerId: number }) {
   const t = useTranslations('tiers')
   const tCommon = useTranslations('common')
-  const tStudio = useTranslations('studio')
+  const tPanel = useTranslations('panel')
   const tiers = useTiersQuery(viewerId)
   const roles = useTierRolesQuery(viewerId)
   const remove = useDeleteTierMutation(viewerId)
@@ -120,9 +120,9 @@ export function TierManager({ viewerId }: { viewerId: number }) {
         data-testid="tiers-list-header"
         className="flex flex-wrap items-center justify-between gap-4"
       >
-        <StudioPageHeader
-          title={tStudio('pages.tiers.title')}
-          category={tStudio('pages.tiers.category')}
+        <PageHeader
+          title={tPanel('pages.tiers.title')}
+          category={tPanel('pages.tiers.category')}
           description={t('overviewHint')}
           className="mb-0"
         />

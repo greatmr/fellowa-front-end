@@ -8,7 +8,7 @@ import type * as Navigation from '@/i18n/navigation'
 
 import en from '../../../messages/en.json'
 import { PublicMobileNav } from './public-mobile-nav'
-import { StudioMobileNav } from './studio-mobile-nav'
+import { AppMobileNav } from './app-mobile-nav'
 
 const navigation = vi.hoisted(() => ({ pathname: '/' }))
 
@@ -26,15 +26,15 @@ beforeEach(() => {
 describe('mobile navigation route changes', () => {
   it.each([
     {
-      frame: 'studio',
-      initial: '/studio',
-      next: '/studio/posts',
-      openLabel: en.studio.openMenu,
+      frame: 'panel',
+      initial: '/dashboard',
+      next: '/posts',
+      openLabel: en.panel.openMenu,
     },
     {
       frame: 'public',
       initial: '/',
-      next: '/studio',
+      next: '/dashboard',
       openLabel: en.publicLayout.openMenu,
     },
   ])(
@@ -45,10 +45,10 @@ describe('mobile navigation route changes', () => {
         <NextIntlClientProvider locale="en" messages={en}>
           <ThemeProvider attribute="class" defaultTheme="light">
             <button type="button">Outside action</button>
-            {frame === 'studio' ? (
-              <StudioMobileNav>
+            {frame === 'panel' ? (
+              <AppMobileNav>
                 <a href="#dashboard">Dashboard</a>
-              </StudioMobileNav>
+              </AppMobileNav>
             ) : (
               <PublicMobileNav />
             )}

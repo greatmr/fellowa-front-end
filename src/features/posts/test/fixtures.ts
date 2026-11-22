@@ -1,4 +1,4 @@
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 
 /**
  * One `GET /content` item as back-end `acffdb2` sends it: `formatForOwner`
@@ -35,7 +35,7 @@ export function rawPost(overrides: Record<string, unknown> = {}) {
 }
 
 /** The model `parsePost` makes of {@link rawPost}. */
-export function studioPost(overrides: Partial<StudioPost> = {}): StudioPost {
+export function ownerPost(overrides: Partial<OwnerPost> = {}): OwnerPost {
   return {
     id: 12,
     type: 'text',

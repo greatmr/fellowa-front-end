@@ -114,7 +114,7 @@ describe('page name (FE-AUTH-03, BE-USER-07)', () => {
   const about = {
     id: 3,
     accountId: 42,
-    pageName: 'Dana Studio',
+    pageName: 'Dana Atelier',
     bio: null,
     videoUrl: null,
     facebookLink: null,
@@ -154,7 +154,7 @@ describe('page name (FE-AUTH-03, BE-USER-07)', () => {
   })
 
   it.each([
-    ['a string', 'Dana Studio', 'Dana Studio'],
+    ['a string', 'Dana Atelier', 'Dana Atelier'],
     ['null', null, null],
     ['missing', undefined, null],
   ])('reads a page name that is %s', (_name, pageName, expected) => {

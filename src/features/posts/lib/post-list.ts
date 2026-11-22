@@ -1,4 +1,4 @@
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 
 /**
  * Tabs, search, access filter and sort, all over the one `GET /content` list
@@ -28,11 +28,11 @@ export const defaultListFilters: ListFilters = {
 export const SNIPPET_LENGTH = 160
 
 /** A draft reads `visibility.datePublished: null` (api.md → "Drafts"). */
-export function isDraft(post: StudioPost): boolean {
+export function isDraft(post: OwnerPost): boolean {
   return post.publishedAt === null
 }
 
-export function tabCounts(posts: StudioPost[]): Record<PostTab, number> {
+export function tabCounts(posts: OwnerPost[]): Record<PostTab, number> {
   const drafts = posts.filter(isDraft).length
   return { all: posts.length, published: posts.length - drafts, draft: drafts }
 }
@@ -41,17 +41,17 @@ export function hasActiveFilters(filters: ListFilters): boolean {
   return filters.query.trim() !== '' || filters.access !== 'all'
 }
 
-function inTab(post: StudioPost, tab: PostTab): boolean {
+function inTab(post: OwnerPost, tab: PostTab): boolean {
   if (tab === 'all') return true
   return tab === 'draft' ? isDraft(post) : !isDraft(post)
 }
 
 export function filterPosts(
-  posts: StudioPost[],
+  posts: OwnerPost[],
   tab: PostTab,
   filters: ListFilters,
   locale: string
-): StudioPost[] {
+): OwnerPost[] {
   const query = filters.query.trim().toLocaleLowerCase(locale)
   const shown = posts.filter(
     (post) =>

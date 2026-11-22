@@ -51,10 +51,10 @@ export function PublicMobileNav() {
             {t('creators')}
           </Link>
           <Link
-            href="/studio"
+            href="/dashboard"
             className="rounded-md px-3 py-3 text-link hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
           >
-            {t('studio')}
+            {t('openPanel')}
           </Link>
         </nav>
         <div className="mt-auto flex flex-col gap-4">

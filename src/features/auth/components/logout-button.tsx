@@ -13,7 +13,7 @@ import { AuthFeedback } from './auth-feedback'
 
 /**
  * Sign out once, then go to `/auth`. Shared by the logout button and the
- * studio account menu; a second call while one is in flight is ignored.
+ * creator account menu; a second call while one is in flight is ignored.
  */
 export function useLogout() {
   const router = useRouter()

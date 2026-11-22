@@ -28,7 +28,12 @@ beforeEach(() => {
 function renderMenu(locale: 'en' | 'fa' = 'en') {
   return renderAuth(
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AccountMenu name="Aida Kiani" subtitle="@aida" initial="A" />
+      <AccountMenu
+        name="Aida Kiani"
+        subtitle="@aida"
+        initial="A"
+        ownPageHref="/creators/7"
+      />
       <Toaster />
     </ThemeProvider>,
     { locale }
@@ -49,21 +54,42 @@ describe('AccountMenu', () => {
 
     const menu = await screen.findByRole('menu')
     expect(
-      within(menu).getByRole('menuitem', { name: en.studio.account.viewPage })
-    ).toHaveAttribute('href', '/studio/page')
+      within(menu).getByRole('menuitem', { name: en.panel.account.viewPage })
+    ).toHaveAttribute('href', '/creators/7')
     expect(
       within(menu).getByRole('menuitem', {
-        name: en.studio.account.memberships,
+        name: en.panel.account.memberships,
       })
     ).toHaveAttribute('href', '/memberships')
     expect(
-      within(menu).getByRole('menuitem', { name: en.studio.account.settings })
+      within(menu).getByRole('menuitem', { name: en.panel.account.settings })
     ).toHaveAttribute('href', '/settings')
     expect(
-      within(menu).getByRole('menuitem', { name: en.studio.account.logout })
+      within(menu).getByRole('menuitem', { name: en.panel.account.logout })
     ).toBeInTheDocument()
+    // FE-SHELL-05: no menu item leads under the retired /studio prefix.
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      expect(item.getAttribute('href') ?? '').not.toMatch(/studio/i)
+    }
     // No sound toggle (removed upstream) and no support item without a destination.
     expect(within(menu).queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('leaves "View my page" out without the page address', async () => {
+    const user = userEvent.setup()
+    renderAuth(
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <AccountMenu name="Aida Kiani" initial="A" />
+      </ThemeProvider>,
+      { locale: 'en' }
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Account menu for Aida Kiani' })
+    )
+    const menu = await screen.findByRole('menu')
+    expect(
+      within(menu).queryByRole('menuitem', { name: en.panel.account.viewPage })
+    ).not.toBeInTheDocument()
   })
 
   it('switches the theme from the menu and stays open', async () => {
@@ -91,7 +117,7 @@ describe('AccountMenu', () => {
       screen.getByRole('button', { name: 'Account menu for Aida Kiani' })
     )
     await user.click(
-      await screen.findByRole('menuitem', { name: en.studio.account.logout })
+      await screen.findByRole('menuitem', { name: en.panel.account.logout })
     )
     await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/auth'))
     expect(mocked.actions.logoutForHook).toHaveBeenCalledWith(undefined)
@@ -109,7 +135,7 @@ describe('AccountMenu', () => {
       screen.getByRole('button', { name: 'Account menu for Aida Kiani' })
     )
     await user.click(
-      await screen.findByRole('menuitem', { name: en.studio.account.logout })
+      await screen.findByRole('menuitem', { name: en.panel.account.logout })
     )
     expect(
       await screen.findByText(en.auth.errors.unavailable)
@@ -122,12 +148,12 @@ describe('AccountMenu', () => {
     renderMenu('fa')
     await user.click(
       screen.getByRole('button', {
-        name: fa.studio.account.trigger.replace('{name}', 'Aida Kiani'),
+        name: fa.panel.account.trigger.replace('{name}', 'Aida Kiani'),
       })
     )
     expect(
       await screen.findByRole('menuitem', {
-        name: fa.studio.account.memberships,
+        name: fa.panel.account.memberships,
       })
     ).toBeInTheDocument()
   })
@@ -144,7 +170,7 @@ describe('AccountMenu', () => {
       screen.getByRole('button', { name: 'Account menu for Aida Kiani' })
     )
     await user.click(
-      await screen.findByRole('menuitem', { name: en.studio.account.logout })
+      await screen.findByRole('menuitem', { name: en.panel.account.logout })
     )
     await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/auth'))
   })

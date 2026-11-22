@@ -145,7 +145,7 @@ export async function AccountScreen({ locale, searchParams }: StepProps) {
 /**
  * `/auth/url` (FE-AUTH-04): the page address, step 2 of 4 of sign-up, then on
  * to the interests (FE-AUTH-08); or on its own when opened from settings or
- * the studio (FE-ONB-02). An account that already has a page has nothing to
+ * the dashboard (FE-ONB-02). An account that already has a page has nothing to
  * choose and goes on — unless it is back from the interests step in sign-up
  * (`BACK_FROM_INTERESTS`): then it sees its page's address and may change it.
  */

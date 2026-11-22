@@ -83,9 +83,9 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
   it.each([
     // In sign-up (no page to return to): back to the account step.
     ['', '/auth/account'],
-    // Opened from a page (settings' "no page" link, the studio checklist;
+    // Opened from a page (settings' "no page" link, the dashboard checklist;
     // FE-ONB-02): back there.
-    ['returnTo=/studio', '/studio'],
+    ['returnTo=/dashboard', '/dashboard'],
     ['returnTo=/settings', '/settings'],
     ['returnTo=/creators/5', '/creators/5'],
   ])('on /auth/url with %j goes back to %s', (search, href) => {
@@ -116,7 +116,7 @@ describe('AuthLayout frame (presentation AuthLayout)', () => {
     const messages = renderLayout()
     expect(backLink(messages)).toHaveAttribute(
       'href',
-      '/auth?returnTo=%2Fstudio'
+      '/auth?returnTo=%2Fdashboard'
     )
   })
 

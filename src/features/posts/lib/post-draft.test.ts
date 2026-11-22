@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { studioPost } from '../test/fixtures'
+import { ownerPost } from '../test/fixtures'
 import {
   draftFromPost,
   draftProblems,
@@ -69,7 +69,7 @@ describe('composer draft → write payload', () => {
   })
 
   it('on edit, keeps unknown tiers, the publish date, the preview and early access', () => {
-    const saved = studioPost({
+    const saved = ownerPost({
       isPublic: false,
       textPreview: 'پیش‌نمایش',
       dateEarly: '2026-12-01T00:00:00.000Z',
@@ -97,7 +97,7 @@ describe('composer draft → write payload', () => {
   })
 
   it('keeps an image post on the image route after its images are removed', () => {
-    const saved = studioPost({ type: 'image' })
+    const saved = ownerPost({ type: 'image' })
     const input = saveInputFromDraft(draftFromPost(saved), 'draft', saved)
     expect(input.kind).toBe('image')
     expect(input.payload.imageIds).toEqual([])
@@ -116,7 +116,7 @@ it('sends no paywall when nothing follows the divider', () => {
 describe('draftFromPost', () => {
   it('splits the body at the stored paywall position', () => {
     const result = draftFromPost(
-      studioPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
+      ownerPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
     )
     expect(result).toMatchObject({
       before: 'ab😀',
@@ -128,7 +128,7 @@ describe('draftFromPost', () => {
 
   it('marks saved images as attached', () => {
     const result = draftFromPost(
-      studioPost({ images: [{ id: 1, url: 'https://cdn.example/a.png' }] })
+      ownerPost({ images: [{ id: 1, url: 'https://cdn.example/a.png' }] })
     )
     expect(result.images).toEqual([
       { id: 1, url: 'https://cdn.example/a.png', attached: true },
@@ -154,13 +154,13 @@ describe('draftProblems', () => {
 
 describe('statusInput', () => {
   it('publishes a draft now and unpublishes with isDraft, resending only title and visibility', () => {
-    const post = studioPost({ publishedAt: null, isPublic: false })
+    const post = ownerPost({ publishedAt: null, isPublic: false })
     expect(statusInput(post, 'publish')).toEqual({
       postId: 12,
       title: 'سلام دنیا',
       visibility: { type: false },
     })
-    expect(statusInput(studioPost(), 'draft')).toEqual({
+    expect(statusInput(ownerPost(), 'draft')).toEqual({
       postId: 12,
       title: 'سلام دنیا',
       visibility: { type: true, isDraft: true },
@@ -190,7 +190,7 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
   })
 
   it('sends an audio id only for a new upload, never the saved one again', () => {
-    const saved = studioPost({
+    const saved = ownerPost({
       type: 'audio',
       audios: [{ id: 81, name: 'ep1.mp3' }],
     })
@@ -207,7 +207,7 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
   })
 
   it('adds a video to a saved text post through the video route', () => {
-    const saved = studioPost()
+    const saved = ownerPost()
     const input = saveInputFromDraft(
       {
         ...draftFromPost(saved),
@@ -222,7 +222,7 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
   })
 
   it('sends trimmed poll options without blanks, the choice mode, and resends the closing time', () => {
-    const saved = studioPost({
+    const saved = ownerPost({
       type: 'poll',
       poll: {
         multiSelect: true,

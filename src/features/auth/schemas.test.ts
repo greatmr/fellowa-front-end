@@ -17,12 +17,15 @@ describe('alias schema (BE-USER-04)', () => {
   const parse = (alias: string) => createAliasSchema().safeParse({ alias })
   const firstError = (alias: string) => parse(alias).error?.issues[0]?.message
 
-  it.each(['abc', 'Studio', 'a_b_9', 'A'.repeat(30)])('accepts %s', (alias) => {
-    expect(parse(alias).success).toBe(true)
-  })
+  it.each(['abc', 'Atelier', 'a_b_9', 'A'.repeat(30)])(
+    'accepts %s',
+    (alias) => {
+      expect(parse(alias).success).toBe(true)
+    }
+  )
 
   it('checks the trimmed value and keeps its case', () => {
-    expect(parse('  Studio ').data).toEqual({ alias: 'Studio' })
+    expect(parse('  Atelier ').data).toEqual({ alias: 'Atelier' })
     expect(firstError('  a ')).toBe('aliasTooShort')
   })
 
@@ -38,14 +41,14 @@ describe('alias schema (BE-USER-04)', () => {
     ['Persian letters', 'نام_من'],
     ['Persian digits', '۱۲۳۴'],
     ['Arabic digits', '١٢٣٤'],
-    ['a mix with Persian digits', 'studio۱'],
+    ['a mix with Persian digits', 'atelier۱'],
     ['a character that lowercases to ASCII', 'stu\u212Adio'],
   ])('refuses %s', (_name, alias) => {
     expect(firstError(alias)).toBe('aliasChars')
   })
 
   it('shows what the backend stores', () => {
-    expect(normalizeAlias(' Studio_9 ')).toBe('studio_9')
+    expect(normalizeAlias(' Atelier_9 ')).toBe('atelier_9')
   })
 })
 

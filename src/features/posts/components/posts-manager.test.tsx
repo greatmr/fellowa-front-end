@@ -2,13 +2,13 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 import { ApiError } from '@/lib/api/errors'
 
 import { renderWithIntl } from '../../../../test/render'
 import en from '../../../../messages/en.json'
 import fa from '../../../../messages/fa.json'
-import { studioPost } from '../test/fixtures'
+import { ownerPost } from '../test/fixtures'
 
 type Mutate = (variables: unknown, options?: Record<string, unknown>) => void
 
@@ -37,8 +37,8 @@ const { PostsManager } = await import('./posts-manager')
 const messages = { fa, en } as const
 const m = en.posts
 
-const published = studioPost({ id: 1, title: 'Morning notes' })
-const draft = studioPost({
+const published = ownerPost({ id: 1, title: 'Morning notes' })
+const draft = ownerPost({
   id: 2,
   title: 'Members essay',
   text: 'The opening, then the rest.',
@@ -47,9 +47,9 @@ const draft = studioPost({
   paywallPosition: 11,
   createdAt: '2026-11-21T08:00:00.000Z',
 })
-const video = studioPost({ id: 3, title: 'A video', type: 'video' })
+const video = ownerPost({ id: 3, title: 'A video', type: 'video' })
 
-function loaded(data: StudioPost[]) {
+function loaded(data: OwnerPost[]) {
   mocks.query = {
     data,
     isPending: false,
@@ -86,7 +86,7 @@ describe('PostsManager', () => {
       expect(
         screen.getByRole('heading', {
           level: 1,
-          name: messages[locale].studio.pages.posts.title,
+          name: messages[locale].panel.pages.posts.title,
         })
       ).toBeInTheDocument()
       await user.click(
@@ -130,7 +130,7 @@ describe('PostsManager', () => {
       within(essay).getByRole('link', {
         name: m.list.editTitle.replace('{title}', 'Members essay'),
       })
-    ).toHaveAttribute('href', '/studio/posts/2/edit')
+    ).toHaveAttribute('href', '/posts/2/edit')
     const notes = row('Morning notes')
     expect(within(notes).getByText(m.list.badge.free)).toBeInTheDocument()
     expect(within(notes).getByText(m.list.badge.published)).toBeInTheDocument()
@@ -138,7 +138,7 @@ describe('PostsManager', () => {
       within(row('A video')).getByRole('link', {
         name: m.list.editTitle.replace('{title}', 'A video'),
       })
-    ).toHaveAttribute('href', '/studio/posts/3/edit')
+    ).toHaveAttribute('href', '/posts/3/edit')
   })
 
   it('searches, filters by access and clears the filters, client side', async () => {
@@ -230,7 +230,7 @@ describe('PostsManager', () => {
     expect(screen.getByText(m.list.empty.title)).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: m.list.empty.action })
-    ).toHaveAttribute('href', '/studio/posts/new')
+    ).toHaveAttribute('href', '/posts/new')
     unmount()
 
     loaded([published])

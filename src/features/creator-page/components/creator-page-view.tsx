@@ -529,7 +529,7 @@ function TierCard({
     <Card className="flex-1 gap-0 overflow-hidden p-0">
       {tier.coverUrl ? (
         // No allowed host in `images.remotePatterns` yet: unoptimized, as
-        // the studio renders the same URLs.
+        // the creator's own pages render the same URLs.
         <Image
           src={tier.coverUrl}
           alt={t('tierCoverAlt', { title: tier.title })}

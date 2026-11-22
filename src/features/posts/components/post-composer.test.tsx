@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as I18nNavigation from '@/i18n/navigation'
-import type { StudioPost } from '@/features/posts/types/post'
+import type { OwnerPost } from '@/features/posts/types/post'
 import { ApiError } from '@/lib/api/errors'
 
 import { renderWithIntl } from '../../../../test/render'
 import en from '../../../../messages/en.json'
 import fa from '../../../../messages/fa.json'
-import { studioPost } from '../test/fixtures'
+import { ownerPost } from '../test/fixtures'
 
 type Mutate = (variables: unknown, options?: Record<string, unknown>) => void
 
@@ -65,7 +65,7 @@ const c = en.posts.composer
 const tier = (id: number, title: string) => ({ id, title })
 
 function renderComposer(
-  saved: StudioPost | null = null,
+  saved: OwnerPost | null = null,
   locale: keyof typeof messages = 'en'
 ) {
   const client = new QueryClient()
@@ -118,10 +118,7 @@ describe('PostComposer', () => {
       expect(screen.getByText(t.access.laterTiersNote)).toBeInTheDocument()
       expect(screen.getByText(t.attachments.saveFirst)).toBeInTheDocument()
       unmount()
-      renderComposer(
-        studioPost({ isPublic: false, paywallPosition: 3 }),
-        locale
-      )
+      renderComposer(ownerPost({ isPublic: false, paywallPosition: 3 }), locale)
       expect(screen.getByText(t.access.keepTitle)).toBeInTheDocument()
       expect(
         screen.getByRole('button', { name: t.saveChanges })
@@ -166,9 +163,9 @@ describe('PostComposer', () => {
         visibility: { type: true },
       },
     })
-    ;(options?.onSuccess as (post: StudioPost) => void)(studioPost())
+    ;(options?.onSuccess as (post: OwnerPost) => void)(ownerPost())
     expect(mocks.toastSuccess).toHaveBeenCalledWith(c.publishedToast)
-    expect(mocks.push).toHaveBeenCalledWith('/studio/posts')
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
   })
 
   it('inserts the divider at the caret and sends its offset in code points', async () => {
@@ -255,7 +252,7 @@ describe('PostComposer', () => {
     await user.type(title(), 'Once')
     await user.click(screen.getByRole('button', { name: c.publish }))
     const options = lastSave()[1]
-    ;(options?.onSuccess as (post: StudioPost) => void)(studioPost())
+    ;(options?.onSuccess as (post: OwnerPost) => void)(ownerPost())
     ;(options?.onSettled as () => void)()
     expect(
       await screen.findByRole('button', { name: c.publish })
@@ -266,14 +263,14 @@ describe('PostComposer', () => {
 
   it('stops offering "keep" once a limited post is saved as free', async () => {
     const user = userEvent.setup()
-    renderComposer(studioPost({ isPublic: false, publishedAt: null }))
+    renderComposer(ownerPost({ isPublic: false, publishedAt: null }))
     await user.click(
       screen.getByRole('radio', { name: new RegExp(c.access.free) })
     )
     await user.click(screen.getByRole('button', { name: c.saveDraft }))
     const options = lastSave()[1]
-    ;(options?.onSuccess as (post: StudioPost) => void)(
-      studioPost({ isPublic: true, publishedAt: null })
+    ;(options?.onSuccess as (post: OwnerPost) => void)(
+      ownerPost({ isPublic: true, publishedAt: null })
     )
     ;(options?.onSettled as () => void)()
     await user.click(
@@ -288,17 +285,17 @@ describe('PostComposer', () => {
     renderComposer()
     await user.type(title(), 'Draft')
     await user.click(screen.getByRole('button', { name: c.saveDraft }))
-    ;(lastSave()[1]?.onSuccess as (post: StudioPost) => void)(
-      studioPost({ id: 77, publishedAt: null })
+    ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+      ownerPost({ id: 77, publishedAt: null })
     )
     expect(mocks.toastSuccess).toHaveBeenCalledWith(c.draftToast)
-    expect(mocks.replace).toHaveBeenCalledWith('/studio/posts/77/edit')
+    expect(mocks.replace).toHaveBeenCalledWith('/posts/77/edit')
   })
 
   it('edits a limited post: keeps its tiers and date, resends the paywall', async () => {
     const user = userEvent.setup()
     renderComposer(
-      studioPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
+      ownerPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
     )
     expect(body()).toHaveValue('ab😀')
     expect(screen.getByRole('textbox', { name: c.afterLabel })).toHaveValue(
@@ -358,7 +355,7 @@ describe('PostComposer', () => {
   it('deletes a saved image on the server and drops a new one locally', async () => {
     const user = userEvent.setup()
     renderComposer(
-      studioPost({
+      ownerPost({
         type: 'image',
         images: [{ id: 9, url: 'https://cdn.example/s.png' }],
       })
@@ -566,7 +563,7 @@ describe('PostComposer', () => {
 
     it('shows a saved video without replacing it, and offers no other block', () => {
       renderComposer(
-        studioPost({ type: 'video', videos: [{ id: 70, name: 'clip.mp4' }] })
+        ownerPost({ type: 'video', videos: [{ id: 70, name: 'clip.mp4' }] })
       )
       expect(screen.getByText('clip.mp4')).toBeInTheDocument()
       expect(screen.getByText(c.media.savedNote)).toBeInTheDocument()
@@ -583,7 +580,7 @@ describe('PostComposer', () => {
 
     it('opens a saved poll with its options, and a saved text post without the poll choice', () => {
       const { unmount } = renderComposer(
-        studioPost({
+        ownerPost({
           type: 'poll',
           poll: {
             multiSelect: true,
@@ -600,7 +597,7 @@ describe('PostComposer', () => {
         screen.getByRole('switch', { name: c.poll.multiSelect })
       ).toBeChecked()
       unmount()
-      renderComposer(studioPost())
+      renderComposer(ownerPost())
       expect(
         screen.getByRole('button', { name: c.mediaChoice.video })
       ).toBeInTheDocument()
@@ -612,7 +609,7 @@ describe('PostComposer', () => {
     it('says why a poll with votes cannot be saved', async () => {
       const user = userEvent.setup()
       renderComposer(
-        studioPost({
+        ownerPost({
           type: 'poll',
           poll: {
             multiSelect: false,
@@ -642,7 +639,7 @@ describe('PostComposer', () => {
 
     it('keeps a file a draft save attached, even when the post has not refetched yet', async () => {
       const user = userEvent.setup()
-      renderComposer(studioPost({ publishedAt: null }))
+      renderComposer(ownerPost({ publishedAt: null }))
       await choose(c.mediaChoice.video)
       await user.upload(
         screen.getByTestId('post-video-input'),
@@ -656,8 +653,8 @@ describe('PostComposer', () => {
       expect(lastSave()[0]).toMatchObject({ kind: 'video' })
       // The save answered before its refetch: `saved` still says text.
       act(() =>
-        (lastSave()[1]?.onSuccess as (post: StudioPost) => void)(
-          studioPost({
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({
             type: 'video',
             publishedAt: null,
             videos: [{ id: 70, name: 'clip.mp4' }],
@@ -672,7 +669,7 @@ describe('PostComposer', () => {
 
     it('opens a draft poll saved with fewer than two options on two inputs', () => {
       renderComposer(
-        studioPost({
+        ownerPost({
           type: 'poll',
           poll: { multiSelect: false, closesAt: null, options: [] },
         })

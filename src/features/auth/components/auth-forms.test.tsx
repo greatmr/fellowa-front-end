@@ -94,7 +94,7 @@ describe('React Query auth forms', () => {
         isVerified: false,
       },
     })
-    renderAuth(<CredentialsForm mode="register" returnTo="/studio/posts" />)
+    renderAuth(<CredentialsForm mode="register" returnTo="/posts" />)
     await user.type(
       screen.getByLabelText(en.auth.fields.email),
       'creator@example.com'
@@ -106,7 +106,7 @@ describe('React Query auth forms', () => {
     await waitFor(() =>
       expect(mocked.replace).toHaveBeenCalledWith({
         pathname: '/auth/verify-email',
-        query: { returnTo: '/studio/posts' },
+        query: { returnTo: '/posts' },
       })
     )
   })
@@ -167,7 +167,9 @@ describe('React Query auth forms', () => {
         isVerified: true,
       },
     })
-    await waitFor(() => expect(mocked.replace).toHaveBeenCalledWith('/studio'))
+    await waitFor(() =>
+      expect(mocked.replace).toHaveBeenCalledWith('/dashboard')
+    )
   })
 
   it('shows verification errors and resend success from separate mutations', async () => {

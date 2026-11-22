@@ -24,7 +24,7 @@ const noopSubscribe = () => () => {}
  * selection renders after hydration; the server output shows no option
  * selected rather than a wrong one.
  *
- * `compact`: the studio header's icon-only form (presentation Header
+ * `compact`: the creator header's icon-only form (presentation Header
  * @ d843c3b); the group and each option keep their names for assistive tech.
  */
 export function ThemeSwitch({

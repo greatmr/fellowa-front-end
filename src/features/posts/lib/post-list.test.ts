@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { studioPost } from '../test/fixtures'
+import { ownerPost } from '../test/fixtures'
 import {
   defaultListFilters,
   filterPosts,
@@ -10,8 +10,8 @@ import {
 } from './post-list'
 
 const posts = [
-  studioPost({ id: 1, title: 'Banana', createdAt: '2026-11-01T00:00:00Z' }),
-  studioPost({
+  ownerPost({ id: 1, title: 'Banana', createdAt: '2026-11-01T00:00:00Z' }),
+  ownerPost({
     id: 2,
     title: 'apple',
     text: 'secret recipe',
@@ -19,7 +19,7 @@ const posts = [
     publishedAt: null,
     createdAt: '2026-11-03T00:00:00Z',
   }),
-  studioPost({ id: 3, title: 'Cherry', createdAt: '2026-11-02T00:00:00Z' }),
+  ownerPost({ id: 3, title: 'Cherry', createdAt: '2026-11-02T00:00:00Z' }),
 ]
 const ids = (list: { id: number }[]) => list.map((post) => post.id)
 

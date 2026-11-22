@@ -149,10 +149,10 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
     })
 
     it('shows the public page name with the alias under it (FQ-17)', () => {
-      renderPage('anonymous', { profile: { pageName: 'Dana Studio' } })
+      renderPage('anonymous', { profile: { pageName: 'Dana Atelier' } })
 
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Dana Studio' })
+        screen.getByRole('heading', { level: 1, name: 'Dana Atelier' })
       ).toBeVisible()
       expect(page().getByText('@dana')).toBeVisible()
     })

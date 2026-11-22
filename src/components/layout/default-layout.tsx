@@ -4,7 +4,7 @@ import { PublicFooter } from '@/components/layout/public-footer'
 import { PublicHeader } from '@/components/layout/public-header'
 import { SkipLink } from '@/components/layout/skip-link'
 
-/** Public pages share their navigation without inheriting the studio rail. */
+/** Public pages share their navigation without inheriting the creator rail. */
 export function DefaultLayout({
   children,
   authNavigation,

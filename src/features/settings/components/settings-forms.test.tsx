@@ -293,14 +293,14 @@ describe('PageNameForm (FE-AUTH-03)', () => {
     expect(field()).toHaveValue('Dana')
     expect(save()).toBeDisabled()
     await user.clear(field())
-    await user.type(field(), '  Dana Studio ')
+    await user.type(field(), '  Dana Atelier ')
     await user.click(save())
 
     await waitFor(() =>
-      expect(mocks.updatePageName).toHaveBeenCalledWith(42, 'Dana Studio')
+      expect(mocks.updatePageName).toHaveBeenCalledWith(42, 'Dana Atelier')
     )
     expect(mocks.toastSuccess).toHaveBeenCalledWith('Your page name was saved.')
-    await waitFor(() => expect(field()).toHaveValue('Dana Studio'))
+    await waitFor(() => expect(field()).toHaveValue('Dana Atelier'))
     expect(save()).toBeDisabled()
   })
 
@@ -384,9 +384,9 @@ describe('SettingsView page name section', () => {
     )
 
   it('edits the name of an existing page', () => {
-    view({ hasPage: true, pageName: 'Dana Studio' })
+    view({ hasPage: true, pageName: 'Dana Atelier' })
 
-    expect(screen.getByLabelText('Page name')).toHaveValue('Dana Studio')
+    expect(screen.getByLabelText('Page name')).toHaveValue('Dana Atelier')
   })
 
   it('sends an account with no page to choose its address first', () => {
