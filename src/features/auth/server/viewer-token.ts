@@ -5,7 +5,8 @@ import { readSession, type AuthSession } from '@/features/auth/server/session'
 import type { ApiActionResult } from '@/lib/api/action-result'
 
 /**
- * The session for a mutation on the signed-in account: origin check, a
+ * The session for a mutation on the signed-in account, or a read only its
+ * owner may make (the `/creator` preview's lists): origin check, a
  * validated session (a fresh owner-profile read), and the viewer id the page
  * rendered for — a different account in the cookie is refused rather than
  * edited.
@@ -30,7 +31,7 @@ export async function authorizedViewerSession(
   return { ok: true, data: session }
 }
 
-/** {@link authorizedViewerSession}, for a mutation that needs only the token. */
+/** {@link authorizedViewerSession}, for a call that needs only the token. */
 export async function authorizedViewerToken(
   viewerId: number
 ): Promise<ApiActionResult<string>> {

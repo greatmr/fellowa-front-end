@@ -46,6 +46,12 @@ export type CreatorPageData = {
    * `/creators/:id`); `null` when the origin is not configured.
    */
   pageUrl: string | null
+  /**
+   * Set only on the owner's preview at `/creator` (BE-LAND-10): the lists
+   * read `/landing/me/page/…`, and an unpublished page shows the publish bar
+   * instead of the share controls. Absent on `/creators/:id`.
+   */
+  ownPage?: { isPublished: boolean }
 }
 
 const isNotFound = (error: unknown) =>

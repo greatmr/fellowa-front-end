@@ -38,7 +38,7 @@ export type AccountMenuProps = {
   /** Email or `@alias`; omitted when it would repeat the name. */
   subtitle?: string
   initial: string
-  /** The creator's public page (`/creators/:id`); the item is left out without it. */
+  /** The creator's own page (`/creator`); the item is left out without it. */
   ownPageHref?: string
 }
 

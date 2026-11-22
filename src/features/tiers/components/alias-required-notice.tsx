@@ -5,9 +5,17 @@ import { Link } from '@/i18n/navigation'
 
 /**
  * `POST /tire` and `POST /tire/cover` answer 400 `USER_ALIAS_REQUIRED` while
- * the caller has no page. The address step (FE-ONB-02) returns here.
+ * the caller has no page, as does the owner's preview (`/creator`,
+ * BE-LAND-10). The address step (FE-ONB-02) returns to `returnTo`; `body`
+ * replaces the tiers' explanation where another page shows the notice.
  */
-export function AliasRequiredNotice() {
+export function AliasRequiredNotice({
+  returnTo = '/tiers',
+  body,
+}: {
+  returnTo?: string
+  body?: string
+}) {
   const t = useTranslations('tiers.aliasRequired')
 
   return (
@@ -18,11 +26,11 @@ export function AliasRequiredNotice() {
       <div>
         <p className="text-label font-semibold text-foreground">{t('title')}</p>
         <p className="mt-1 text-label leading-5 text-muted-foreground">
-          {t('body')}
+          {body ?? t('body')}
         </p>
       </div>
       <Button asChild variant="outline" size="sm">
-        <Link href={{ pathname: '/auth/url', query: { returnTo: '/tiers' } }}>
+        <Link href={{ pathname: '/auth/url', query: { returnTo } }}>
           {t('action')}
         </Link>
       </Button>

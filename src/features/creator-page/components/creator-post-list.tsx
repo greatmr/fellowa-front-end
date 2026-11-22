@@ -13,6 +13,10 @@ import {
   type PostAuthor,
 } from '@/features/creator-page/components/creator-post-card'
 import type {
+  CreatorListSource,
+  CreatorPostLink,
+} from '@/features/creator-page/lib/sources'
+import type {
   CreatorPost,
   CreatorPostPage,
 } from '@/features/creator-page/types/creator-page'
@@ -33,21 +37,26 @@ function matches(post: CreatorPost, filter: PostFilter) {
 
 /**
  * The Posts tab (presentation `CreatorProfileView` :792-1029 @ d843c3b) over
- * `GET /landing/creators/:id/posts` (Q-51), page by page. The filter works on
+ * `GET /landing/creators/:id/posts` (Q-51), or the owner's preview over
+ * `GET /landing/me/page/posts` (`source`, BE-LAND-10), page by page. The filter works on
  * the posts loaded so far, and says so when it finds none while more remain.
  */
 export function CreatorPostList({
   creatorId,
   firstPage,
   author,
+  source = 'public',
+  postLink = 'reader',
 }: {
   creatorId: number
   firstPage: CreatorPostPage
   author: PostAuthor
+  source?: CreatorListSource
+  postLink?: CreatorPostLink
 }) {
   const t = useTranslations('creatorPage')
   const [filter, setFilter] = useState<PostFilter>('all')
-  const query = useCreatorPostsQuery(creatorId, firstPage)
+  const query = useCreatorPostsQuery(creatorId, firstPage, source)
 
   // Offset pages: a post published between two reads repeats one (kept
   // once here); one removed between reads is skipped until the next refetch.
@@ -111,6 +120,7 @@ export function CreatorPostList({
                 post={post}
                 creatorId={creatorId}
                 author={author}
+                link={postLink}
               />
             </li>
           ))}

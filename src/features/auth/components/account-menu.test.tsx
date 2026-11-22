@@ -32,7 +32,7 @@ function renderMenu(locale: 'en' | 'fa' = 'en') {
         name="Aida Kiani"
         subtitle="@aida"
         initial="A"
-        ownPageHref="/creators/7"
+        ownPageHref="/creator"
       />
       <Toaster />
     </ThemeProvider>,
@@ -55,7 +55,7 @@ describe('AccountMenu', () => {
     const menu = await screen.findByRole('menu')
     expect(
       within(menu).getByRole('menuitem', { name: en.panel.account.viewPage })
-    ).toHaveAttribute('href', '/creators/7')
+    ).toHaveAttribute('href', '/creator')
     expect(
       within(menu).getByRole('menuitem', {
         name: en.panel.account.memberships,

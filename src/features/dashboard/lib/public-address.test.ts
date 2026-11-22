@@ -31,20 +31,13 @@ describe('postReaderUrl', () => {
 })
 
 describe('ownPageHref', () => {
-  it('opens the public page only when it is published', () => {
-    expect(ownPageHref({ id: 7, alias: 'sara', isPublish: true })).toBe(
-      '/creators/7'
-    )
-  })
-
-  it('goes to the dashboard while the page is unpublished, or the server did not say', () => {
-    expect(ownPageHref({ id: 7, alias: 'sara', isPublish: false })).toBe(
-      '/dashboard'
-    )
-    expect(ownPageHref({ id: 7, alias: 'sara' })).toBe('/dashboard')
+  it('opens /creator for an account with an address, published or not', () => {
+    // `/creator` previews an unpublished page (BE-LAND-10), so publication
+    // no longer changes the link.
+    expect(ownPageHref({ alias: 'sara' })).toBe('/creator')
   })
 
   it('has no item without an address', () => {
-    expect(ownPageHref({ id: 7, alias: null, isPublish: true })).toBeUndefined()
+    expect(ownPageHref({ alias: null })).toBeUndefined()
   })
 })

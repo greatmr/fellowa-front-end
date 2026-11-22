@@ -40,6 +40,7 @@ import {
   creatorPageTabs,
 } from '@/features/creator-page/lib/tabs'
 import type { CreatorTier } from '@/features/creator-page/types/creator-page'
+import { PublishButton, PublishPageProvider } from '@/features/dashboard'
 import { Link } from '@/i18n/navigation'
 import { publicPageTitle } from '@/lib/page-name'
 
@@ -54,7 +55,10 @@ const HERO_ID = 'creator-page-hero'
  * (FQ-33 A). Collections (FQ-35, BE-CONT-15) are a tab of their own when
  * the creator has any: beyond the design, in the page's own patterns. The
  * owner view is display only; the backend refuses
- * self-interaction. Not ported: the support widget with goal, tips and
+ * self-interaction. `ownPage` is the owner's preview at `/creator`
+ * (BE-LAND-10): the lists read the owner's routes, and until the page is
+ * published the bar offers publishing instead of the link to share, and posts
+ * open in the editor (their public pages are 404 until then). Not ported: the support widget with goal, tips and
  * crypto (FQ-2/3/31), member counts (none is public), "most popular" and
  * trial (FQ-12/11), single-post purchase, the avatar shuffle, likes and
  * comments, and the bio's "read more" (the whole bio is shown).
@@ -67,6 +71,7 @@ export function CreatorPageView({
   categoryTitle,
   viewer,
   pageUrl,
+  ownPage,
   initialTab = 'posts',
 }: CreatorPageData & { initialTab?: CreatorPageTab }) {
   const t = useTranslations('creatorPage')
@@ -85,6 +90,9 @@ export function CreatorPageView({
   )
   const startTab = visibleTabs.includes(initialTab) ? initialTab : 'posts'
   const author = { name, initial, avatarUrl: profile.avatarUrl }
+  const listSource = ownPage ? 'ownPage' : 'public'
+  const unpublished = ownPage?.isPublished === false
+  const postLink = unpublished ? 'editor' : 'reader'
 
   const tabLabels: Record<CreatorPageTab, string> = {
     posts:
@@ -150,12 +158,15 @@ export function CreatorPageView({
         }
         actions={
           <>
-            <CopyLinkButton
-              url={pageUrl}
-              label={t('copyLink')}
-              iconOnly
-              size="icon-sm"
-            />
+            {/* Nothing to share before publication: the link is a 404. */}
+            {unpublished ? null : (
+              <CopyLinkButton
+                url={pageUrl}
+                label={t('copyLink')}
+                iconOnly
+                size="icon-sm"
+              />
+            )}
             <CreatorActions
               creatorId={profile.id}
               viewer={viewer}
@@ -167,7 +178,14 @@ export function CreatorPageView({
       />
 
       <article>
-        {viewer === 'owner' ? <OwnerBar pageUrl={pageUrl} /> : null}
+        {viewer !== 'owner' ? null : unpublished ? (
+          <UnpublishedOwnerBar
+            creatorId={profile.id}
+            hasNoTier={tiers !== null && tiers.length === 0}
+          />
+        ) : (
+          <OwnerBar pageUrl={pageUrl} />
+        )}
 
         <div id={HERO_ID}>
           <div
@@ -305,6 +323,8 @@ export function CreatorPageView({
                 creatorId={profile.id}
                 firstPage={posts}
                 author={author}
+                source={listSource}
+                postLink={postLink}
               />
             )}
           </TabsContent>
@@ -315,6 +335,8 @@ export function CreatorPageView({
                 creatorId={profile.id}
                 collections={shownCollections}
                 author={author}
+                source={listSource}
+                postLink={postLink}
               />
             </TabsContent>
           )}
@@ -488,6 +510,52 @@ function OwnerBar({ pageUrl }: { pageUrl: string | null }) {
         <Button asChild size="sm">
           <Link href="/settings">{t('editPage')}</Link>
         </Button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The owner's bar on the preview of an unpublished page (`/creator`, owner
+ * decision 2026-11-22): the page as visitors will see it, "not published
+ * yet", and the dashboard's one publish action (FE-STUDIO-03's provider, so
+ * a single request and pending state; it refreshes the page on success,
+ * which then shows the published bar). Held back with its reason while the
+ * page has no active tier (CP-05), as on the dashboard (`/tire` and
+ * `me/page/tiers` both list active tiers only); a page here always has a
+ * username, or the preview would not exist.
+ */
+function UnpublishedOwnerBar({
+  creatorId,
+  hasNoTier,
+}: {
+  creatorId: number
+  hasNoTier: boolean
+}) {
+  const t = useTranslations('creatorPage')
+  const tDashboard = useTranslations('panel.dashboard')
+
+  return (
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-3 rounded-md border border-warning-border bg-warning-subtle px-5 py-3">
+      <div className="flex items-center gap-2.5 self-center">
+        <span
+          aria-hidden
+          className="size-2.5 shrink-0 rounded-full bg-warning"
+        />
+        <p className="text-label font-medium text-foreground">
+          {t('unpublishedNotice')}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-start gap-2">
+        <Button asChild size="sm" variant="outline" className="bg-card">
+          <Link href="/settings">{t('editPage')}</Link>
+        </Button>
+        <PublishPageProvider viewerId={creatorId}>
+          <PublishButton
+            withIcon
+            blockedReason={hasNoTier ? tDashboard('publishNeedsTier') : null}
+          />
+        </PublishPageProvider>
       </div>
     </div>
   )

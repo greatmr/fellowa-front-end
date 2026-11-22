@@ -14,6 +14,10 @@ import {
   CreatorPostCard,
   type PostAuthor,
 } from '@/features/creator-page/components/creator-post-card'
+import type {
+  CreatorListSource,
+  CreatorPostLink,
+} from '@/features/creator-page/lib/sources'
 import type { CreatorCollection } from '@/features/creator-page/types/creator-page'
 
 /**
@@ -27,10 +31,15 @@ export function CreatorCollections({
   creatorId,
   collections,
   author,
+  source = 'public',
+  postLink = 'reader',
 }: {
   creatorId: number
   collections: CreatorCollection[]
   author: PostAuthor
+  /** The owner's preview reads its own routes (BE-LAND-10). */
+  source?: CreatorListSource
+  postLink?: CreatorPostLink
 }) {
   const t = useTranslations('creatorPage.collections')
   const format = useFormatter()
@@ -51,6 +60,8 @@ export function CreatorCollections({
         creatorId={creatorId}
         collection={open}
         author={author}
+        source={source}
+        postLink={postLink}
         onBack={() => {
           setReturnId(open.id)
           setOpenId(null)
@@ -119,16 +130,20 @@ function CollectionPosts({
   creatorId,
   collection,
   author,
+  source,
+  postLink,
   onBack,
 }: {
   creatorId: number
   collection: CreatorCollection
   author: PostAuthor
+  source: CreatorListSource
+  postLink: CreatorPostLink
   onBack: () => void
 }) {
   const t = useTranslations('creatorPage.collections')
   const tPosts = useTranslations('creatorPage.posts')
-  const query = useCreatorCollectionPostsQuery(creatorId, collection.id)
+  const query = useCreatorCollectionPostsQuery(creatorId, collection.id, source)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // The list it replaced is gone: focus the collection's heading.
@@ -187,6 +202,7 @@ function CollectionPosts({
                 post={post}
                 creatorId={creatorId}
                 author={author}
+                link={postLink}
               />
             </li>
           ))}
