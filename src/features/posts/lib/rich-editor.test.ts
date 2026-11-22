@@ -78,7 +78,7 @@ function expectAllowListOnly(html: string) {
 }
 
 describe('the editor writes only the Q-83 allow-list', () => {
-  it('writes every allowed element, with dir="auto" on text blocks', () => {
+  it('writes every allowed element, with no dir added (FE-I18N-02)', () => {
     const editor = makeEditor()
     editor
       .chain()
@@ -89,10 +89,10 @@ describe('the editor writes only the Q-83 allow-list', () => {
       .run()
     const { before } = parts(editor)
     expect(before).toBe(
-      '<h2 dir="auto">T</h2><h3 dir="auto">S</h3>' +
-        `<p dir="auto">a<br>b <strong>c</strong> <em>d</em> <a rel="${LINK_REL}" href="https://a.test">l</a></p>` +
-        '<ul><li><p dir="auto">1</p></li></ul><ol><li><p dir="auto">2</p></li></ol>' +
-        '<blockquote><p dir="auto">q</p></blockquote>'
+      '<h2>T</h2><h3>S</h3>' +
+        `<p>a<br>b <strong>c</strong> <em>d</em> <a rel="${LINK_REL}" href="https://a.test">l</a></p>` +
+        '<ul><li><p>1</p></li></ul><ol><li><p>2</p></li></ol>' +
+        '<blockquote><p>q</p></blockquote>'
     )
     expectAllowListOnly(before)
   })
@@ -153,23 +153,36 @@ describe('the editor writes only the Q-83 allow-list', () => {
     expect(parts(editor).before).not.toContain('<a')
   })
 
-  it('keeps Persian and mixed text, each paragraph with its own direction', () => {
+  it('adds no dir to new blocks: they follow the page (FE-I18N-02)', () => {
     const editor = makeEditor()
     editor.chain().focus().insertContent('سلام دنیا').run()
     editor.chain().splitBlock().insertContent('Hello').run()
-    expect(parts(editor).before).toBe(
-      '<p dir="auto">سلام دنیا</p><p dir="auto">Hello</p>'
-    )
+    editor
+      .chain()
+      .splitBlock()
+      .setHeading({ level: 2 })
+      .insertContent('T')
+      .run()
+    expect(parts(editor).before).toBe('<p>سلام دنیا</p><p>Hello</p><h2>T</h2>')
   })
 
-  it('keeps a stored dir on a container, and adds none', () => {
+  it('keeps a stored dir on any block, and adds none', () => {
     const editor = makeEditor({
-      before: '<ul dir="rtl"><li>یک</li></ul><ul><li>two</li></ul>',
+      before:
+        '<p dir="auto">a</p><h2 dir="rtl">ع</h2><p>b</p>' +
+        '<ul dir="rtl"><li>یک</li></ul><ul><li>two</li></ul>',
       after: null,
     })
     expect(parts(editor).before).toBe(
-      '<ul dir="rtl"><li><p dir="auto">یک</p></li></ul><ul><li><p dir="auto">two</p></li></ul>'
+      '<p dir="auto">a</p><h2 dir="rtl">ع</h2><p>b</p>' +
+        '<ul dir="rtl"><li><p>یک</p></li></ul><ul><li><p>two</p></li></ul>'
     )
+  })
+
+  it('does not copy a stored dir onto the block Enter creates', () => {
+    const editor = makeEditor({ before: '<p dir="rtl">a</p>', after: null })
+    editor.chain().focus('end').splitBlock().insertContent('b').run()
+    expect(parts(editor).before).toBe('<p dir="rtl">a</p><p>b</p>')
   })
 
   it('writes nothing for an empty document', () => {
@@ -178,7 +191,7 @@ describe('the editor writes only the Q-83 allow-list', () => {
 })
 
 describe('the paywall divider', () => {
-  const body = '<p dir="auto">یک</p><p dir="auto">دو</p><p dir="auto">سه</p>'
+  const body = '<p>یک</p><p>دو</p><p>سه</p>'
 
   it('is left out of the body; the blocks before it are the index', () => {
     const editor = makeEditor({ before: body, after: null })
@@ -187,8 +200,8 @@ describe('the paywall divider', () => {
     expect(editor.commands.insertPaywallDivider()).toBe(true)
     const result = parts(editor)
     expect(result).toEqual({
-      before: '<p dir="auto">یک</p><p dir="auto">دو</p>',
-      after: '<p dir="auto">سه</p>',
+      before: '<p>یک</p><p>دو</p>',
+      after: '<p>سه</p>',
     })
     expect(result.before + result.after).not.toContain('paywall')
     expect(blockCount(result.before)).toBe(2)
@@ -224,13 +237,13 @@ describe('the paywall divider', () => {
 
   it('removing it clears the paywall and joins the body', () => {
     const editor = makeEditor({
-      before: '<p dir="auto">a</p>',
-      after: '<p dir="auto">b</p>',
+      before: '<p>a</p>',
+      after: '<p>b</p>',
     })
-    expect(parts(editor).after).toBe('<p dir="auto">b</p>')
+    expect(parts(editor).after).toBe('<p>b</p>')
     editor.commands.removePaywallDivider()
     expect(parts(editor)).toEqual({
-      before: '<p dir="auto">a</p><p dir="auto">b</p>',
+      before: '<p>a</p><p>b</p>',
       after: null,
     })
   })
@@ -289,8 +302,8 @@ describe('loading at the stored index: parity with the server count', () => {
 
   it('round-trips its own output: same body, same index', () => {
     const first = {
-      before: '<h2 dir="auto">عنوان</h2><p dir="auto">باز</p>',
-      after: '<ul><li><p dir="auto">قفل</p></li></ul>',
+      before: '<h2>عنوان</h2><p>باز</p>',
+      after: '<ul><li><p>قفل</p></li></ul>',
     }
     const editor = makeEditor(first)
     expect(parts(editor)).toEqual(first)

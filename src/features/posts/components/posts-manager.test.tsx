@@ -102,6 +102,9 @@ function renderManager(locale: keyof typeof messages = 'en') {
 const row = (title: string) =>
   screen.getByRole('row', { name: new RegExp(title) })
 
+const autoDirFields = (root: HTMLElement) =>
+  root.querySelectorAll('input[dir="auto"], textarea[dir="auto"]')
+
 describe('PostsManager', () => {
   beforeEach(() => {
     loaded([published, { ...draft, collectionIds: [7] }, video])
@@ -523,6 +526,8 @@ describe('PostsManager', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent(
       t.collections.assign.title
     )
+    // FE-I18N-02: typing direction follows the page, never `dir="auto"`.
+    expect(autoDirFields(screen.getByRole('dialog'))).toHaveLength(0)
     await user.keyboard('{Escape}')
     await user.click(
       screen.getByRole('button', { name: t.list.createCollection })
@@ -530,6 +535,10 @@ describe('PostsManager', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent(
       t.collections.dialog.createTitle
     )
+    expect(
+      within(screen.getByRole('dialog')).getAllByRole('textbox').length
+    ).toBeGreaterThanOrEqual(2)
+    expect(autoDirFields(screen.getByRole('dialog'))).toHaveLength(0)
     await user.keyboard('{Escape}')
     await user.click(
       screen.getByRole('tab', { name: new RegExp(t.list.tabs.collections) })

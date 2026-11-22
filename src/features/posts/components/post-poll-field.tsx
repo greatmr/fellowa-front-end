@@ -72,7 +72,6 @@ export function PostPollField({ poll, onChange, showRequired }: Props) {
             </label>
             <Input
               id={`${ids}-option-${index}`}
-              dir="auto"
               value={option}
               maxLength={MAX_POLL_OPTION}
               placeholder={t('optionPlaceholder', { index: index + 1 })}

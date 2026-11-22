@@ -126,22 +126,20 @@ describe('isAllowedHref (the server’s scheme allow-list)', () => {
 
 describe('plain → html conversion (Q-83 option a)', () => {
   it('makes paragraphs of blank-line separated text and keeps single breaks', () => {
-    expect(plainToHtml('یک\nدو\n\nسه')).toBe(
-      '<p dir="auto">یک<br>دو</p><p dir="auto">سه</p>'
-    )
+    expect(plainToHtml('یک\nدو\n\nسه')).toBe('<p>یک<br>دو</p><p>سه</p>')
   })
 
   it('escapes what looks like markup, so it stays text', () => {
     const html = plainToHtml('<script>alert(1)</script> & "q"')
     expect(html).toBe(
-      '<p dir="auto">&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;q&quot;</p>'
+      '<p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;q&quot;</p>'
     )
     expect(blockCount(html)).toBe(1)
   })
 
   it('drops empty paragraphs and normalises CRLF', () => {
     expect(plainToHtml('\r\n\r\na\r\n\r\n\r\n\r\nb\n\n')).toBe(
-      '<p dir="auto">a</p><p dir="auto">b</p>'
+      '<p>a</p><p>b</p>'
     )
     expect(plainToHtml('   ')).toBe('')
   })
@@ -151,26 +149,26 @@ describe('plain → html conversion (Q-83 option a)', () => {
     const text = 'یک\n\nدو😀\n\nسه\n\nچهار'
     const parts = plainPostToHtmlParts(text, 7)
     expect(parts).toEqual({
-      before: '<p dir="auto">یک</p><p dir="auto">دو😀</p>',
-      after: '<p dir="auto">سه</p><p dir="auto">چهار</p>',
+      before: '<p>یک</p><p>دو😀</p>',
+      after: '<p>سه</p><p>چهار</p>',
     })
     expect(blockCount(parts.before)).toBe(2)
   })
 
   it('splits mid-paragraph into two paragraphs', () => {
     expect(plainPostToHtmlParts('abcdef', 3)).toEqual({
-      before: '<p dir="auto">abc</p>',
-      after: '<p dir="auto">def</p>',
+      before: '<p>abc</p>',
+      after: '<p>def</p>',
     })
   })
 
   it('has no divider without a paywall, and a position past the end gates nothing', () => {
     expect(plainPostToHtmlParts('a\n\nb', null)).toEqual({
-      before: '<p dir="auto">a</p><p dir="auto">b</p>',
+      before: '<p>a</p><p>b</p>',
       after: null,
     })
     expect(plainPostToHtmlParts('ab', 10)).toEqual({
-      before: '<p dir="auto">ab</p>',
+      before: '<p>ab</p>',
       after: '',
     })
   })

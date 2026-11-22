@@ -38,13 +38,13 @@ const { PageNameForm } = await import('./page-name-form')
 const { FirstPasswordForm } = await import('./first-password-form')
 const { SettingsView } = await import('./settings-view')
 
-function renderForm(ui: ReactElement) {
+function renderForm(ui: ReactElement, locale: 'fa' | 'en' = 'en') {
   const client = new QueryClient({
     defaultOptions: { mutations: { retry: false } },
   })
   return renderWithIntl(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-    { locale: 'en' }
+    { locale }
   )
 }
 
@@ -54,6 +54,26 @@ beforeEach(() => {
 
 describe('PersonalForm', () => {
   const empty = { firstName: '', lastName: '', phoneNumber: '' }
+
+  it('lets the name fields inherit the page direction in fa, the phone stays ltr (FE-I18N-02)', () => {
+    const { container } = renderForm(
+      <>
+        <PersonalForm viewerId={42} initial={empty} />
+        <PageNameForm viewerId={42} initial="" />
+      </>,
+      'fa'
+    )
+    const inputs = Array.from(container.querySelectorAll('input'))
+    expect(inputs.length).toBeGreaterThanOrEqual(4)
+    expect(inputs.filter((input) => input.dir === 'auto')).toHaveLength(0)
+    expect(
+      container.querySelector('input[autocomplete="given-name"]')
+    ).not.toHaveAttribute('dir')
+    expect(container.querySelector('input[type="tel"]')).toHaveAttribute(
+      'dir',
+      'ltr'
+    )
+  })
 
   it('saves the details for this viewer and confirms', async () => {
     mocks.updatePersonal.mockImplementation(async (_viewer, values) => ({

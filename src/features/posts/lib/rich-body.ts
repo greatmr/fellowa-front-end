@@ -166,7 +166,7 @@ export function plainToHtml(text: string): string {
     .filter((paragraph) => paragraph.trim() !== '')
     .map(
       (paragraph) =>
-        `<p dir="auto">${paragraph.split('\n').map(escapeHtml).join('<br>')}</p>`
+        `<p>${paragraph.split('\n').map(escapeHtml).join('<br>')}</p>`
     )
     .join('')
 }

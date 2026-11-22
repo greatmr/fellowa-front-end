@@ -194,7 +194,6 @@ export function CollectionDialog({
             </Label>
             <Input
               id={`${ids}-title`}
-              dir="auto"
               value={title}
               maxLength={MAX_COLLECTION_TITLE}
               required
@@ -223,7 +222,6 @@ export function CollectionDialog({
             </Label>
             <Textarea
               id={`${ids}-description`}
-              dir="auto"
               rows={2}
               value={description}
               maxLength={MAX_COLLECTION_DESCRIPTION}

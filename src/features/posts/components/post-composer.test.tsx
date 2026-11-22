@@ -564,14 +564,14 @@ describe('PostComposer', () => {
       })
     )
     expect(screen.getByText(c.plainConversionNote)).toBeInTheDocument()
-    expect(body()).toHaveValue('<p dir="auto">یک</p><p dir="auto">دو😀</p>')
-    expect(after()).toHaveValue('<p dir="auto">سه &lt;b&gt;</p>')
+    expect(body()).toHaveValue('<p>یک</p><p>دو😀</p>')
+    expect(after()).toHaveValue('<p>سه &lt;b&gt;</p>')
     // Nothing is written on open.
     expect(mocks.save).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: c.saveChanges }))
     expect(lastSave()[0]).toMatchObject({
       payload: {
-        text: '<p dir="auto">یک</p><p dir="auto">دو😀</p><p dir="auto">سه &lt;b&gt;</p>',
+        text: '<p>یک</p><p>دو😀</p><p>سه &lt;b&gt;</p>',
         // A format change on a paywalled post must carry the position.
         bodyFormat: 'html',
         paywallPosition: 2,
@@ -898,6 +898,28 @@ describe('PostComposer', () => {
         screen.getByText(/پیش‌نویس ذخیره شد، اما ۱ پیوست آپلود نشد/)
       ).toBeInTheDocument()
     })
+  })
+
+  it('lets every free-text field inherit the page direction in fa (FE-I18N-02)', async () => {
+    const t = fa.posts.composer
+    const user = userEvent.setup()
+    const { container } = renderComposer(null, 'fa')
+    expect(
+      screen.getByRole('textbox', { name: t.titleLabel })
+    ).not.toHaveAttribute('dir')
+    await user.click(screen.getByRole('button', { name: t.collections.new }))
+    expect(
+      screen.getByRole('textbox', { name: t.collections.newLabel })
+    ).not.toHaveAttribute('dir')
+    await user.click(screen.getByRole('button', { name: t.mediaChoice.poll }))
+    expect(
+      screen.getByRole('textbox', {
+        name: t.poll.optionLabel.replace('{index, number}', '۱'),
+      })
+    ).not.toHaveAttribute('dir')
+    expect(
+      container.querySelectorAll('input[dir="auto"], textarea[dir="auto"]')
+    ).toHaveLength(0)
   })
 
   describe('video, audio and poll blocks (FE-POST-02)', () => {

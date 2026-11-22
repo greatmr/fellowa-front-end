@@ -97,7 +97,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     })
     await user.click(screen.getByRole('button', { name: c.toolbar.bold }))
     expect(lastParts(onChange)).toEqual({
-      before: '<p dir="auto"><strong>سلام world</strong></p>',
+      before: '<p><strong>سلام world</strong></p>',
       after: null,
     })
     expect(
@@ -105,11 +105,11 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     ).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: c.toolbar.h2 }))
     expect(lastParts(onChange).before).toBe(
-      '<h2 dir="auto"><strong>سلام world</strong></h2>'
+      '<h2><strong>سلام world</strong></h2>'
     )
     await user.click(screen.getByRole('button', { name: c.toolbar.undo }))
     expect(lastParts(onChange).before).toBe(
-      '<p dir="auto"><strong>سلام world</strong></p>'
+      '<p><strong>سلام world</strong></p>'
     )
   })
 
@@ -126,8 +126,8 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     const insert = screen.getByRole('button', { name: c.insertDivider })
     await user.click(insert)
     expect(lastParts(onChange)).toEqual({
-      before: '<p dir="auto">a</p>',
-      after: '<p dir="auto">b</p>',
+      before: '<p>a</p>',
+      after: '<p>b</p>',
     })
     expect(insert).toBeDisabled()
     expect(screen.getByText(c.dividerFreePublic)).toBeInTheDocument()
@@ -136,7 +136,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
       within(separator).getByRole('button', { name: c.removeDivider })
     )
     expect(lastParts(onChange)).toEqual({
-      before: '<p dir="auto">a</p><p dir="auto">b</p>',
+      before: '<p>a</p><p>b</p>',
       after: null,
     })
     expect(screen.queryByRole('separator')).not.toBeInTheDocument()
@@ -171,7 +171,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     await user.type(address, 'https://a.test/x{Enter}')
     await waitFor(() =>
       expect(lastParts(onChange).before).toBe(
-        '<p dir="auto"><a rel="noopener noreferrer nofollow ugc" href="https://a.test/x">site</a></p>'
+        '<p><a rel="noopener noreferrer nofollow ugc" href="https://a.test/x">site</a></p>'
       )
     )
     expect(
@@ -195,7 +195,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     )
     await waitFor(() =>
       expect(lastParts(onChange).before).toBe(
-        '<p dir="auto">see <a rel="noopener noreferrer nofollow ugc" href="mailto:a@b.test">mailto:a@b.test</a>it</p>'
+        '<p>see <a rel="noopener noreferrer nofollow ugc" href="mailto:a@b.test">mailto:a@b.test</a>it</p>'
       )
     )
   })
@@ -228,7 +228,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
     expect(screen.getByRole('button', { name: c.insertDivider })).toBeDisabled()
   })
 
-  it('keeps Persian and English lines apart, each with dir="auto"', async () => {
+  it('keeps Persian and English lines apart, with no dir: both follow the page', async () => {
     const { onChange } = renderEditor()
     const box = await textbox()
     const editor = editorOf(box)
@@ -236,9 +236,7 @@ describe('PostBodyEditor (FE-POST-03)', () => {
       editor.chain().focus().insertContent('سلام').splitBlock().run()
       editor.chain().insertContent('Hello ۱۲۳').run()
     })
-    expect(lastParts(onChange).before).toBe(
-      '<p dir="auto">سلام</p><p dir="auto">Hello ۱۲۳</p>'
-    )
+    expect(lastParts(onChange).before).toBe('<p>سلام</p><p>Hello ۱۲۳</p>')
     // A composition (IME) session in jsdom: start/end events do not break
     // the document or the reported body.
     fireEvent.compositionStart(box)
@@ -246,8 +244,6 @@ describe('PostBodyEditor (FE-POST-03)', () => {
       editor.commands.insertContent('ی')
     })
     fireEvent.compositionEnd(box, { data: 'ی' })
-    expect(lastParts(onChange).before).toBe(
-      '<p dir="auto">سلام</p><p dir="auto">Hello ۱۲۳ی</p>'
-    )
+    expect(lastParts(onChange).before).toBe('<p>سلام</p><p>Hello ۱۲۳ی</p>')
   })
 })

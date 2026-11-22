@@ -88,7 +88,6 @@ export function PageNameForm({
                   <Input
                     {...field}
                     autoComplete="off"
-                    dir="auto"
                     placeholder={t('pageName.placeholder')}
                   />
                 </FormControl>
