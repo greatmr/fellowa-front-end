@@ -1,2 +1,5 @@
 /** Public surface other features may use. */
-export { publicPageAddress } from '@/features/dashboard/lib/public-address'
+export {
+  ownPageHref,
+  publicPageAddress,
+} from '@/features/dashboard/lib/public-address'

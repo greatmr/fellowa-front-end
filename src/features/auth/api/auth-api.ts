@@ -48,6 +48,9 @@ const userSchema = z.object({
   hasPassword: z.boolean(),
   // `toSelfProfile`: the page's category, `null` with no page or none chosen.
   categoryId: z.number().int().positive().safe().nullable().optional(),
+  // `toSelfProfile`: whether the page is published (`false` with no page or
+  // an unpublished one, C-16). Left out by an older server: read as unpublished.
+  isPublish: z.boolean().optional(),
 })
 const tokenSchema = z.object({ token: z.string().min(1) })
 const messageSchema = z.object({ message: z.string() })

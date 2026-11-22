@@ -222,6 +222,38 @@ describe('server authentication API', () => {
     })
   })
 
+  it('carries whether the page is published into the session user (toSelfProfile isPublish)', async () => {
+    const profile = {
+      id: 4,
+      email: null,
+      alias: 'sara_art',
+      isVerified: true,
+      displayName: 'Sara',
+      hasPassword: false,
+    }
+    server.use(
+      http.get(`${origin}/api/user/4/profile`, () =>
+        HttpResponse.json({
+          data: { ...profile, isPublish: true },
+          errors: null,
+        })
+      ),
+      http.get(`${origin}/api/user/5/profile`, () =>
+        HttpResponse.json({
+          data: { ...profile, id: 5, isPublish: 'yes' },
+          errors: null,
+        })
+      )
+    )
+    expect(await fetchOwnProfile('token', 4)).toEqual({
+      ...profile,
+      isPublish: true,
+    })
+    await expect(fetchOwnProfile('token', 5)).rejects.toMatchObject({
+      name: 'InvalidAuthResponseError',
+    })
+  })
+
   it('sets the page category with the bearer token, and keeps a refusal code', async () => {
     server.use(
       http.put(`${origin}/api/user/category`, async ({ request }) => {

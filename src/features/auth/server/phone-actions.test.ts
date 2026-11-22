@@ -348,6 +348,8 @@ describe('verify', () => {
           hasPassword: false,
           // The page's category (FE-AUTH-08): none with no page.
           categoryId: null,
+          // Not published (C-16): "View my page" goes to the dashboard.
+          isPublish: false,
         },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',
@@ -433,6 +435,8 @@ describe('login with password', () => {
           hasPassword: false,
           // The page's category (FE-AUTH-08): none with no page.
           categoryId: null,
+          // Not published (C-16): "View my page" goes to the dashboard.
+          isPublish: false,
         },
         // The verified number, for the account step's line (FE-AUTH-04).
         phone: '09121234567',
