@@ -45,6 +45,9 @@ const rawFileSchema = z.object({ id, url: z.string().nullable() })
 const rawCloudMediaSchema = z.object({
   id,
   fileNameCloud: z.string().nullable(),
+  // BE-CONT-16: the object-storage URL, `null` for an Arvan asset; absent
+  // from a server older than it.
+  playbackUrl: z.string().nullish(),
 })
 
 const rawPollSchema = z.object({
@@ -91,6 +94,7 @@ const toFile = (file: z.infer<typeof rawFileSchema>): PostFile => ({
 const toMedia = (media: z.infer<typeof rawCloudMediaSchema>): PostMedia => ({
   id: media.id,
   name: media.fileNameCloud,
+  playbackUrl: httpUrlOrNull(media.playbackUrl),
 })
 
 function toPost(raw: RawPost): OwnerPost {
@@ -165,15 +169,24 @@ export function parseUploadChunk(value: unknown): void {
 
 /**
  * `POST /content/upload/finalize-{video|audio}`: `{id, …, fileNameCloud,
- * status: 'Converting'}`. `id` is what `videoId` / `audioId` take.
+ * status: 'Converting'}`, or on the object-storage path (BE-CONT-16)
+ * `status: 'Ready'` and `playbackUrl`. `id` is what `videoId` / `audioId` take.
  */
 export function parseFinalizedMedia(value: unknown): PostMedia {
   const data = parseEnvelope(
-    z.object({ id, fileNameCloud: z.string().nullish() }),
+    z.object({
+      id,
+      fileNameCloud: z.string().nullish(),
+      playbackUrl: z.string().nullish(),
+    }),
     value,
     invalid
   )
-  return { id: data.id, name: data.fileNameCloud ?? null }
+  return {
+    id: data.id,
+    name: data.fileNameCloud ?? null,
+    playbackUrl: httpUrlOrNull(data.playbackUrl),
+  }
 }
 
 /** `DELETE` routes answer `{message}`. */

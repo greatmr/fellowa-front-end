@@ -287,7 +287,15 @@
     "close": "بستن",
     "skipToContent": "رفتن به محتوای اصلی",
     "notifications": "اعلان‌ها",
-    "money": "{amount} <unit>تومان</unit>"
+    "money": "{amount} <unit>تومان</unit>",
+    "mediaPlayer": {
+      "video": "ویدیو",
+      "audio": "صوت",
+      "videoLabel": "ویدیو: {title}",
+      "audioLabel": "صوت: {title}",
+      "unsupported": "این فایل در مرورگر شما پخش نمی‌شود.",
+      "openFile": "باز کردن یا دانلود فایل"
+    }
   },
   "errors": {
     "unexpectedTitle": "مشکلی پیش آمد",

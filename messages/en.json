@@ -287,7 +287,15 @@
     "close": "Close",
     "skipToContent": "Skip to content",
     "notifications": "Notifications",
-    "money": "{amount} <unit>Toman</unit>"
+    "money": "{amount} <unit>Toman</unit>",
+    "mediaPlayer": {
+      "video": "Video",
+      "audio": "Audio",
+      "videoLabel": "Video: {title}",
+      "audioLabel": "Audio: {title}",
+      "unsupported": "This file can't be played in your browser.",
+      "openFile": "Open or download the file"
+    }
   },
   "errors": {
     "unexpectedTitle": "Something went wrong",

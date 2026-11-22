@@ -37,6 +37,8 @@ export function rawFullPublic() {
         videoCloudId: 'VIDEOASSET',
         videoCloudChannel: null,
         fileNameCloud: null,
+        // BE-CONT-16: `null` for an Arvan asset.
+        playbackUrl: null,
       },
     ],
     audios: [
@@ -47,6 +49,7 @@ export function rawFullPublic() {
         audioCloudChannel: null,
         fileNameCloud: null,
         status: true,
+        playbackUrl: null,
       },
     ],
     links: [{ ...row, id: 8, link: 'https://link.test/page' }],
@@ -78,6 +81,31 @@ export function rawFullMember() {
         ],
       },
     ],
+  }
+}
+
+/** BE-CONT-16 public object URLs (`<endpoint>/<bucket>/<key>`). */
+export const VIDEO_URL = 'http://localhost:9000/fellowa/content/video/1-a.mp4'
+export const AUDIO_URL = 'http://localhost:9000/fellowa/content/audio/1-b.mp3'
+
+/** FULL with object-storage media: each item carries its `playbackUrl`. */
+export function rawFullObjectStorage() {
+  const raw = rawFullPublic()
+  return {
+    ...raw,
+    type: 'video',
+    videos: raw.videos.map((v) => ({
+      ...v,
+      videoCloudId: null,
+      fileNameCloud: 'clip.mp4',
+      playbackUrl: VIDEO_URL,
+    })),
+    audios: raw.audios.map((a) => ({
+      ...a,
+      audioCloudId: null,
+      fileNameCloud: 'ep1.mp3',
+      playbackUrl: AUDIO_URL,
+    })),
   }
 }
 

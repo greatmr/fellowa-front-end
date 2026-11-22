@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  AUDIO_URL,
   BODY,
   OPEN_PART,
   PREVIEW,
   ok,
   rawFullMember,
+  rawFullObjectStorage,
   rawFullPublic,
   rawPartial,
   rawTeaser,
+  VIDEO_URL,
 } from '../test/fixtures'
 import {
   InvalidReaderPostResponseError,
@@ -29,8 +32,8 @@ describe('parseReaderPost (FE-CONT-01)', () => {
       images: [{ id: 5, url: 'https://cdn.test/IMAGEKEY.png' }],
       attachments: [{ id: 9, url: 'https://cdn.test/FILEKEY.pdf' }],
       links: [{ id: 8, url: 'https://link.test/page' }],
-      videoCount: 1,
-      audios: [{ id: 7, ready: true }],
+      videos: [{ id: 6, playbackUrl: null }],
+      audios: [{ id: 7, ready: true, playbackUrl: null }],
       poll: null,
     })
   })
@@ -58,6 +61,31 @@ describe('parseReaderPost (FE-CONT-01)', () => {
     expect(parseReaderPost(ok(raw))).toMatchObject({
       images: [{ id: 5, url: null }],
       links: [{ id: 8, url: null }],
+    })
+  })
+
+  it('reads playbackUrl on object-storage media (BE-CONT-16)', () => {
+    expect(parseReaderPost(ok(rawFullObjectStorage()))).toMatchObject({
+      videos: [{ id: 6, playbackUrl: VIDEO_URL }],
+      audios: [{ id: 7, ready: true, playbackUrl: AUDIO_URL }],
+    })
+  })
+
+  it('drops a playbackUrl that is not absolute http(s), and reads its absence as null', () => {
+    const raw = rawFullObjectStorage()
+    const unsafe = {
+      ...raw,
+      videos: [{ ...raw.videos[0], playbackUrl: 'javascript:alert(1)' }],
+      // A server older than BE-CONT-16 sends no key.
+      audios: rawFullPublic().audios.map((a) => {
+        const { playbackUrl, ...older } = a
+        void playbackUrl
+        return older
+      }),
+    }
+    expect(parseReaderPost(ok(unsafe))).toMatchObject({
+      videos: [{ id: 6, playbackUrl: null }],
+      audios: [{ id: 7, playbackUrl: null }],
     })
   })
 

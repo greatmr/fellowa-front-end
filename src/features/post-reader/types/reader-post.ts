@@ -34,10 +34,13 @@ export type FullReaderPost = ReaderPostBase & {
   images: ReaderFile[]
   attachments: ReaderFile[]
   links: { id: number; url: string | null }[]
-  /** No playable URL is in the contract; only how many there are. */
-  videoCount: number
+  /**
+   * `playbackUrl` (BE-CONT-16): an http(s) URL for a file in object storage,
+   * `null` for an Arvan asset (no Arvan playback yet). Only FULL carries it.
+   */
+  videos: { id: number; playbackUrl: string | null }[]
   /** As for videos; `ready` is `audios[].status`. */
-  audios: { id: number; ready: boolean }[]
+  audios: { id: number; ready: boolean; playbackUrl: string | null }[]
   /** Only `GET /content/:id` sends polls; landing never does (Q-57). */
   poll: { id: number; options: { id: number; label: string }[] } | null
 }

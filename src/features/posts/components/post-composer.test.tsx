@@ -999,7 +999,7 @@ describe('PostComposer', () => {
       )
       mocks.mediaPending = false
       act(() => {
-        options.onSuccess({ id: 70, name: 'clip.mp4' })
+        options.onSuccess({ id: 70, name: 'clip.mp4', playbackUrl: null })
         options.onSettled()
       })
       expect(await screen.findByText('clip.mp4')).toBeInTheDocument()
@@ -1118,7 +1118,10 @@ describe('PostComposer', () => {
 
     it('shows a saved video without replacing it, and offers no other block', () => {
       renderComposer(
-        ownerPost({ type: 'video', videos: [{ id: 70, name: 'clip.mp4' }] })
+        ownerPost({
+          type: 'video',
+          videos: [{ id: 70, name: 'clip.mp4', playbackUrl: null }],
+        })
       )
       expect(screen.getByText('clip.mp4')).toBeInTheDocument()
       expect(screen.getByText(c.media.savedNote)).toBeInTheDocument()
@@ -1131,6 +1134,47 @@ describe('PostComposer', () => {
       expect(
         screen.queryByRole('button', { name: c.mediaChoice.image })
       ).not.toBeInTheDocument()
+    })
+
+    it('previews an object-storage file (BE-CONT-16), saved or just uploaded', async () => {
+      const url = 'http://localhost:9000/fellowa/content/video/1-a.mp4'
+      const { unmount } = renderComposer(
+        ownerPost({
+          type: 'video',
+          videos: [{ id: 70, name: 'clip.mp4', playbackUrl: url }],
+        })
+      )
+      const saved = screen.getByLabelText('Video: clip.mp4')
+      expect(saved.tagName).toBe('VIDEO')
+      expect(saved).toHaveAttribute('src', url)
+      unmount()
+
+      renderComposer()
+      await choose(c.mediaChoice.audio)
+      await userEvent
+        .setup()
+        .upload(
+          screen.getByTestId('post-audio-input'),
+          new File(['x'], 'ep1.mp3', { type: 'audio/mpeg' })
+        )
+      mocks.mediaPending = false
+      act(() => {
+        lastMedia()[1].onSuccess({ id: 81, name: null, playbackUrl: url })
+        lastMedia()[1].onSettled()
+      })
+      expect(
+        await screen.findByLabelText(`Audio: ${c.media.audio.unnamed}`)
+      ).toHaveAttribute('src', url)
+    })
+
+    it('shows no player for a file without a playbackUrl (Arvan)', () => {
+      const { container } = renderComposer(
+        ownerPost({
+          type: 'video',
+          videos: [{ id: 70, name: 'clip.mp4', playbackUrl: null }],
+        })
+      )
+      expect(container.querySelector('video, audio')).toBeNull()
     })
 
     it('opens a saved poll with its options, and a saved text post without the poll choice', () => {
@@ -1200,7 +1244,13 @@ describe('PostComposer', () => {
         screen.getByTestId('post-video-input'),
         new File(['x'], 'clip.mp4', { type: 'video/mp4' })
       )
-      act(() => lastMedia()[1].onSuccess({ id: 70, name: 'clip.mp4' }))
+      act(() =>
+        lastMedia()[1].onSuccess({
+          id: 70,
+          name: 'clip.mp4',
+          playbackUrl: null,
+        })
+      )
       expect(
         screen.getByRole('button', { name: c.mediaChoice.remove.video })
       ).toBeInTheDocument()
@@ -1212,7 +1262,7 @@ describe('PostComposer', () => {
           ownerPost({
             type: 'video',
             publishedAt: null,
-            videos: [{ id: 70, name: 'clip.mp4' }],
+            videos: [{ id: 70, name: 'clip.mp4', playbackUrl: null }],
           })
         )
       )

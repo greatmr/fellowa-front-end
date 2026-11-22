@@ -232,7 +232,7 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
     const input = saveInputFromDraft(
       draft({
         media: 'video',
-        upload: { id: 70, name: 'clip', attached: false },
+        upload: { id: 70, name: 'clip', playbackUrl: null, attached: false },
       }),
       'publish',
       null
@@ -245,13 +245,14 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
   it('sends an audio id only for a new upload, never the saved one again', () => {
     const saved = ownerPost({
       type: 'audio',
-      audios: [{ id: 81, name: 'ep1.mp3' }],
+      audios: [{ id: 81, name: 'ep1.mp3', playbackUrl: null }],
     })
     const fromSaved = draftFromPost(saved)
     expect(fromSaved.media).toBe('audio')
     expect(fromSaved.upload).toEqual({
       id: 81,
       name: 'ep1.mp3',
+      playbackUrl: null,
       attached: true,
     })
     const input = saveInputFromDraft(fromSaved, 'publish', saved)
@@ -265,7 +266,7 @@ describe('video, audio and poll posts (FE-POST-02)', () => {
       {
         ...draftFromPost(saved),
         media: 'video',
-        upload: { id: 5, name: null, attached: false },
+        upload: { id: 5, name: null, playbackUrl: null, attached: false },
       },
       'draft',
       saved
