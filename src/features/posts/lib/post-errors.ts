@@ -1,4 +1,5 @@
 import type { ApiError } from '@/lib/api/errors'
+import type { UploadProblem } from '@/lib/api/upload-problem'
 
 /** `posts.errors.*` keys, one per failure the panel explains. */
 export type PostErrorKey =
@@ -38,4 +39,26 @@ export function postErrorKey(error: ApiError): PostErrorKey {
       return 'notFound'
   }
   return error.status === 404 ? 'notFound' : 'generic'
+}
+
+/**
+ * `posts.composer.uploadErrors.*`: the upload failures worded the same for
+ * every post field. `null` for the ones each field words itself (`size`,
+ * `type`, `unavailable`, `failed`) and for `noPage`, which is a notice.
+ */
+export type SharedUploadLine =
+  'sessionExpired' | 'storage' | 'requestRefused' | 'accountRefused'
+
+export function sharedUploadLine(
+  problem: UploadProblem | null
+): SharedUploadLine | null {
+  switch (problem) {
+    case 'sessionExpired':
+    case 'storage':
+    case 'requestRefused':
+    case 'accountRefused':
+      return problem
+    default:
+      return null
+  }
 }

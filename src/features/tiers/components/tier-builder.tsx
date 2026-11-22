@@ -64,6 +64,7 @@ import {
 } from '@/features/tiers/schemas/tier'
 import type { Tier, TierRole } from '@/features/tiers/types/tier'
 import type { ApiError } from '@/lib/api/errors'
+import { uploadProblem, type UploadProblem } from '@/lib/api/upload-problem'
 import { cn } from '@/lib/utils'
 
 type RolesState = {
@@ -83,41 +84,11 @@ type Props = {
   onDelete: (tier: Tier) => void
 }
 
-type CoverProblem =
-  | 'type'
-  | 'size'
-  | 'unavailable'
-  | 'storage'
-  | 'requestRefused'
-  | 'accountRefused'
-  | 'failed'
-  | null
+/** The cover's line; `noPage` and `sessionExpired` are not lines (below). */
+type CoverProblem = Exclude<UploadProblem, 'noPage' | 'sessionExpired'> | null
 
 const NO_PAGE = 'USER_ALIAS_REQUIRED'
 const PRICE_BELOW_MINIMUM = 'TIER_PRICE_BELOW_MINIMUM'
-/** 503 from `StorageService` when the server has no object storage. */
-const STORAGE_NOT_CONFIGURED = 'INTEGRATION_NOT_CONFIGURED'
-/** 403 from the action's Origin check (`mutation` in `server/actions.ts`). */
-const REQUEST_REFUSED = 'INVALID_REQUEST'
-
-/**
- * The line a failed `POST /tire/cover` shows (FE-TIER-04). A 401 is a toast,
- * not a line, and the alias case has its own notice; both are handled first.
- */
-function coverUploadProblem(error: ApiError): CoverProblem {
-  if (error.status === 413) return 'size'
-  if (error.status === 415) return 'type'
-  if (error.status === 503 && error.code === STORAGE_NOT_CONFIGURED) {
-    return 'unavailable'
-  }
-  if (error.status === 500) return 'storage'
-  if (error.status === 403) {
-    // Without the Origin code it is `authorizedToken`: another account's
-    // tab, or an unverified one.
-    return error.code === REQUEST_REFUSED ? 'requestRefused' : 'accountRefused'
-  }
-  return 'failed'
-}
 
 const COVER_PROBLEM_KEY = {
   type: 'coverTypeError',
@@ -253,9 +224,12 @@ export function TierBuilder({
       onSuccess: (cover) =>
         setDraft({ coverId: cover.id, coverUrl: cover.url }),
       onError: (error) => {
-        if (error.code === NO_PAGE) setNoPage(true)
-        else if (error.status === 401) toast.error(t('sessionExpired'))
-        else setCoverProblem(coverUploadProblem(error))
+        // FE-TIER-04: a 401 is a toast, not a line, and the alias case has
+        // its own notice; the rest is the shared upload table.
+        const problem = uploadProblem(error)
+        if (problem === 'noPage') setNoPage(true)
+        else if (problem === 'sessionExpired') toast.error(t('sessionExpired'))
+        else setCoverProblem(problem)
       },
     })
   }

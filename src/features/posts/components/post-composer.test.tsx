@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn<Mutate>(),
   removeImage: vi.fn<Mutate>(),
   uploadMedia: vi.fn<Mutate>(),
+  uploadAttachment: vi.fn<(variables: unknown) => Promise<unknown>>(),
   mediaPending: false,
   push: vi.fn(),
   replace: vi.fn(),
@@ -45,7 +46,10 @@ vi.mock('@/features/posts/api/post-hooks', () => ({
     isPending: mocks.mediaPending,
     mutate: mocks.uploadMedia,
   }),
-  useUploadPostAttachmentMutation: () => mutation(vi.fn()),
+  useUploadPostAttachmentMutation: () => ({
+    isPending: false,
+    mutateAsync: mocks.uploadAttachment,
+  }),
   useDeletePostAttachmentMutation: () => mutation(vi.fn()),
 }))
 vi.mock('@/features/tiers/client', () => ({ useTiersQuery: () => mocks.tiers }))
@@ -89,6 +93,7 @@ describe('PostComposer', () => {
       mocks.upload,
       mocks.removeImage,
       mocks.uploadMedia,
+      mocks.uploadAttachment,
       mocks.push,
       mocks.replace,
       mocks.toastSuccess,
@@ -116,7 +121,10 @@ describe('PostComposer', () => {
         screen.getByRole('radio', { name: new RegExp(t.access.tiers) })
       )
       expect(screen.getByText(t.access.laterTiersNote)).toBeInTheDocument()
-      expect(screen.getByText(t.attachments.saveFirst)).toBeInTheDocument()
+      // FE-POST-05: the paperclip works before the first save.
+      expect(
+        screen.getByRole('button', { name: t.attachments.add })
+      ).toBeEnabled()
       unmount()
       renderComposer(ownerPost({ isPublic: false, paywallPosition: 3 }), locale)
       expect(screen.getByText(t.access.keepTitle)).toBeInTheDocument()
@@ -372,6 +380,274 @@ describe('PostComposer', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
+  describe('upload failures (FE-POST-05)', () => {
+    const png = () => new File(['x'], 'a.png', { type: 'image/png' })
+
+    it.each([
+      [503, 'INTEGRATION_NOT_CONFIGURED', c.images.unavailable],
+      [500, undefined, c.uploadErrors.storage],
+      [413, 'UPLOAD_TOO_LARGE', c.images.sizeError],
+      [415, 'UPLOAD_TYPE_NOT_ALLOWED', c.images.typeError],
+      [403, 'INVALID_REQUEST', c.uploadErrors.requestRefused],
+      [403, undefined, c.uploadErrors.accountRefused],
+      [400, 'INVALID_REQUEST', c.images.uploadError],
+    ] as const)(
+      'explains an image upload answered %i %s',
+      async (status, code, message) => {
+        const user = userEvent.setup()
+        renderComposer()
+        await user.click(
+          screen.getByRole('button', { name: c.mediaChoice.image })
+        )
+        await user.upload(screen.getByTestId('post-image-input'), png())
+        const onError = mocks.upload.mock.calls[0]![1]?.onError as (
+          error: ApiError
+        ) => void
+        act(() => onError(new ApiError({ message: 'x', status, code })))
+        expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      }
+    )
+
+    it('turns an image 401 into the toast and the alias code into the notice', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.click(
+        screen.getByRole('button', { name: c.mediaChoice.image })
+      )
+      await user.upload(screen.getByTestId('post-image-input'), png())
+      await user.upload(screen.getByTestId('post-image-input'), png())
+      const [first, second] = mocks.upload.mock.calls.map(
+        (call) => call[1]?.onError as (error: ApiError) => void
+      )
+      act(() => first!(new ApiError({ message: 'x', status: 401 })))
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        en.posts.errors.sessionExpired
+      )
+      act(() =>
+        second!(
+          new ApiError({
+            message: 'x',
+            status: 400,
+            code: 'USER_ALIAS_REQUIRED',
+          })
+        )
+      )
+      expect(
+        await screen.findByText(en.posts.aliasRequired.title)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(c.images.uploadError)).not.toBeInTheDocument()
+    })
+
+    it('says storage is off on a saved post’s attachment and offers no retry', async () => {
+      const user = userEvent.setup()
+      renderComposer(ownerPost({ id: 12 }))
+      mocks.uploadAttachment.mockRejectedValueOnce(
+        new ApiError({
+          message: 'object storage is not configured on this server',
+          status: 503,
+          code: 'INTEGRATION_NOT_CONFIGURED',
+        })
+      )
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      expect(mocks.uploadAttachment).toHaveBeenCalledWith({
+        postId: 12,
+        file: expect.any(File),
+      })
+      expect(
+        await screen.findByText(c.attachments.unavailable)
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Remove a.png' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Retry uploading a.png' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('retries a saved post’s attachment after a storage failure', async () => {
+      const user = userEvent.setup()
+      renderComposer(ownerPost({ id: 12 }))
+      mocks.uploadAttachment
+        .mockRejectedValueOnce(
+          new ApiError({ message: 'S3 upload failed: x', status: 500 })
+        )
+        .mockResolvedValueOnce({ id: 3, url: 'http://localhost:9000/b/k.pdf' })
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      expect(
+        await screen.findByText(c.uploadErrors.storage)
+      ).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', { name: 'Retry uploading a.png' })
+      )
+      expect(mocks.uploadAttachment).toHaveBeenCalledTimes(2)
+      // Sent: the refetched server list shows it, so the queue drops it.
+      await vi.waitFor(() =>
+        expect(screen.queryByText('a.png')).not.toBeInTheDocument()
+      )
+    })
+
+    it('queues an attachment on a new post and sends it after the first draft save', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Draft')
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      expect(screen.getByText('a.png')).toBeInTheDocument()
+      expect(screen.getByText(c.attachments.status.queued)).toBeInTheDocument()
+      expect(screen.getByText(c.attachments.queuedNote)).toBeInTheDocument()
+      expect(mocks.uploadAttachment).not.toHaveBeenCalled()
+
+      let finish: (value: unknown) => void = () => {}
+      mocks.uploadAttachment.mockReturnValueOnce(
+        new Promise((resolve) => (finish = resolve))
+      )
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 77, publishedAt: null })
+        )
+      )
+      act(() => (lastSave()[1]?.onSettled as () => void)())
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(c.draftToast)
+      expect(mocks.uploadAttachment).toHaveBeenCalledWith({
+        postId: 77,
+        file: expect.any(File),
+      })
+      expect(
+        await screen.findByText(c.attachments.status.uploading)
+      ).toBeInTheDocument()
+      // Waits for the file; a second save would create a second post.
+      expect(mocks.replace).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: c.saveDraft })).toBeDisabled()
+      await act(async () => finish({ id: 1, url: null }))
+      expect(mocks.replace).toHaveBeenCalledWith('/posts/77/edit')
+    })
+
+    it('keeps a failed attachment after publishing, says so, and moves on once retried', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Post')
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      mocks.uploadAttachment
+        .mockRejectedValueOnce(
+          new ApiError({ message: 'S3 upload failed: x', status: 500 })
+        )
+        .mockResolvedValueOnce({ id: 1, url: null })
+      await user.click(screen.getByRole('button', { name: c.publish }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 78 })
+        )
+      )
+      act(() => (lastSave()[1]?.onSettled as () => void)())
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(c.publishedToast)
+      expect(
+        await screen.findByText(
+          'The post was published, but 1 attachment did not upload. Retry or remove it, or continue without it and add attachments later from the editor.'
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByText(c.uploadErrors.storage)).toBeInTheDocument()
+      expect(mocks.push).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: c.publish })).toBeDisabled()
+      // Moving on reloads the saved post, so the form waits read-only.
+      expect(title()).toBeDisabled()
+      expect(body()).toBeDisabled()
+      await user.click(
+        screen.getByRole('button', { name: 'Retry uploading a.png' })
+      )
+      expect(mocks.uploadAttachment).toHaveBeenLastCalledWith({
+        postId: 78,
+        file: expect.any(File),
+      })
+      await vi.waitFor(() => expect(mocks.push).toHaveBeenCalledWith('/posts'))
+      expect(mocks.save).toHaveBeenCalledTimes(1)
+    })
+
+    it('tells the owner once when the session ends mid-queue, and sends no more', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Draft')
+      await user.upload(screen.getByTestId('post-attachment-input'), [
+        png(),
+        new File(['y'], 'b.pdf', { type: 'application/pdf' }),
+      ])
+      mocks.uploadAttachment.mockRejectedValueOnce(
+        new ApiError({ message: 'Unauthorized', status: 401 })
+      )
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 81, publishedAt: null })
+        )
+      )
+      expect(
+        await screen.findAllByText(c.uploadErrors.sessionExpired)
+      ).toHaveLength(2)
+      expect(mocks.uploadAttachment).toHaveBeenCalledTimes(1)
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+      expect(
+        screen.getByRole('button', {
+          name: 'Continue without them',
+        })
+      ).toBeInTheDocument()
+    })
+
+    it('lets the owner continue without a failed attachment', async () => {
+      const user = userEvent.setup()
+      renderComposer()
+      await user.type(title(), 'Draft')
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      mocks.uploadAttachment.mockRejectedValueOnce(
+        new ApiError({
+          message: 'x',
+          status: 503,
+          code: 'INTEGRATION_NOT_CONFIGURED',
+        })
+      )
+      await user.click(screen.getByRole('button', { name: c.saveDraft }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 79, publishedAt: null })
+        )
+      )
+      expect(
+        await screen.findByText(c.attachments.unavailable)
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Retry uploading a.png' })
+      ).not.toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', { name: 'Continue without it' })
+      )
+      expect(mocks.replace).toHaveBeenCalledWith('/posts/79/edit')
+    })
+
+    it('words the partial save in Persian', async () => {
+      const user = userEvent.setup()
+      renderComposer(null, 'fa')
+      const f = fa.posts.composer
+      await user.type(
+        screen.getByRole('textbox', { name: f.titleLabel }),
+        'پست'
+      )
+      await user.upload(screen.getByTestId('post-attachment-input'), png())
+      mocks.uploadAttachment.mockRejectedValueOnce(
+        new ApiError({ message: 'x', status: 403, code: 'INVALID_REQUEST' })
+      )
+      await user.click(screen.getByRole('button', { name: f.saveDraft }))
+      act(() =>
+        (lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+          ownerPost({ id: 80, publishedAt: null })
+        )
+      )
+      expect(
+        await screen.findByText(f.uploadErrors.requestRefused)
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/پیش‌نویس ذخیره شد، اما ۱ پیوست آپلود نشد/)
+      ).toBeInTheDocument()
+    })
+  })
+
   describe('video, audio and poll blocks (FE-POST-02)', () => {
     type MediaVariables = {
       file: File
@@ -494,19 +770,24 @@ describe('PostComposer', () => {
       const user = userEvent.setup()
       renderComposer()
       await choose(c.mediaChoice.video)
-      for (const [code, message] of [
-        ['INTEGRATION_NOT_CONFIGURED', c.media.unavailable],
-        ['UPLOAD_TOO_LARGE', c.media.video.sizeError],
-        ['CONTENT_UPLOAD_NOT_FOUND', c.media.uploadError],
+      // The envelopes `upload/init`, `chunk` and `finalize-*` answer with.
+      for (const [status, code, message] of [
+        [503, 'INTEGRATION_NOT_CONFIGURED', c.media.unavailable],
+        [413, 'UPLOAD_TOO_LARGE', c.media.video.sizeError],
+        [413, 'PAYLOAD_TOO_LARGE', c.media.video.sizeError],
+        [415, 'UPLOAD_TYPE_NOT_ALLOWED', c.media.video.typeError],
+        [404, 'CONTENT_UPLOAD_NOT_FOUND', c.media.uploadError],
+        [500, undefined, c.uploadErrors.storage],
+        // Another 503 is not "not configured".
+        [503, undefined, c.media.uploadError],
+        [403, 'INVALID_REQUEST', c.uploadErrors.requestRefused],
       ] as const) {
         await user.upload(
           screen.getByTestId('post-video-input'),
           new File(['x'], 'clip.mp4', { type: 'video/mp4' })
         )
         act(() =>
-          lastMedia()[1].onError(
-            new ApiError({ message: 'x', status: 400, code })
-          )
+          lastMedia()[1].onError(new ApiError({ message: 'x', status, code }))
         )
         expect(await screen.findByRole('alert')).toHaveTextContent(message)
       }
