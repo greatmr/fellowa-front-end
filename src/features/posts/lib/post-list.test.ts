@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { ownerPost } from '../test/fixtures'
 import {
   defaultListFilters,
+  effectiveFilters,
   filterPosts,
   hasActiveFilters,
   searchableText,
@@ -61,6 +62,30 @@ describe('posts list, client side over GET /content', () => {
     expect(hasActiveFilters({ ...defaultListFilters, access: 'free' })).toBe(
       true
     )
+  })
+
+  it('filters by one collection or by posts in none (BE-CONT-15 collectionIds)', () => {
+    const list = [
+      ownerPost({ id: 1, collectionIds: [5] }),
+      ownerPost({ id: 2, collectionIds: [5, 6] }),
+      ownerPost({ id: 3, collectionIds: [] }),
+    ]
+    const by = (collection: 'none' | number) =>
+      ids(filterPosts(list, 'all', { ...defaultListFilters, collection }, 'en'))
+    expect(by(5).sort()).toEqual([1, 2])
+    expect(by(6)).toEqual([2])
+    expect(by('none')).toEqual([3])
+    expect(
+      hasActiveFilters({ ...defaultListFilters, collection: 'none' })
+    ).toBe(true)
+  })
+
+  it('drops a collection filter whose collection is gone', () => {
+    const filters = { ...defaultListFilters, collection: 7 }
+    expect(effectiveFilters(filters, [7, 8])).toBe(filters)
+    expect(effectiveFilters(filters, [8]).collection).toBe('all')
+    const none = { ...defaultListFilters, collection: 'none' as const }
+    expect(effectiveFilters(none, [])).toBe(none)
   })
 
   it('cuts the snippet in code points', () => {

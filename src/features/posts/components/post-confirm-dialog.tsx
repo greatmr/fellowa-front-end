@@ -12,12 +12,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+export type ConfirmKind =
+  | 'confirmDelete'
+  | 'confirmUnpublish'
+  | 'bulk.confirmDelete'
+  | 'bulk.confirmUnpublish'
+  | 'collections.confirmDelete'
+
 type Props = {
-  /** `posts.confirmDelete` or `posts.confirmUnpublish`. */
-  kind: 'confirmDelete' | 'confirmUnpublish'
+  /** The `posts.*` namespace with `title`, `body`, `confirm`, `pending`. */
+  kind: ConfirmKind
   open: boolean
-  /** Kept while the dialog animates closed, so its text does not change. */
-  title: string
+  /**
+   * The heading's values: a post's or collection's `title`, or the bulk
+   * `count`. Kept while the dialog animates closed, so its text does not
+   * change.
+   */
+  values: { title?: string; count?: number }
   pending: boolean
   /** The server's refusal, already translated; `null` for none. */
   error: string | null
@@ -25,11 +36,14 @@ type Props = {
   onClose: () => void
 }
 
-/** Confirms a row's delete or unpublish (FQ-30 (5): per-row actions only). */
+/**
+ * Confirms a destructive step: a row's or the selection's delete or
+ * unpublish (FQ-30 (5)), or a collection's delete.
+ */
 export function PostConfirmDialog({
   kind,
   open,
-  title,
+  values,
   pending,
   error,
   onConfirm,
@@ -47,7 +61,12 @@ export function PostConfirmDialog({
     >
       <DialogContent closeLabel={tCommon('close')}>
         <DialogHeader>
-          <DialogTitle dir="auto">{t('title', { title })}</DialogTitle>
+          <DialogTitle dir="auto">
+            {t('title', {
+              title: values.title ?? '',
+              count: values.count ?? 0,
+            })}
+          </DialogTitle>
           <DialogDescription className="leading-6">
             {t('body')}
           </DialogDescription>
@@ -68,7 +87,7 @@ export function PostConfirmDialog({
           </Button>
           <Button
             type="button"
-            variant={kind === 'confirmDelete' ? 'destructive' : 'inverse'}
+            variant={kind.endsWith('confirmDelete') ? 'destructive' : 'inverse'}
             disabled={pending}
             onClick={onConfirm}
           >

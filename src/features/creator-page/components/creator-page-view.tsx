@@ -2,6 +2,7 @@ import {
   CheckIcon,
   ExternalLinkIcon,
   FileTextIcon,
+  FolderOpen,
   GemIcon,
   HeartIcon,
   InfoIcon,
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CopyLinkButton } from '@/features/creator-page/components/copy-link-button'
+import { CreatorCollections } from '@/features/creator-page/components/creator-collections'
 import { CreatorPostList } from '@/features/creator-page/components/creator-post-list'
 import { CreatorStickyHeader } from '@/features/creator-page/components/creator-sticky-header'
 import {
@@ -54,7 +56,9 @@ const HERO_ID = 'creator-page-hero'
  * and identity, follower and post chips, tabs Posts · Tiers · About, in one
  * column at the public page width. Posts come from the public list (Q-51):
  * FULL, PARTIAL or TEASER as the server decided, the same for every viewer
- * (FQ-33 A). The owner view is display only; the backend refuses
+ * (FQ-33 A). Collections (FQ-35, BE-CONT-15) are a tab of their own when
+ * the creator has any: beyond the design, in the page's own patterns. The
+ * owner view is display only; the backend refuses
  * self-interaction. Not ported: the support widget with goal, tips and
  * crypto (FQ-2/3/31), member counts (none is public), "most popular" and
  * trial (FQ-12/11), single-post purchase, the avatar shuffle, likes and
@@ -64,6 +68,7 @@ export function CreatorPageView({
   profile,
   tiers,
   posts,
+  collections,
   categoryTitle,
   viewer,
   pageUrl,
@@ -76,6 +81,15 @@ export function CreatorPageView({
   const initial = title?.initial ?? name.slice(0, 1)
   const showAlias = Boolean(title && !title.isAlias && profile.alias)
   const following = profile.viewerFollows ?? false
+  // The Collections tab only when there is something to open (FQ-35; an
+  // addition beyond the design, which has none).
+  const shownCollections =
+    collections !== null && collections.length > 0 ? collections : null
+  const visibleTabs = creatorPageTabs.filter(
+    (tab) => tab !== 'collections' || shownCollections !== null
+  )
+  const startTab = visibleTabs.includes(initialTab) ? initialTab : 'posts'
+  const author = { name, initial, avatarUrl: profile.avatarUrl }
 
   const tabLabels: Record<CreatorPageTab, string> = {
     posts:
@@ -92,11 +106,18 @@ export function CreatorPageView({
             label: t('tabs.tiers'),
             count: format.number(tiers.length),
           }),
+    collections:
+      shownCollections === null
+        ? t('tabs.collections')
+        : t('tabs.withCount', {
+            label: t('tabs.collections'),
+            count: format.number(shownCollections.length),
+          }),
     about: t('tabs.about'),
   }
 
   return (
-    <CreatorTabsProvider initialTab={initialTab}>
+    <CreatorTabsProvider initialTab={startTab}>
       <CreatorStickyHeader
         watchId={HERO_ID}
         identity={
@@ -127,6 +148,7 @@ export function CreatorPageView({
         }
         tabs={
           <MiniTabs
+            tabs={visibleTabs}
             labels={tabLabels}
             className="hidden items-center gap-1 rounded-md bg-muted p-1 sm:flex"
           />
@@ -251,6 +273,14 @@ export function CreatorPageView({
                 label={t('tabs.posts')}
                 count={posts === null ? null : format.number(posts.total)}
               />
+              {shownCollections === null ? null : (
+                <UnderlineTab
+                  value="collections"
+                  icon={<FolderOpen aria-hidden />}
+                  label={t('tabs.collections')}
+                  count={format.number(shownCollections.length)}
+                />
+              )}
               <UnderlineTab
                 value="tiers"
                 icon={<SparklesIcon aria-hidden />}
@@ -279,10 +309,20 @@ export function CreatorPageView({
               <CreatorPostList
                 creatorId={profile.id}
                 firstPage={posts}
-                author={{ name, initial, avatarUrl: profile.avatarUrl }}
+                author={author}
               />
             )}
           </TabsContent>
+
+          {shownCollections === null ? null : (
+            <TabsContent value="collections" className="mt-8">
+              <CreatorCollections
+                creatorId={profile.id}
+                collections={shownCollections}
+                author={author}
+              />
+            </TabsContent>
+          )}
 
           <TabsContent value="tiers" className="mt-8 grid gap-6">
             <div>

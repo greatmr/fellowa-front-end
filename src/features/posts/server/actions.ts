@@ -22,6 +22,29 @@ import {
   POST_IMAGE_TYPES,
   fileProblem,
 } from '@/features/posts/lib/upload-limits'
+import {
+  assignCollections,
+  createCollection,
+  deleteCollection,
+  listOwnCollections,
+  setPostCollections,
+  updateCollection,
+} from '@/features/posts/api/collection-api'
+import {
+  assignCollectionsSchema,
+  collectionIdSchema,
+  createCollectionSchema,
+  setPostCollectionsSchema,
+  updateCollectionSchema,
+} from '@/features/posts/schemas/collection'
+import type {
+  AssignCollectionsInput,
+  CreateCollectionInput,
+  OwnerCollection,
+  PostCollections,
+  SetPostCollectionsInput,
+  UpdateCollectionInput,
+} from '@/features/posts/types/collection'
 import { MEDIA_CHUNK_BYTES } from '@/features/posts/lib/media-upload-limits'
 import {
   InvalidPostResponseError,
@@ -247,5 +270,71 @@ export async function finalizeMediaUploadForHook(
     const parsed = mediaUploadFinishSchema.safeParse(finish)
     if (!parsed.success) invalidPost()
     return finalizeMediaUpload(await authorizedToken(viewerId), parsed.data)
+  })
+}
+
+// ---- Collections (BE-CONT-15) ----------------------------------------------
+
+export async function listCollectionsForHook(
+  viewerId: number
+): Promise<ApiActionResult<OwnerCollection[]>> {
+  if (!validId(viewerId)) return invalidRequest
+  return execute(async () =>
+    listOwnCollections(await authorizedToken(viewerId))
+  )
+}
+
+export async function createCollectionForHook(
+  viewerId: number,
+  input: CreateCollectionInput
+): Promise<ApiActionResult<OwnerCollection>> {
+  return mutation(async () => {
+    const parsed = createCollectionSchema.safeParse(input)
+    if (!parsed.success) invalidPost()
+    return createCollection(await authorizedToken(viewerId), parsed.data)
+  })
+}
+
+export async function updateCollectionForHook(
+  viewerId: number,
+  input: UpdateCollectionInput
+): Promise<ApiActionResult<OwnerCollection>> {
+  return mutation(async () => {
+    const parsed = updateCollectionSchema.safeParse(input)
+    if (!parsed.success) invalidPost()
+    return updateCollection(await authorizedToken(viewerId), parsed.data)
+  })
+}
+
+export async function deleteCollectionForHook(
+  viewerId: number,
+  collectionId: number
+): Promise<ApiActionResult<null>> {
+  return mutation(async () => {
+    if (!collectionIdSchema.safeParse(collectionId).success) invalidPost()
+    await deleteCollection(await authorizedToken(viewerId), collectionId)
+    return null
+  })
+}
+
+export async function setPostCollectionsForHook(
+  viewerId: number,
+  input: SetPostCollectionsInput
+): Promise<ApiActionResult<PostCollections>> {
+  return mutation(async () => {
+    const parsed = setPostCollectionsSchema.safeParse(input)
+    if (!parsed.success) invalidPost()
+    return setPostCollections(await authorizedToken(viewerId), parsed.data)
+  })
+}
+
+export async function assignCollectionsForHook(
+  viewerId: number,
+  input: AssignCollectionsInput
+): Promise<ApiActionResult<PostCollections[]>> {
+  return mutation(async () => {
+    const parsed = assignCollectionsSchema.safeParse(input)
+    if (!parsed.success) invalidPost()
+    return assignCollections(await authorizedToken(viewerId), parsed.data)
   })
 }

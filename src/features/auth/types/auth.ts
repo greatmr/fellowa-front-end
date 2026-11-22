@@ -46,6 +46,11 @@ export type AuthUser = {
    * that step reads it.
    */
   categoryId?: number | null
+  /**
+   * The page is published (`toSelfProfile` `isPublish`, owner-only): only
+   * then is `/creators/:id` public. Absent reads as unpublished.
+   */
+  isPublish?: boolean
 }
 
 export type AuthValidationMessages = Record<AuthFieldError, string>

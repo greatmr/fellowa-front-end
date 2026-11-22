@@ -12,6 +12,8 @@ export type PostErrorKey =
   | 'imageNotFound'
   | 'mediaNotFound'
   | 'pollLocked'
+  | 'collectionNotFound'
+  | 'collectionTitleTaken'
   | 'network'
 
 /** `USER_ALIAS_REQUIRED`: the caller has no page yet; a notice, not a line. */
@@ -37,6 +39,10 @@ export function postErrorKey(error: ApiError): PostErrorKey {
       return 'pollLocked'
     case 'CONTENT_NOT_FOUND':
       return 'notFound'
+    case 'CONTENT_COLLECTION_NOT_FOUND':
+      return 'collectionNotFound'
+    case 'CONTENT_COLLECTION_TITLE_TAKEN':
+      return 'collectionTitleTaken'
   }
   return error.status === 404 ? 'notFound' : 'generic'
 }

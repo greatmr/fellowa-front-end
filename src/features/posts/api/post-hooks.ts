@@ -8,6 +8,12 @@ import {
 } from '@tanstack/react-query'
 
 import {
+  assignCollectionsForHook,
+  createCollectionForHook,
+  deleteCollectionForHook,
+  listCollectionsForHook,
+  setPostCollectionsForHook,
+  updateCollectionForHook,
   deletePostAttachmentForHook,
   deletePostForHook,
   deletePostImageForHook,
@@ -26,6 +32,22 @@ import {
   type MediaUploadCancelledError,
   type MediaUploadProgress,
 } from '@/features/posts/lib/media-upload'
+import {
+  chunk,
+  runBulk,
+  type BulkOutcome,
+  type BulkProgress,
+} from '@/features/posts/lib/bulk'
+import { statusInput } from '@/features/posts/lib/post-draft'
+import { MAX_COLLECTION_IDS } from '@/features/posts/schemas/collection'
+import type {
+  AssignCollectionsInput,
+  CreateCollectionInput,
+  OwnerCollection,
+  PostCollections,
+  SetPostCollectionsInput,
+  UpdateCollectionInput,
+} from '@/features/posts/types/collection'
 import type {
   MediaUploadKind,
   PostFile,
@@ -46,6 +68,9 @@ export const postKeys = {
   list: (viewerId: number) => ['posts', viewerId, 'list'] as const,
   detail: (viewerId: number, postId: number) =>
     ['posts', viewerId, 'detail', postId] as const,
+  /** Under the viewer: every post write refreshes the counts too. */
+  collections: (viewerId: number) =>
+    ['posts', viewerId, 'collections'] as const,
   mutation: (name: string, viewerId: number) =>
     ['posts', 'mutation', name, viewerId] as const,
 }
@@ -216,5 +241,142 @@ export function useUploadPostMediaMutation(viewerId: number) {
         },
         { onProgress, isCancelled }
       ),
+  })
+}
+
+// ---- Collections (BE-CONT-15) ----------------------------------------------
+
+/**
+ * The owner's collections. `staleTime: 0` as for the posts: counts change
+ * with every post write, which invalidates the whole viewer key.
+ */
+export function useCollectionsQuery(viewerId: number) {
+  return useQuery<OwnerCollection[], ApiError>({
+    queryKey: postKeys.collections(viewerId),
+    queryFn: async () =>
+      unwrapApiActionResult(await listCollectionsForHook(viewerId)),
+    enabled: validId(viewerId),
+    staleTime: 0,
+  })
+}
+
+export function useCreateCollectionMutation(
+  viewerId: number,
+  options?: MutationOptions<OwnerCollection, CreateCollectionInput>
+) {
+  return usePostMutation(
+    'createCollection',
+    viewerId,
+    (input: CreateCollectionInput) => createCollectionForHook(viewerId, input),
+    options
+  )
+}
+
+export function useUpdateCollectionMutation(
+  viewerId: number,
+  options?: MutationOptions<OwnerCollection, UpdateCollectionInput>
+) {
+  return usePostMutation(
+    'updateCollection',
+    viewerId,
+    (input: UpdateCollectionInput) => updateCollectionForHook(viewerId, input),
+    options
+  )
+}
+
+export function useDeleteCollectionMutation(
+  viewerId: number,
+  options?: MutationOptions<null, number>
+) {
+  return usePostMutation(
+    'deleteCollection',
+    viewerId,
+    (collectionId: number) => deleteCollectionForHook(viewerId, collectionId),
+    options
+  )
+}
+
+/** Replace one post's collections (the row cell, the composer). */
+export function useSetPostCollectionsMutation(
+  viewerId: number,
+  options?: MutationOptions<PostCollections, SetPostCollectionsInput>
+) {
+  return usePostMutation(
+    'postCollections',
+    viewerId,
+    (input: SetPostCollectionsInput) =>
+      setPostCollectionsForHook(viewerId, input),
+    options
+  )
+}
+
+/**
+ * Bulk add: every post into every collection, in requests of at most 100
+ * posts, one after another. A repeat is harmless (`ON CONFLICT DO NOTHING`),
+ * so after a failure the whole selection can be sent again.
+ */
+export function useAssignCollectionsMutation(
+  viewerId: number,
+  options?: MutationOptions<PostCollections[], AssignCollectionsInput>
+) {
+  const queryClient = useQueryClient()
+  return useMutation<PostCollections[], ApiError, AssignCollectionsInput>({
+    ...options,
+    mutationKey: postKeys.mutation('assignCollections', viewerId),
+    mutationFn: async ({ postIds, collectionIds }) => {
+      const results: PostCollections[] = []
+      for (const ids of chunk(postIds, MAX_COLLECTION_IDS)) {
+        results.push(
+          ...unwrapApiActionResult(
+            await assignCollectionsForHook(viewerId, {
+              postIds: ids,
+              collectionIds,
+            })
+          )
+        )
+      }
+      return results
+    },
+    // Settled, not only succeeded: an earlier request may have gone through.
+    onSettled: async (...args) => {
+      await queryClient.invalidateQueries({
+        queryKey: postKeys.viewer(viewerId),
+      })
+      await options?.onSettled?.(...args)
+    },
+  })
+}
+
+export type BulkAction = 'publish' | 'draft' | 'delete'
+
+export type BulkVariables = {
+  action: BulkAction
+  posts: OwnerPost[]
+  onProgress?: (progress: BulkProgress) => void
+}
+
+/**
+ * Bulk publish, draft or delete through the per-post routes, at most
+ * `BULK_CONCURRENCY` at a time. Resolves with every post's outcome; a post
+ * that failed does not fail the batch. The list refetches once, at the end.
+ */
+export function useBulkPostsMutation(viewerId: number) {
+  const queryClient = useQueryClient()
+  return useMutation<BulkOutcome<OwnerPost>[], ApiError, BulkVariables>({
+    mutationKey: postKeys.mutation('bulk', viewerId),
+    mutationFn: ({ action, posts, onProgress }) =>
+      runBulk(
+        posts,
+        async (post) => {
+          unwrapApiActionResult(
+            action === 'delete'
+              ? await deletePostForHook(viewerId, post.id)
+              : await setPostStatusForHook(viewerId, statusInput(post, action))
+          )
+        },
+        { onProgress }
+      ),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: postKeys.viewer(viewerId) }),
   })
 }

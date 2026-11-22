@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type {
+  CreatorCollection,
   CreatorLink,
   CreatorPost,
   CreatorPostPage,
@@ -183,6 +184,18 @@ export function parseCreatorPostPage(
     }
   })
   return { items, total: raw.page.total, nextPage: raw.page.next }
+}
+
+const rawCollectionSchema = z.object({
+  id,
+  title: z.string(),
+  description: z.string().nullable(),
+  postCount: z.number().int().nonnegative(),
+})
+
+/** `GET /landing/creators/:id/collections`: newest first. */
+export function parseCreatorCollections(value: unknown): CreatorCollection[] {
+  return parseEnvelope(z.array(rawCollectionSchema), value, invalid)
 }
 
 /** PostgreSQL `integer` ids; larger values would overflow the backend column. */

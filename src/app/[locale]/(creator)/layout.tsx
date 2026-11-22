@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { SessionGate } from '@/features/auth/components/session-gate'
 import { SidebarAccount } from '@/features/auth/components/sidebar-account'
 import { getSession } from '@/features/auth/server/session'
-import { publicPageAddress } from '@/features/dashboard'
+import { ownPageHref as ownPageHrefOf } from '@/features/dashboard'
 import { routing } from '@/i18n/routing'
 
 /**
@@ -56,12 +56,9 @@ export default async function CreatorLayout({
  */
 async function CreatorFrame({ children }: { children: React.ReactNode }) {
   const session = await getSession()
-  // Without an address (no alias yet) there is no public page to open: the
-  // backend answers 404, so the item is left out until the address is chosen.
-  const ownPageHref =
-    session && session.user.alias !== null
-      ? publicPageAddress(undefined, session.user.id).path
-      : undefined
+  // No alias: no item. Unpublished: the dashboard, since the public page
+  // answers 404 until it is published (`ownPageHref`).
+  const ownPageHref = session ? ownPageHrefOf(session.user) : undefined
 
   return (
     <AppLayout

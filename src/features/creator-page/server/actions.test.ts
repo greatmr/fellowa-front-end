@@ -22,7 +22,11 @@ vi.mock('next/headers', () => ({
 const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
-const { listCreatorPostsAction, setFollowingAction } = await import('./actions')
+const {
+  listCreatorCollectionPostsAction,
+  listCreatorPostsAction,
+  setFollowingAction,
+} = await import('./actions')
 afterAll(() => vi.unstubAllEnvs())
 
 // Fixed for the file: a token built from the clock on each call would differ
@@ -244,5 +248,71 @@ describe('listCreatorPostsAction (FE-PAGE-03)', () => {
       ok: false,
       code: 'INVALID_CREATOR_PAGE_RESPONSE',
     })
+  })
+})
+
+describe('listCreatorCollectionPostsAction (FE-POST-04, BE-CONT-15)', () => {
+  it('reads a page of one collection with no token, and keeps the 404 code', async () => {
+    let seen: { query: string; auth: string | null } | null = null
+    server.use(
+      http.get(
+        `${apiOrigin}/landing/creators/4/collections/7/posts`,
+        ({ request: r }) => {
+          seen = {
+            query: new URL(r.url).search,
+            auth: r.headers.get('authorization'),
+          }
+          return HttpResponse.json(ok(rawPostPage([rawTeaser()], { total: 1 })))
+        }
+      ),
+      http.get(`${apiOrigin}/landing/creators/4/collections/9/posts`, () =>
+        failure(404, 'CONTENT_COLLECTION_NOT_FOUND')
+      )
+    )
+
+    expect(
+      await listCreatorCollectionPostsAction({
+        creatorId: 4,
+        collectionId: 7,
+        page: 1,
+      })
+    ).toMatchObject({
+      ok: true,
+      data: { total: 1, items: [{ id: 11, access: 'TEASER' }] },
+    })
+    expect(seen).toEqual({ query: '?page=1&pageSize=20', auth: null })
+    expect(
+      await listCreatorCollectionPostsAction({
+        creatorId: 4,
+        collectionId: 9,
+        page: 1,
+      })
+    ).toMatchObject({
+      ok: false,
+      status: 404,
+      code: 'CONTENT_COLLECTION_NOT_FOUND',
+    })
+  })
+
+  it('refuses a malformed request, and another page’s post, without trusting it', async () => {
+    expect(
+      await listCreatorCollectionPostsAction({
+        creatorId: 4,
+        collectionId: 0,
+        page: 1,
+      })
+    ).toMatchObject({ ok: false, status: 400 })
+    server.use(
+      http.get(`${apiOrigin}/landing/creators/4/collections/7/posts`, () =>
+        HttpResponse.json(ok(rawPostPage([{ ...rawTeaser(), creatorId: 9 }])))
+      )
+    )
+    expect(
+      await listCreatorCollectionPostsAction({
+        creatorId: 4,
+        collectionId: 7,
+        page: 1,
+      })
+    ).toEqual({ ok: false, code: 'INVALID_CREATOR_PAGE_RESPONSE' })
   })
 })

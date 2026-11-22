@@ -13,7 +13,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tabs } from '@/components/ui/tabs'
 
-export const creatorPageTabs = ['posts', 'tiers', 'about'] as const
+export const creatorPageTabs = [
+  'posts',
+  'collections',
+  'tiers',
+  'about',
+] as const
 export type CreatorPageTab = (typeof creatorPageTabs)[number]
 
 /** The element the tab strip sits in, scrolled to when a tab is opened. */
@@ -101,16 +106,19 @@ export function OpenTabButton({
 
 /** The sticky header's compact tab switcher; mirrors the shared tab. */
 export function MiniTabs({
+  tabs,
   labels,
   className,
 }: {
+  /** The tabs the page shows, in order. */
+  tabs: readonly CreatorPageTab[]
   labels: Record<CreatorPageTab, string>
   className?: string
 }) {
   const { tab, selectTab } = useCreatorTab()
   return (
     <div className={className}>
-      {creatorPageTabs.map((key) => (
+      {tabs.map((key) => (
         <button
           key={key}
           type="button"

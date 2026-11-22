@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { publicPageAddress } from './public-address'
+import { ownPageHref, publicPageAddress } from './public-address'
 
 describe('publicPageAddress', () => {
   it('joins the origin and /creators/:id, without a doubled slash', () => {
@@ -14,5 +14,24 @@ describe('publicPageAddress', () => {
     expect(publicPageAddress(undefined, 42).url).toBeNull()
     expect(publicPageAddress('   ', 42).url).toBeNull()
     expect(publicPageAddress(undefined, 42).path).toBe('/creators/42')
+  })
+})
+
+describe('ownPageHref', () => {
+  it('opens the public page only when it is published', () => {
+    expect(ownPageHref({ id: 7, alias: 'sara', isPublish: true })).toBe(
+      '/creators/7'
+    )
+  })
+
+  it('goes to the dashboard while the page is unpublished, or the server did not say', () => {
+    expect(ownPageHref({ id: 7, alias: 'sara', isPublish: false })).toBe(
+      '/dashboard'
+    )
+    expect(ownPageHref({ id: 7, alias: 'sara' })).toBe('/dashboard')
+  })
+
+  it('has no item without an address', () => {
+    expect(ownPageHref({ id: 7, alias: null, isPublish: true })).toBeUndefined()
   })
 })

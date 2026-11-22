@@ -1,7 +1,7 @@
 import type { OwnerPost } from '@/features/posts/types/post'
 
 /**
- * One `GET /content` item as back-end `305c018` (BE-CONT-14) sends it: `formatForOwner`
+ * One `GET /content` item as back-end `773f88d` (BE-CONT-15) sends it: `formatForOwner`
  * (`content-format.ts`) plus `access` from `applyContentAccess`. Dates are
  * the JSON form of `timestamptz` columns.
  */
@@ -32,6 +32,7 @@ export function rawPost(overrides: Record<string, unknown> = {}) {
     bodyFormat: 'plain',
     excerpt: 'متن آزاد. ادامه برای اعضا',
     access: 'FULL',
+    collectionIds: [],
     ...overrides,
   }
 }
@@ -56,6 +57,23 @@ export function ownerPost(overrides: Partial<OwnerPost> = {}): OwnerPost {
     videos: [],
     audios: [],
     poll: null,
+    collectionIds: [],
+    ...overrides,
+  }
+}
+
+/**
+ * One `OwnerCollection` as back-end `773f88d` (BE-CONT-15) sends it from
+ * `GET/POST/PUT /content/collections`.
+ */
+export function rawCollection(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 7,
+    title: 'پادکست',
+    description: null,
+    postCount: 2,
+    createdAt: '2026-11-22T08:00:00.000Z',
+    updatedAt: '2026-11-22T08:00:00.000Z',
     ...overrides,
   }
 }

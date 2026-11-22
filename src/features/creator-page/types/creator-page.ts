@@ -83,3 +83,15 @@ export type CreatorPostPage = {
   total: number
   nextPage: number | null
 }
+
+/**
+ * A collection on the public page (`GET /landing/creators/:id/collections`,
+ * BE-CONT-15, FQ-35). `postCount` counts only what the public list shows
+ * (published, not future-dated), so it equals that collection's `total`.
+ */
+export type CreatorCollection = {
+  id: number
+  title: string
+  description: string | null
+  postCount: number
+}

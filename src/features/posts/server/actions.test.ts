@@ -7,7 +7,7 @@ import type {
   SavePostInput,
 } from '@/features/posts/types/post'
 
-import { rawPost, ownerPost } from '../test/fixtures'
+import { rawCollection, rawPost, ownerPost } from '../test/fixtures'
 
 const request = vi.hoisted(() => ({
   origin: 'https://fellowa.test',
@@ -28,6 +28,12 @@ const apiOrigin = 'https://api.fellowa.test/api'
 vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', apiOrigin)
 vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://fellowa.test')
 const {
+  assignCollectionsForHook,
+  createCollectionForHook,
+  deleteCollectionForHook,
+  listCollectionsForHook,
+  setPostCollectionsForHook,
+  updateCollectionForHook,
   deletePostForHook,
   finalizeMediaUploadForHook,
   getPostForHook,
@@ -633,5 +639,154 @@ describe('posts server boundary', () => {
       status: 404,
       code: 'CONTENT_UPLOAD_NOT_FOUND',
     })
+  })
+
+  it('reads collectionIds on the owner’s posts (BE-CONT-15)', async () => {
+    server.use(
+      http.get(`${apiOrigin}/content`, () =>
+        ok([rawPost({ collectionIds: [3, 7] })])
+      )
+    )
+    expect(await listPostsForHook(42)).toEqual({
+      ok: true,
+      data: [ownerPost({ collectionIds: [3, 7] })],
+    })
+  })
+})
+
+describe('collections server boundary (BE-CONT-15)', () => {
+  it('lists the owner’s collections without the dates it does not read', async () => {
+    server.use(
+      http.get(`${apiOrigin}/content/collections`, ({ request: upstream }) => {
+        expect(upstream.headers.get('authorization')).toBe(`Bearer ${token()}`)
+        return ok([rawCollection(), rawCollection({ id: 8, description: 'd' })])
+      })
+    )
+    expect(await listCollectionsForHook(42)).toEqual({
+      ok: true,
+      data: [
+        { id: 7, title: 'پادکست', description: null, postCount: 2 },
+        { id: 8, title: 'پادکست', description: 'd', postCount: 2 },
+      ],
+    })
+    expect(await listCollectionsForHook(9)).toMatchObject({
+      ok: false,
+      status: 403,
+    })
+  })
+
+  it('creates, updates and deletes with the bodies as sent, and passes the 409 through', async () => {
+    server.use(
+      http.post(
+        `${apiOrigin}/content/collections`,
+        recordWrite('POST', () => ok(rawCollection()))
+      ),
+      http.put(
+        `${apiOrigin}/content/collections/7`,
+        recordWrite('PUT', () =>
+          HttpResponse.json(
+            {
+              data: null,
+              errors: [{ code: 'CONTENT_COLLECTION_TITLE_TAKEN' }],
+            },
+            { status: 409 }
+          )
+        )
+      ),
+      http.delete(
+        `${apiOrigin}/content/collections/7`,
+        recordWrite('DELETE', () => ok({ message: 'Collection deleted' }))
+      )
+    )
+    expect(
+      await createCollectionForHook(42, {
+        title: 'پادکست',
+        description: null,
+        postIds: [12],
+      })
+    ).toMatchObject({ ok: true, data: { id: 7 } })
+    expect(
+      await updateCollectionForHook(42, {
+        collectionId: 7,
+        title: 'Taken',
+        description: null,
+      })
+    ).toMatchObject({ ok: false, status: 409 })
+    expect(await deleteCollectionForHook(42, 7)).toEqual({
+      ok: true,
+      data: null,
+    })
+    expect(writes).toEqual([
+      {
+        method: 'POST',
+        path: '/content/collections',
+        body: { title: 'پادکست', description: null, postIds: [12] },
+      },
+      {
+        method: 'PUT',
+        path: '/content/collections/7',
+        body: { title: 'Taken', description: null },
+      },
+      { method: 'DELETE', path: '/content/collections/7', body: null },
+    ])
+  })
+
+  it('replaces one post’s collections and bulk-adds, with the shapes the API answers', async () => {
+    server.use(
+      http.put(
+        `${apiOrigin}/content/12/collections`,
+        recordWrite('PUT', () => ok({ postId: 12, collectionIds: [] }))
+      ),
+      http.post(
+        `${apiOrigin}/content/collections/assign`,
+        recordWrite('POST', () =>
+          ok([
+            { postId: 12, collectionIds: [7] },
+            { postId: 13, collectionIds: [7, 8] },
+          ])
+        )
+      )
+    )
+    expect(
+      await setPostCollectionsForHook(42, { postId: 12, collectionIds: [] })
+    ).toEqual({ ok: true, data: { postId: 12, collectionIds: [] } })
+    expect(
+      await assignCollectionsForHook(42, {
+        postIds: [12, 13],
+        collectionIds: [7],
+      })
+    ).toMatchObject({ ok: true, data: [{ postId: 12 }, { postId: 13 }] })
+    expect(writes.map((write) => write.body)).toEqual([
+      { collectionIds: [] },
+      { postIds: [12, 13], collectionIds: [7] },
+    ])
+  })
+
+  it('refuses inputs over the DTO limits before calling the API', async () => {
+    const many = Array.from({ length: 101 }, (_, i) => i + 1)
+    const refused = [
+      createCollectionForHook(42, { title: '   ', description: null }),
+      createCollectionForHook(42, {
+        title: 'x'.repeat(121),
+        description: null,
+      }),
+      createCollectionForHook(42, {
+        title: 'ok',
+        description: 'x'.repeat(501),
+      }),
+      createCollectionForHook(42, {
+        title: 'ok',
+        description: null,
+        postIds: Array.from({ length: 501 }, (_, i) => i + 1),
+      }),
+      setPostCollectionsForHook(42, { postId: 12, collectionIds: many }),
+      assignCollectionsForHook(42, { postIds: [], collectionIds: [1] }),
+      assignCollectionsForHook(42, { postIds: many, collectionIds: [1] }),
+      deleteCollectionForHook(42, 0),
+    ]
+    for (const result of await Promise.all(refused)) {
+      expect(result).toMatchObject({ ok: false, status: 400 })
+    }
+    expect(writes).toEqual([])
   })
 })

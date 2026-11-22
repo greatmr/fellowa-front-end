@@ -1,6 +1,7 @@
 import 'server-only'
 
 import {
+  parseCreatorCollections,
   parseCreatorPostPage,
   parseCreatorProfile,
   parseCreatorTiers,
@@ -42,6 +43,34 @@ export async function getCreatorPostPage(id: number, page: number) {
     await apiGet<unknown>(`/landing/creators/${id}/posts`, {
       params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE },
     }),
+    id
+  )
+}
+
+/**
+ * The creator's collections (BE-CONT-15, FQ-35). Public, no token: a
+ * membership never widens them (FQ-33 A).
+ */
+export async function getCreatorCollections(id: number) {
+  return parseCreatorCollections(
+    await apiGet<unknown>(`/landing/creators/${id}/collections`)
+  )
+}
+
+/**
+ * One page of a collection's posts, the same projection as the creator's
+ * post list (TEASER and PARTIAL decided on the server); no token.
+ */
+export async function getCreatorCollectionPostPage(
+  id: number,
+  collectionId: number,
+  page: number
+) {
+  return parseCreatorPostPage(
+    await apiGet<unknown>(
+      `/landing/creators/${id}/collections/${collectionId}/posts`,
+      { params: { page, pageSize: CREATOR_POSTS_PAGE_SIZE } }
+    ),
     id
   )
 }

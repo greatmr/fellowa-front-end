@@ -2,12 +2,14 @@ import 'server-only'
 
 import { readOptionalSessionToken } from '@/features/auth/server'
 import {
+  getCreatorCollections,
   getCreatorPostPage,
   getCreatorProfile,
   getCreatorTiers,
 } from '@/features/creator-page/api/creator-page-api'
 import { creatorIdSchema } from '@/features/creator-page/schemas/creator-page'
 import type {
+  CreatorCollection,
   CreatorPostPage,
   CreatorProfile,
   CreatorTier,
@@ -32,6 +34,11 @@ export type CreatorPageData = {
    * `null` when it could not be read: only that tab degrades.
    */
   posts: CreatorPostPage | null
+  /**
+   * The public collections (BE-CONT-15, FQ-35). `null` when they could not
+   * be read: the tab is left out, as it is with none.
+   */
+  collections: CreatorCollection[] | null
   categoryTitle: string | null
   viewer: CreatorPageViewer
   /**
@@ -59,7 +66,7 @@ export async function loadCreatorPage(
 
   const session = await readOptionalSessionToken().catch(() => null)
   try {
-    const [profile, tiers, posts, categories] = await Promise.all([
+    const [profile, tiers, posts, collections, categories] = await Promise.all([
       getCreatorProfile(id.data, session?.token),
       getCreatorTiers(id.data).catch((error: unknown) => {
         if (isNotFound(error)) throw error
@@ -69,12 +76,15 @@ export async function loadCreatorPage(
         if (isNotFound(error)) throw error
         return null
       }),
+      // An extra on the page: whatever fails here only hides the tab.
+      getCreatorCollections(id.data).catch(() => null),
       loadExploreCategories(),
     ])
     return {
       profile,
       tiers,
       posts,
+      collections,
       categoryTitle:
         categories.find((c) => c.id === profile.categoryId)?.title ?? null,
       pageUrl: publicPageAddress(env.NEXT_PUBLIC_APP_URL, profile.id).url,

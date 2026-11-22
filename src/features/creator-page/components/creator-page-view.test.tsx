@@ -12,6 +12,7 @@ import type * as I18nNavigation from '@/i18n/navigation'
 const actions = vi.hoisted(() => ({
   setFollowingAction: vi.fn(),
   listCreatorPostsAction: vi.fn(),
+  listCreatorCollectionPostsAction: vi.fn(),
 }))
 vi.mock('@/features/creator-page/server/actions', () => actions)
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
@@ -21,17 +22,22 @@ vi.mock('@/i18n/navigation', async (importOriginal) => ({
 
 import type { CreatorPageViewer } from '@/features/creator-page/server/load-creator-page'
 import type {
+  CreatorCollection,
   CreatorPostPage,
   CreatorProfile,
   CreatorTier,
 } from '@/features/creator-page/types/creator-page'
 import { renderWithIntl } from '../../../../test/render'
-import { parseCreatorPostPage } from '../schemas/creator-page'
+import {
+  parseCreatorCollections,
+  parseCreatorPostPage,
+} from '../schemas/creator-page'
 import {
   FREE_BODY,
   OPEN_PART,
   PREVIEW,
   ok,
+  rawCollection,
   rawFull,
   rawPartial,
   rawPostPage,
@@ -74,9 +80,10 @@ type Overrides = {
   profile?: Partial<CreatorProfile>
   tiers?: CreatorTier[] | null
   posts?: CreatorPostPage | null
+  collections?: CreatorCollection[] | null
   categoryTitle?: string | null
   pageUrl?: string | null
-  initialTab?: 'posts' | 'tiers' | 'about'
+  initialTab?: 'posts' | 'collections' | 'tiers' | 'about'
 }
 
 function view(viewer: CreatorPageViewer, overrides: Overrides = {}) {
@@ -87,6 +94,7 @@ function view(viewer: CreatorPageViewer, overrides: Overrides = {}) {
       posts={
         overrides.posts === undefined ? postPage([rawFull()]) : overrides.posts
       }
+      collections={overrides.collections ?? null}
       categoryTitle={
         overrides.categoryTitle === undefined
           ? 'Music'
@@ -127,6 +135,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals()
   actions.listCreatorPostsAction.mockReset()
+  actions.listCreatorCollectionPostsAction.mockReset()
 })
 
 describe('CreatorPageView (FE-PAGE-01/03)', () => {
@@ -628,6 +637,162 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
     })
   })
 
+  describe('collections tab (FQ-35, BE-CONT-15)', () => {
+    const collections = () =>
+      parseCreatorCollections(
+        ok([
+          rawCollection(),
+          rawCollection({
+            id: 8,
+            title: 'Sketches',
+            description: null,
+            postCount: 0,
+          }),
+        ])
+      )
+    const tab = () => page().getByRole('tab', { name: /Collections/ })
+    const panel = () =>
+      within(screen.getByRole('tabpanel', { name: /Collections/ }))
+
+    it('is left out when the creator has none, or they could not be read', () => {
+      const { unmount } = renderPage('anonymous', { collections: [] })
+      expect(page().queryByRole('tab', { name: /Collections/ })).toBeNull()
+      unmount()
+      renderPage('anonymous', { collections: null, initialTab: 'collections' })
+      expect(page().queryByRole('tab', { name: /Collections/ })).toBeNull()
+      // ?tab=collections without the tab opens Posts.
+      expect(page().getByRole('tab', { name: /Posts/ })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    })
+
+    it('lists each collection with its public count, and opens its posts as the server sent them', async () => {
+      const user = userEvent.setup()
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawFull(), rawTeaser(11, null)], { next: 2, total: 3 }),
+      })
+      renderPage('anonymous', { collections: collections() })
+      await user.click(tab())
+      const cards = panel().getAllByRole('listitem')
+      expect(cards[0]).toHaveTextContent('Podcast')
+      expect(cards[0]).toHaveTextContent('3 posts')
+      expect(cards[0]).toHaveTextContent('Weekly episodes')
+      expect(cards[1]).toHaveTextContent('0 posts')
+      await user.click(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      )
+      expect(actions.listCreatorCollectionPostsAction).toHaveBeenCalledWith({
+        creatorId: 4,
+        collectionId: 7,
+        page: 1,
+      })
+      expect(await panel().findByText(FREE_BODY)).toBeInTheDocument()
+      // TEASER with no preview: only the gate, nothing of a body.
+      expect(
+        panel().getAllByRole('region', {
+          name: "This post is for the creator's members",
+        })
+      ).toHaveLength(1)
+      expect(panel().queryByText(OPEN_PART)).toBeNull()
+      expect(panel().queryByText(PREVIEW)).toBeNull()
+
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawPartial()], { next: null, total: 3 }),
+      })
+      await user.click(screen.getByRole('button', { name: 'Load more posts' }))
+      expect(actions.listCreatorCollectionPostsAction).toHaveBeenLastCalledWith(
+        {
+          creatorId: 4,
+          collectionId: 7,
+          page: 2,
+        }
+      )
+      expect(
+        (await panel().findByText(OPEN_PART)).closest('.teaser-fade')
+      ).not.toBeNull()
+
+      await user.click(screen.getByRole('button', { name: 'All collections' }))
+      expect(panel().getAllByRole('listitem')).toHaveLength(2)
+    })
+
+    it('shows the empty and failed states of a collection', async () => {
+      const user = userEvent.setup()
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([]),
+      })
+      renderPage('anonymous', {
+        collections: collections(),
+        initialTab: 'collections',
+      })
+      await user.click(
+        page().getByRole('button', { name: 'View the posts of “Sketches”' })
+      )
+      expect(
+        await screen.findByText('No published posts in this collection yet.')
+      ).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'All collections' }))
+
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: false,
+        status: 500,
+      })
+      await user.click(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      )
+      expect(
+        await screen.findByText("This collection's posts couldn't be loaded.")
+      ).toBeVisible()
+    })
+
+    it('says a collection deleted since the page loaded is gone, with a way back, and moves focus', async () => {
+      const user = userEvent.setup()
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: false,
+        status: 404,
+        code: 'CONTENT_COLLECTION_NOT_FOUND',
+      })
+      renderPage('anonymous', {
+        collections: collections(),
+        initialTab: 'collections',
+      })
+      await user.click(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      )
+      expect(
+        page().getByRole('heading', { name: 'Podcast', level: 3 })
+      ).toHaveFocus()
+      expect(
+        await screen.findByText('This collection is no longer available.')
+      ).toBeVisible()
+      expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+      await user.click(
+        screen.getAllByRole('button', { name: 'All collections' })[0]!
+      )
+      expect(
+        page().getByRole('button', { name: 'View the posts of “Podcast”' })
+      ).toHaveFocus()
+    })
+
+    it('renders in Persian with every key present', async () => {
+      const user = userEvent.setup()
+      actions.listCreatorCollectionPostsAction.mockResolvedValue({
+        ok: true,
+        data: postPage([rawTeaser()]),
+      })
+      renderPage('anonymous', { collections: collections() }, 'fa')
+      await user.click(page().getByRole('tab', { name: /مجموعه‌ها/ }))
+      expect(page().getByText('۳ پست')).toBeInTheDocument()
+      await user.click(
+        page().getByRole('button', { name: 'مشاهده پست‌های «Podcast»' })
+      )
+      expect(await screen.findByText(PREVIEW)).toBeInTheDocument()
+    })
+  })
+
   it('opens the Tiers tab from ?tab=tiers, the post gate (FE-CONT-01)', () => {
     renderPage('anonymous', { initialTab: 'tiers' })
 
@@ -640,6 +805,7 @@ describe('CreatorPageView (FE-PAGE-01/03)', () => {
 
   it.each([
     ['tiers', 'tiers'],
+    ['collections', 'collections'],
     ['about', 'about'],
     ['posts', 'posts'],
     [undefined, 'posts'],

@@ -28,6 +28,9 @@ const mocks = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
   tiers: {} as Record<string, unknown>,
+  collections: {} as Record<string, unknown>,
+  setCollections: vi.fn<(variables: unknown) => Promise<unknown>>(),
+  createCollection: vi.fn<Mutate>(),
 }))
 
 const mutation = (mutate: Mutate) => ({ isPending: false, mutate })
@@ -53,6 +56,12 @@ vi.mock('@/features/posts/api/post-hooks', () => ({
     mutateAsync: mocks.uploadAttachment,
   }),
   useDeletePostAttachmentMutation: () => mutation(vi.fn()),
+  useCollectionsQuery: () => mocks.collections,
+  useCreateCollectionMutation: () => mutation(mocks.createCollection),
+  useSetPostCollectionsMutation: () => ({
+    isPending: false,
+    mutateAsync: mocks.setCollections,
+  }),
 }))
 vi.mock('@/features/tiers/client', () => ({ useTiersQuery: () => mocks.tiers }))
 vi.mock('@/i18n/navigation', async (importOriginal) => ({
@@ -164,8 +173,19 @@ describe('PostComposer', () => {
       mocks.replace,
       mocks.toastSuccess,
       mocks.toastError,
+      mocks.setCollections,
+      mocks.createCollection,
     ]) {
       fn.mockReset()
+    }
+    mocks.collections = {
+      isPending: false,
+      isError: false,
+      data: [
+        { id: 7, title: 'Podcast', description: null, postCount: 2 },
+        { id: 8, title: 'Course', description: 'Lessons', postCount: 0 },
+      ],
+      refetch: vi.fn(),
     }
     mocks.mediaPending = false
     mocks.tiers = {
@@ -200,12 +220,129 @@ describe('PostComposer', () => {
     }
   )
 
-  it('renders no single-post purchase or collections controls (FQ-31, FQ-30)', () => {
+  it('renders no single-post purchase or schedule controls (FQ-31, FQ-30)', () => {
     renderComposer()
-    for (const text of [/purchase/i, /collection/i, /schedule/i]) {
+    for (const text of [/purchase/i, /schedule/i]) {
       expect(screen.queryByText(text)).not.toBeInTheDocument()
     }
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('sends the ticked collections after the first save, then moves on (FE-POST-04)', async () => {
+    const user = userEvent.setup()
+    mocks.setCollections.mockResolvedValue({ postId: 12, collectionIds: [8] })
+    renderComposer()
+    await user.type(title(), 'Hello')
+    await user.click(screen.getByRole('checkbox', { name: 'Course' }))
+    await user.click(screen.getByRole('button', { name: c.publish }))
+    // Create and update take no collectionIds (BE-CONT-15).
+    expect(lastSave()[0]).not.toHaveProperty('payload.collectionIds')
+    await act(async () => {
+      ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+        ownerPost({ id: 12 })
+      )
+    })
+    expect(mocks.setCollections).toHaveBeenCalledWith({
+      postId: 12,
+      collectionIds: [8],
+    })
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
+  })
+
+  it('leaves the collections alone when they did not change', async () => {
+    const user = userEvent.setup()
+    renderComposer(ownerPost({ collectionIds: [7] }))
+    expect(screen.getByRole('checkbox', { name: 'Podcast' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+      ownerPost({ collectionIds: [7] })
+    )
+    expect(mocks.setCollections).not.toHaveBeenCalled()
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
+  })
+
+  it('reports a failed collections write without undoing the save', async () => {
+    const user = userEvent.setup()
+    mocks.setCollections.mockRejectedValue(
+      new ApiError({
+        message: 'x',
+        status: 404,
+        code: 'CONTENT_COLLECTION_NOT_FOUND',
+      })
+    )
+    renderComposer(ownerPost({ collectionIds: [7] }))
+    await user.click(screen.getByRole('checkbox', { name: 'Podcast' }))
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    await act(async () => {
+      ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+        ownerPost({ collectionIds: [7] })
+      )
+    })
+    expect(mocks.setCollections).toHaveBeenCalledWith({
+      postId: 12,
+      collectionIds: [],
+    })
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      c.collections.syncFailed.replace(
+        '{reason}',
+        en.posts.errors.collectionNotFound
+      )
+    )
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
+  })
+
+  it('drops a collection deleted meanwhile instead of failing every save', async () => {
+    const user = userEvent.setup()
+    // 99 was deleted: the server no longer lists it nor holds the link.
+    renderComposer(ownerPost({ collectionIds: [7, 99] }))
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(
+      ownerPost({ collectionIds: [7] })
+    )
+    expect(mocks.setCollections).not.toHaveBeenCalled()
+    expect(mocks.push).toHaveBeenCalledWith('/posts')
+  })
+
+  it('says only that the session ended when it ends during the collections write', async () => {
+    const user = userEvent.setup()
+    mocks.setCollections.mockRejectedValue(
+      new ApiError({ message: 'x', status: 401 })
+    )
+    renderComposer(ownerPost({ collectionIds: [] }))
+    await user.click(screen.getByRole('checkbox', { name: 'Podcast' }))
+    await user.click(screen.getByRole('button', { name: c.saveChanges }))
+    await act(async () => {
+      ;(lastSave()[1]?.onSuccess as (post: OwnerPost) => void)(ownerPost())
+    })
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      en.posts.errors.sessionExpired
+    )
+    expect(mocks.toastSuccess).not.toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
+  it('creates a collection on the spot and ticks it', async () => {
+    const user = userEvent.setup()
+    renderComposer()
+    await user.click(screen.getByRole('button', { name: c.collections.new }))
+    await user.type(
+      screen.getByRole('textbox', { name: c.collections.newLabel }),
+      ' Diaries '
+    )
+    await user.click(screen.getByRole('button', { name: c.collections.add }))
+    const [input, options] = mocks.createCollection.mock.calls.at(-1)!
+    expect(input).toEqual({ title: 'Diaries', description: null })
+    act(() => {
+      ;(options?.onSuccess as (c: unknown) => void)({
+        id: 9,
+        title: 'Diaries',
+        description: null,
+        postCount: 0,
+      })
+    })
+    expect(
+      screen.queryByRole('textbox', { name: c.collections.newLabel })
+    ).not.toBeInTheDocument()
   })
 
   it('needs a title before saving', async () => {
@@ -480,7 +617,10 @@ describe('PostComposer', () => {
         images: [{ id: 9, url: 'https://cdn.example/s.png' }],
       })
     )
-    const gallery = screen.getByRole('list')
+    // The gallery, not the collections list (FE-POST-04).
+    const gallery = screen
+      .getAllByRole('list')
+      .find((list) => !list.hasAttribute('aria-label'))!
     await user.click(
       within(gallery).getByRole('button', { name: 'Delete image 1' })
     )

@@ -52,6 +52,11 @@ export type OwnerPost = {
   audios: PostMedia[]
   /** `polls[0]`; `poll.post_id` is UNIQUE, so a post has at most one. */
   poll: PostPoll | null
+  /**
+   * The collections this post is in, ascending (BE-CONT-15, owner reads
+   * only); `[]` from a server older than BE-CONT-15.
+   */
+  collectionIds: number[]
 }
 
 /**
