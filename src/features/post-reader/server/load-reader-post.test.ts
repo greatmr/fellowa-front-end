@@ -43,10 +43,31 @@ const record = (req: Request) =>
     authorization: req.headers.get('authorization'),
   })
 
+/** `GET /landing/creators/4`, the byline's source, as the creator page reads it. */
+const rawCreator = {
+  id: 4,
+  alias: 'dana',
+  pageName: 'Dana Studio',
+  avatar: 'https://cdn.test/avatar.png',
+  header: null,
+  about: null,
+  categoryId: null,
+  numFollowers: '12',
+}
+
 beforeEach(() => {
   request.cookie = ''
   calls = []
+  server.use(
+    http.get(`${apiOrigin}/landing/creators/4`, ({ request: req }) => {
+      record(req)
+      return HttpResponse.json(ok(rawCreator))
+    })
+  )
 })
+
+const postCalls = () =>
+  calls.filter((call) => !call.path.startsWith('/api/landing/creators/'))
 
 describe('loadReaderPost (FE-CONT-01)', () => {
   it('reads an anonymous visitor through GET /landing/posts/:id, with no token', async () => {
@@ -62,7 +83,7 @@ describe('loadReaderPost (FE-CONT-01)', () => {
       viewer: 'anonymous',
       post: { access: 'TEASER' },
     })
-    expect(calls).toEqual([
+    expect(postCalls()).toEqual([
       { path: '/api/landing/posts/31', authorization: null },
     ])
   })
@@ -80,7 +101,7 @@ describe('loadReaderPost (FE-CONT-01)', () => {
       viewer: 'signedIn',
       post: { access: 'FULL' },
     })
-    expect(calls).toEqual([
+    expect(postCalls()).toEqual([
       { path: '/api/content/31', authorization: `Bearer ${request.cookie}` },
     ])
   })
@@ -102,11 +123,11 @@ describe('loadReaderPost (FE-CONT-01)', () => {
       viewer: 'anonymous',
       post: { access: 'TEASER' },
     })
-    expect(calls.map((call) => call.path)).toEqual([
+    expect(postCalls().map((call) => call.path)).toEqual([
       '/api/content/31',
       '/api/landing/posts/31',
     ])
-    expect(calls[1]?.authorization).toBeNull()
+    expect(postCalls()[1]?.authorization).toBeNull()
   })
 
   it('treats a cookie that is not a token as no session', async () => {
@@ -147,7 +168,7 @@ describe('loadReaderPost (FE-CONT-01)', () => {
     )
 
     expect(await loadReaderPost('4', '31')).toBeNull()
-    expect(calls).toHaveLength(1)
+    expect(postCalls()).toHaveLength(1)
   })
 
   it.each([
@@ -155,6 +176,80 @@ describe('loadReaderPost (FE-CONT-01)', () => {
     ['a malformed body', () => HttpResponse.json(ok({ id: 31 }))],
   ])('lets %s reach the error boundary', async (_name, respond) => {
     server.use(http.get(`${apiOrigin}/landing/posts/31`, respond))
+
+    await expect(loadReaderPost('4', '31')).rejects.toThrow()
+  })
+
+  it('takes the byline from the public profile, read with no token', async () => {
+    request.cookie = token()
+    server.use(
+      http.get(`${apiOrigin}/content/31`, () =>
+        HttpResponse.json(ok(rawFullMember()))
+      )
+    )
+
+    expect(await loadReaderPost('4', '31')).toMatchObject({
+      creatorId: 4,
+      post: { creatorId: 4 },
+      creator: {
+        id: 4,
+        pageName: 'Dana Studio',
+        alias: 'dana',
+        avatarUrl: 'https://cdn.test/avatar.png',
+      },
+    })
+    expect(
+      calls.find((call) => call.path === '/api/landing/creators/4')
+    ).toEqual({ path: '/api/landing/creators/4', authorization: null })
+  })
+
+  it('renders without a byline when the profile cannot be read', async () => {
+    server.use(
+      http.get(`${apiOrigin}/landing/creators/4`, () => fail(500, 'INTERNAL')),
+      http.get(`${apiOrigin}/landing/posts/31`, () =>
+        HttpResponse.json(ok(rawTeaser()))
+      )
+    )
+
+    expect(await loadReaderPost('4', '31')).toMatchObject({
+      creator: null,
+      post: { access: 'TEASER' },
+    })
+  })
+
+  it.each([
+    ['an anonymous visitor', ''],
+    ['a signed-in viewer', 'token'],
+  ])(
+    'answers null when the post belongs to another creator, for %s',
+    async (_name, cookie) => {
+      request.cookie = cookie ? token() : ''
+      server.use(
+        http.get(`${apiOrigin}/landing/creators/9`, () =>
+          HttpResponse.json(ok({ ...rawCreator, id: 9 }))
+        ),
+        http.get(`${apiOrigin}/landing/posts/31`, () =>
+          HttpResponse.json(ok(rawTeaser()))
+        ),
+        http.get(`${apiOrigin}/content/31`, () =>
+          HttpResponse.json(ok(rawFullMember()))
+        )
+      )
+
+      // Post 31 is creator 4's; /creators/9/posts/31 does not exist.
+      expect(await loadReaderPost('9', '31')).toBeNull()
+      expect(await loadReaderPost('4', '31')).not.toBeNull()
+    }
+  )
+
+  it('lets a post response without creatorId reach the error boundary', async () => {
+    const withoutCreator: Record<string, unknown> = { ...rawTeaser() }
+    delete withoutCreator.creatorId
+    server.use(
+      http.get(`${apiOrigin}/landing/posts/31`, () =>
+        HttpResponse.json(ok(withoutCreator))
+      )
+    )
 
     await expect(loadReaderPost('4', '31')).rejects.toThrow()
   })

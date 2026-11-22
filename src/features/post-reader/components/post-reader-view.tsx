@@ -9,15 +9,18 @@ import {
 import Image from 'next/image'
 import { useFormatter, useTranslations } from 'next-intl'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import type { CreatorByline } from '@/features/creator-page/server'
 import type { ReaderPostData } from '@/features/post-reader/server/load-reader-post'
 import type {
   FullReaderPost,
   ReaderViewer,
 } from '@/features/post-reader/types/reader-post'
 import { Link } from '@/i18n/navigation'
+import { publicPageTitle } from '@/lib/page-name'
 
 /**
  * The gated post reader (FE-CONT-01; presentation `CreatorProfileView` post
@@ -26,11 +29,16 @@ import { Link } from '@/i18n/navigation'
  * the keys that level carries: FULL the whole post, PARTIAL the opening the
  * server cut and the divider, TEASER the owner's preview and the gate. The
  * gate leads to the creator's Tiers tab, never to a purchase (FQ-31). Not
- * ported: likes, comments, share, the creator byline (no response names the
- * page), the tier name on the gate (no response names it) and single-post
- * purchase.
+ * ported: likes, comments, share, the tier name on the gate (no response
+ * names it) and single-post purchase. The byline is the creator page the post
+ * belongs to (BE-CONT-13 `creatorId`, checked by the loader).
  */
-export function PostReaderView({ creatorId, post, viewer }: ReaderPostData) {
+export function PostReaderView({
+  creatorId,
+  post,
+  viewer,
+  creator,
+}: ReaderPostData) {
   const t = useTranslations('postReader')
   const format = useFormatter()
 
@@ -55,6 +63,7 @@ export function PostReaderView({ creatorId, post, viewer }: ReaderPostData) {
           <h1 dir="auto" className="text-title font-bold text-foreground">
             {post.title}
           </h1>
+          {creator ? <Byline creator={creator} /> : null}
           <p className="text-label text-muted-foreground">
             <time dateTime={post.createdAt}>
               {format.dateTime(new Date(post.createdAt), {
@@ -100,6 +109,29 @@ export function PostReaderView({ creatorId, post, viewer }: ReaderPostData) {
         )}
       </Card>
     </article>
+  )
+}
+
+function Byline({ creator }: { creator: CreatorByline }) {
+  const t = useTranslations('postReader')
+  const title = publicPageTitle(creator)
+  const name = title?.name ?? t('unnamedCreator')
+
+  return (
+    <Link
+      href={`/creators/${creator.id}`}
+      className="inline-flex w-fit items-center gap-2 rounded-md text-body-sm font-semibold text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      <Avatar className="size-7">
+        {creator.avatarUrl ? (
+          <AvatarImage src={creator.avatarUrl} alt="" />
+        ) : null}
+        <AvatarFallback className="text-caption font-bold">
+          {title?.initial ?? name.slice(0, 1)}
+        </AvatarFallback>
+      </Avatar>
+      <bdi>{name}</bdi>
+    </Link>
   )
 }
 

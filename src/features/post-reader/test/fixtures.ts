@@ -8,8 +8,12 @@ export const OPEN_PART = 'OPENPART the free opening'
 export const PREVIEW = 'PREVIEWTEXT what the owner typed'
 export const BODY = 'FULLBODY the whole post'
 
+/** The creator page that owns post 31 (BE-CONT-13 `creatorId`). */
+export const CREATOR_ID = 4
+
 const common = {
   id: 31,
+  creatorId: CREATOR_ID,
   type: 'text',
   title: 'A title',
   tags: null,

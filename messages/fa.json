@@ -1179,6 +1179,7 @@
   },
   "postReader": {
     "backToPage": "بازگشت به صفحهٔ سازنده",
+    "unnamedCreator": "کریتور بی‌نام",
     "membersBadge": "ویژهٔ اعضا",
     "dividerLabel": "ادامهٔ این پست فقط برای اعضا باز است",
     "imageAlt": "تصویر {index, number}",

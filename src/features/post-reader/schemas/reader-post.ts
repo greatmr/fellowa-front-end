@@ -36,6 +36,8 @@ export const idParamSchema = z
 
 const base = {
   id,
+  /** BE-CONT-13: on both routes, at every level. */
+  creatorId: id,
   type: z.string(),
   title: z.string(),
   createdAt: z.iso.datetime({ offset: true }),
@@ -88,6 +90,7 @@ export function parseReaderPost(value: unknown): ReaderPost {
   const raw = parseEnvelope(readerPostSchema, value, invalid)
   const common = {
     id: raw.id,
+    creatorId: raw.creatorId,
     type: raw.type,
     title: raw.title,
     createdAt: raw.createdAt,
