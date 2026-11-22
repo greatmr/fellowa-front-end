@@ -1236,4 +1236,118 @@ describe('PostComposer', () => {
       ).toHaveLength(2)
     })
   })
+
+  describe('the chooser opens the native picker (fix/post-media-picker)', () => {
+    const f = fa.posts.composer
+    let clicked: HTMLInputElement[] = []
+
+    beforeEach(() => {
+      clicked = []
+      vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(
+        function (this: HTMLInputElement) {
+          clicked.push(this)
+        }
+      )
+      return () => vi.restoreAllMocks()
+    })
+
+    it('opens the image picker on the chooser click, uploads the pick, and keeps a visible add button', async () => {
+      const user = userEvent.setup()
+      renderComposer(null, 'fa')
+      await user.click(
+        screen.getByRole('button', { name: f.mediaChoice.image })
+      )
+      const picker = screen.getByTestId('post-image-picker')
+      expect(picker).toHaveAttribute('type', 'file')
+      expect(clicked).toEqual([picker])
+      const add = screen.getByRole('button', { name: f.images.add })
+      expect(add).toBeVisible()
+      expect(add).toBeEnabled()
+
+      await user.upload(picker, new File(['x'], 'a.png', { type: 'image/png' }))
+      expect(mocks.upload).toHaveBeenCalledTimes(1)
+      expect((mocks.upload.mock.calls[0]![0] as File).name).toBe('a.png')
+
+      // Adding more goes through the block's own button and input.
+      clicked = []
+      await user.click(add)
+      const input = screen.getByTestId('post-image-input')
+      expect(clicked).toEqual([input])
+      await user.upload(input, new File(['y'], 'b.png', { type: 'image/png' }))
+      expect(mocks.upload).toHaveBeenCalledTimes(2)
+    })
+
+    it.each(['video', 'audio'] as const)(
+      'opens the %s picker on the chooser click and starts the upload',
+      async (kind) => {
+        const user = userEvent.setup()
+        renderComposer(null, 'fa')
+        await user.click(
+          screen.getByRole('button', { name: f.mediaChoice[kind] })
+        )
+        const picker = screen.getByTestId(`post-${kind}-picker`)
+        expect(clicked).toEqual([picker])
+        const add = screen.getByRole('button', { name: f.media[kind].add })
+        expect(add).toBeVisible()
+
+        const file =
+          kind === 'video'
+            ? new File(['x'], 'clip.mp4', { type: 'video/mp4' })
+            : new File(['x'], 'talk.mp3', { type: 'audio/mpeg' })
+        await user.upload(picker, file)
+        expect(mocks.uploadMedia).toHaveBeenCalledTimes(1)
+        expect(mocks.uploadMedia.mock.calls[0]![0]).toMatchObject({
+          kind,
+          file,
+        })
+        // The visible button opens the block's own picker (retry, or a
+        // cancelled native dialog).
+        clicked = []
+        await user.click(add)
+        expect(clicked).toEqual([screen.getByTestId(`post-${kind}-input`)])
+      }
+    )
+
+    it('keeps the block with its button when the native dialog is cancelled', async () => {
+      const user = userEvent.setup()
+      renderComposer(ownerPost({ type: 'text' }), 'fa')
+      await user.click(
+        screen.getByRole('button', { name: f.mediaChoice.video })
+      )
+      const picker = screen.getByTestId('post-video-picker')
+      expect(clicked).toEqual([picker])
+      fireEvent.change(picker, { target: { files: [] } })
+      expect(mocks.uploadMedia).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: f.media.video.add })
+      ).toBeVisible()
+    })
+
+    it('drops a file picked for a block that is no longer shown', async () => {
+      const user = userEvent.setup()
+      renderComposer(null, 'fa')
+      await user.click(
+        screen.getByRole('button', { name: f.mediaChoice.image })
+      )
+      fireEvent.change(screen.getByTestId('post-video-picker'), {
+        target: {
+          files: [new File(['x'], 'clip.mp4', { type: 'video/mp4' })],
+        },
+      })
+      expect(mocks.upload).not.toHaveBeenCalled()
+      expect(mocks.uploadMedia).not.toHaveBeenCalled()
+    })
+
+    it('opens no picker for a poll and shows its options', async () => {
+      const user = userEvent.setup()
+      renderComposer(null, 'fa')
+      await user.click(screen.getByRole('button', { name: f.mediaChoice.poll }))
+      expect(clicked).toEqual([])
+      expect(
+        within(screen.getByRole('region', { name: f.poll.title })).getAllByRole(
+          'textbox'
+        )
+      ).toHaveLength(2)
+    })
+  })
 })
