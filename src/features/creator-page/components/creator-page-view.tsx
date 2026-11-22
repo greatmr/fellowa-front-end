@@ -24,29 +24,24 @@ import { CreatorCollections } from '@/features/creator-page/components/creator-c
 import { CreatorPostList } from '@/features/creator-page/components/creator-post-list'
 import { CreatorStickyHeader } from '@/features/creator-page/components/creator-sticky-header'
 import {
-  CREATOR_TABS_ID,
-  type CreatorPageTab,
   CreatorTabs,
   CreatorTabsProvider,
   MiniTabs,
   OpenTabButton,
-  creatorPageTabs,
 } from '@/features/creator-page/components/creator-tabs'
 import { FollowButton } from '@/features/creator-page/components/follow-button'
 import type {
   CreatorPageData,
   CreatorPageViewer,
 } from '@/features/creator-page/server/load-creator-page'
+import {
+  CREATOR_TABS_ID,
+  type CreatorPageTab,
+  creatorPageTabs,
+} from '@/features/creator-page/lib/tabs'
 import type { CreatorTier } from '@/features/creator-page/types/creator-page'
 import { Link } from '@/i18n/navigation'
 import { publicPageTitle } from '@/lib/page-name'
-
-export type { CreatorPageTab } from '@/features/creator-page/components/creator-tabs'
-
-/** `?tab=` from the URL as one of the tabs; anything else opens Posts. */
-export function creatorPageTab(value: unknown): CreatorPageTab {
-  return creatorPageTabs.find((tab) => tab === value) ?? 'posts'
-}
 
 const HERO_ID = 'creator-page-hero'
 

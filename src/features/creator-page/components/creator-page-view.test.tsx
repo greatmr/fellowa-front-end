@@ -43,7 +43,8 @@ import {
   rawPostPage,
   rawTeaser,
 } from '../test/fixtures'
-import { CreatorPageView, creatorPageTab } from './creator-page-view'
+import { creatorPageTab } from '../lib/tabs'
+import { CreatorPageView } from './creator-page-view'
 
 const profile: CreatorProfile = {
   id: 4,

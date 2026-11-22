@@ -12,17 +12,11 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Tabs } from '@/components/ui/tabs'
-
-export const creatorPageTabs = [
-  'posts',
-  'collections',
-  'tiers',
-  'about',
-] as const
-export type CreatorPageTab = (typeof creatorPageTabs)[number]
-
-/** The element the tab strip sits in, scrolled to when a tab is opened. */
-export const CREATOR_TABS_ID = 'creator-page-tabs'
+import {
+  CREATOR_TABS_ID,
+  type CreatorPageTab,
+  creatorPageTabs,
+} from '@/features/creator-page/lib/tabs'
 
 type TabState = {
   tab: CreatorPageTab
