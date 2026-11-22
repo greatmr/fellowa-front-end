@@ -14,7 +14,7 @@ import {
 const draft = (patch: Partial<PostDraft> = {}): PostDraft => ({
   ...emptyPostDraft(),
   title: 'عنوان',
-  before: 'متن',
+  before: '<p dir="auto">متن</p>',
   ...patch,
 })
 
@@ -24,7 +24,8 @@ describe('composer draft → write payload', () => {
       kind: 'text',
       payload: {
         title: 'عنوان',
-        text: 'متن',
+        text: '<p dir="auto">متن</p>',
+        bodyFormat: 'html',
         paywallPosition: null,
         tireIds: [],
         visibility: { type: true },
@@ -32,16 +33,35 @@ describe('composer draft → write payload', () => {
     })
   })
 
-  it('sends the divider as a code-point offset with Persian text and emoji', () => {
+  it('sends the divider as the index of the first gated top-level block (Q-83)', () => {
     const input = saveInputFromDraft(
-      draft({ before: 'سلام 😀 ', after: 'ادامه' }),
+      draft({
+        before:
+          '<h2 dir="auto">سلام 😀</h2><ul><li><p>یک</p><ul><li><p>دو</p></li></ul></li></ul>',
+        after: '<p dir="auto">ادامه</p>',
+      }),
       'draft',
       null
     )
-    expect(input.payload.text).toBe('سلام 😀 ادامه')
-    // "سلام" 4 + space + emoji 1 + space = 7 code points (8 UTF-16 units).
-    expect(input.payload.paywallPosition).toBe(7)
+    expect(input.payload.text).toBe(
+      '<h2 dir="auto">سلام 😀</h2><ul><li><p>یک</p><ul><li><p>دو</p></li></ul></li></ul><p dir="auto">ادامه</p>'
+    )
+    // The heading and the whole (nested) list: two blocks.
+    expect(input.payload.paywallPosition).toBe(2)
+    expect(input.payload.bodyFormat).toBe('html')
     expect(input.payload.visibility).toEqual({ type: true, isDraft: true })
+  })
+
+  it('gates everything with the divider first', () => {
+    const input = saveInputFromDraft(
+      draft({ before: '', after: '<p>a</p>' }),
+      'draft',
+      null
+    )
+    expect(input.payload).toMatchObject({
+      text: '<p>a</p>',
+      paywallPosition: 0,
+    })
   })
 
   it('limits to picked tiers, trims the title, and routes image posts to the image route', () => {
@@ -59,7 +79,8 @@ describe('composer draft → write payload', () => {
       kind: 'image',
       payload: {
         title: 'عنوان',
-        text: 'متن',
+        text: '<p dir="auto">متن</p>',
+        bodyFormat: 'html',
         paywallPosition: null,
         tireIds: [3, 5],
         visibility: { type: false },
@@ -73,8 +94,9 @@ describe('composer draft → write payload', () => {
       isPublic: false,
       textPreview: 'پیش‌نمایش',
       dateEarly: '2026-12-01T00:00:00.000Z',
-      paywallPosition: 4,
-      text: 'سلام دنیا',
+      paywallPosition: 1,
+      text: '<p dir="auto">سلام</p><p dir="auto">دنیا</p>',
+      bodyFormat: 'html',
     })
     const input = saveInputFromDraft(draftFromPost(saved), 'publish', saved)
     expect(input).toEqual({
@@ -82,8 +104,9 @@ describe('composer draft → write payload', () => {
       kind: 'text',
       payload: {
         title: 'سلام دنیا',
-        text: 'سلام دنیا',
-        paywallPosition: 4,
+        text: '<p dir="auto">سلام</p><p dir="auto">دنیا</p>',
+        bodyFormat: 'html',
+        paywallPosition: 1,
         visibility: {
           type: false,
           datePublished: '2026-11-20T08:00:00.000Z',
@@ -104,26 +127,56 @@ describe('composer draft → write payload', () => {
   })
 })
 
-it('sends no paywall when nothing follows the divider', () => {
+it('sends no paywall when no block follows the divider', () => {
   const input = saveInputFromDraft(
-    draft({ before: 'متن', after: ' \n' }),
+    draft({ before: '<p>متن</p>', after: ' \n' }),
     'publish',
     null
   )
-  expect(input.payload).toMatchObject({ text: 'متن \n', paywallPosition: null })
+  expect(input.payload).toMatchObject({
+    text: '<p>متن</p> \n',
+    paywallPosition: null,
+  })
 })
 
 describe('draftFromPost', () => {
-  it('splits the body at the stored paywall position', () => {
+  it('splits an html body at its stored block index', () => {
     const result = draftFromPost(
-      ownerPost({ text: 'ab😀cd', paywallPosition: 3, isPublic: false })
+      ownerPost({
+        text: '<p>a</p><ul><li>1</li></ul><p>b</p>',
+        bodyFormat: 'html',
+        paywallPosition: 2,
+        isPublic: false,
+      })
     )
     expect(result).toMatchObject({
-      before: 'ab😀',
-      after: 'cd',
+      before: '<p>a</p><ul><li>1</li></ul>',
+      after: '<p>b</p>',
       access: 'tiers',
       tiers: { mode: 'keep' },
     })
+  })
+
+  it('converts a plain body in memory: split at the code-point offset, escaped paragraphs', () => {
+    const result = draftFromPost(
+      ownerPost({ text: 'ab😀cd<i>', bodyFormat: 'plain', paywallPosition: 3 })
+    )
+    expect(result).toMatchObject({
+      before: '<p dir="auto">ab😀</p>',
+      after: '<p dir="auto">cd&lt;i&gt;</p>',
+    })
+    expect(
+      saveInputFromDraft(result, 'publish', ownerPost()).payload
+    ).toMatchObject({ bodyFormat: 'html', paywallPosition: 1 })
+  })
+
+  it('has no divider for a body without a paywall, in either format', () => {
+    expect(
+      draftFromPost(ownerPost({ text: 'a', bodyFormat: 'plain' }))
+    ).toMatchObject({ before: '<p dir="auto">a</p>', after: null })
+    expect(
+      draftFromPost(ownerPost({ text: '<p>a</p>', bodyFormat: 'html' }))
+    ).toMatchObject({ before: '<p>a</p>', after: null })
   })
 
   it('marks saved images as attached', () => {

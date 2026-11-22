@@ -35,6 +35,8 @@ const invalid = () => new InvalidPostResponseError()
 
 const id = z.number().int().positive().safe()
 
+const bodyFormatSchema = z.enum(['plain', 'html'])
+
 // ---- Raw responses (`formatForOwner`, only the keys the panel reads) ------
 
 const rawFileSchema = z.object({ id, url: z.string().nullable() })
@@ -71,6 +73,10 @@ const rawPostSchema = z.object({
   createdAt: z.string(),
   // Owner-only key (BE-CONT-04); every route here is the owner's.
   paywallPosition: z.number().int().nonnegative().nullable(),
+  // BE-CONT-14. A server without it stores plain bodies only.
+  bodyFormat: bodyFormatSchema.optional(),
+  // BE-CONT-14, owner reads only.
+  excerpt: z.string().nullish(),
 })
 
 type RawPost = z.infer<typeof rawPostSchema>
@@ -92,6 +98,8 @@ function toPost(raw: RawPost): OwnerPost {
     type: raw.type,
     title: raw.title,
     text: raw.text ?? '',
+    bodyFormat: raw.bodyFormat ?? 'plain',
+    excerpt: raw.excerpt ?? null,
     isPublic: raw.visibility.type,
     publishedAt: raw.visibility.datePublished,
     createdAt: raw.createdAt,
@@ -194,6 +202,7 @@ export const postWriteSchema = z
   .object({
     title: titleSchema,
     text: z.string(),
+    bodyFormat: bodyFormatSchema,
     paywallPosition: z
       .number()
       .int()

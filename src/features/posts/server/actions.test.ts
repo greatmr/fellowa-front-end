@@ -87,8 +87,9 @@ function recordWrite(method: string, response: () => Response) {
 
 const textPayload = {
   title: 'عنوان',
-  text: 'سلام 😀 ادامه',
-  paywallPosition: 7,
+  text: '<p dir="auto">سلام 😀</p><p dir="auto">ادامه</p>',
+  bodyFormat: 'html' as const,
+  paywallPosition: 1,
   tireIds: [3],
   visibility: { type: false },
 }
@@ -237,6 +238,11 @@ describe('posts server boundary', () => {
       { ...textPayload, paywallPosition: 1.5 },
       { ...textPayload, visibility: { type: false, publishAt: 'x' } },
       { ...textPayload, imageIds: [1] },
+      // Only the two formats the API knows (BE-CONT-14 `isIn`).
+      {
+        ...textPayload,
+        bodyFormat: 'markdown',
+      } as unknown as typeof textPayload,
     ]
     for (const payload of bad) {
       expect(

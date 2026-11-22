@@ -1,3 +1,5 @@
+import type { BodyFormat } from '@/lib/post-body'
+
 /**
  * The owner's own posts, as `GET /content`, `GET /content/:id` and every
  * write route return them (`content-format.ts` `formatForOwner`, back-end
@@ -15,14 +17,28 @@ export type OwnerPost = {
    */
   type: string
   title: string
-  /** `text`, plain; `''` when the post has no body. */
+  /**
+   * `text`: plain text, or the server-sanitised HTML of an `html` body
+   * (BE-CONT-14); `''` when the post has no body. Never rendered as HTML
+   * from here: the panel shows `excerpt`.
+   */
   text: string
+  /** How `text` is written (Q-83). Every post stored before M021 is `plain`. */
+  bodyFormat: BodyFormat
+  /**
+   * The server's plain-text start of the body, at most 200 code points (owner
+   * reads only); `null` without a body, or from a server older than BE-CONT-14.
+   */
+  excerpt: string | null
   /** `visibility.type`: `true` is public, `false` is limited to tiers. */
   isPublic: boolean
   /** `visibility.datePublished`; `null` is a draft (api.md → "Drafts"). */
   publishedAt: string | null
   createdAt: string
-  /** Code points of `text` readable before the paywall; `null` for none. */
+  /**
+   * Where the paywall is: code points of a `plain` body (Q-19), the index of
+   * the first gated top-level block of an `html` one (Q-83); `null` for none.
+   */
   paywallPosition: number | null
   /** `visibility.textPreview`, resent on every write so it is not cleared. */
   textPreview: string | null
@@ -71,7 +87,15 @@ export type PostVisibilityPayload = {
 export type PostWritePayload = {
   title: string
   text: string
-  /** Always sent with `text`, so Q-50 never refuses an edit. */
+  /**
+   * Always sent: left out, an update keeps the stored format, and the
+   * composer writes `html` only (FE-POST-03).
+   */
+  bodyFormat: BodyFormat
+  /**
+   * Always sent with `text`, so Q-50 never refuses an edit, nor a format
+   * change on a paywalled post (CONTENT_PAYWALL_POSITION_REQUIRED).
+   */
   paywallPosition: number | null
   /** Left out: the tier links stay as they are (PUT). */
   tireIds?: number[]

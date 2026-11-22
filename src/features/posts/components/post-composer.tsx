@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useIsMutating } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -18,7 +19,6 @@ import { Card } from '@/components/ui/card'
 import { postKeys, useSavePostMutation } from '@/features/posts/api/post-hooks'
 import { PostAccessPanel } from '@/features/posts/components/post-access-panel'
 import { PostAttachments } from '@/features/posts/components/post-attachments'
-import { PostBodyEditor } from '@/features/posts/components/post-body-editor'
 import { PostImagesField } from '@/features/posts/components/post-images-field'
 import { PostMediaField } from '@/features/posts/components/post-media-field'
 import { PostPollField } from '@/features/posts/components/post-poll-field'
@@ -48,6 +48,27 @@ type Props = {
   saved: OwnerPost | null
 }
 
+/**
+ * The rich editor (Tiptap) only on the composer, and only in the browser: its
+ * code stays out of every other route's bundle, and nothing of it renders on
+ * the server (FE-POST-03).
+ */
+const PostBodyEditor = dynamic(
+  () =>
+    import('@/features/posts/components/post-body-editor').then(
+      (mod) => mod.PostBodyEditor
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div aria-hidden className="grid gap-2">
+        <div className="h-11 border-y" />
+        <div className="min-h-40" />
+      </div>
+    ),
+  }
+)
+
 const mediaChoices = [
   { kind: 'image', Icon: ImageIcon },
   { kind: 'video', Icon: Video },
@@ -56,13 +77,14 @@ const mediaChoices = [
 ] as const
 
 /**
- * The composer (presentation `ComposerView` @ d843c3b): title, plain-text
- * body with the paywall divider, one media block (images, a video, an audio
- * or a poll: FQ-30, one media type per post, FE-POST-02), attachments (a new
- * post's wait for its first save: FE-POST-05), access, and publish or save as draft (no date: Q-18). Not ported
- * (FQ-31, FQ-30): the formatting toolbar, the single-post purchase switch and
- * the collections picker, the "upload error" demo button, and the "saved
- * automatically" line (nothing autosaves).
+ * The composer (presentation `ComposerView` @ d843c3b): title, rich-text body
+ * with its toolbar and the paywall divider (FE-POST-03, saved as `html`), one
+ * media block (images, a video, an audio or a poll: FQ-30, one media type per
+ * post, FE-POST-02), attachments (a new post's wait for its first save:
+ * FE-POST-05), access, and publish or save as draft (no date: Q-18). Not
+ * ported (FQ-31, FQ-30): the single-post purchase switch and the collections
+ * picker, the "upload error" demo button, and the "saved automatically" line
+ * (nothing autosaves).
  */
 export function PostComposer({ viewerId, saved }: Props) {
   const t = useTranslations('posts.composer')
@@ -82,6 +104,11 @@ export function PostComposer({ viewerId, saved }: Props) {
   const [draft, setDraftState] = useState<PostDraft>(() =>
     saved ? draftFromPost(saved) : emptyPostDraft()
   )
+  // What the editor starts from; it owns the body after that.
+  const [initialBody] = useState(() => ({
+    before: draft.before,
+    after: draft.after,
+  }))
   const [checkedFor, setCheckedFor] = useState<SaveIntent | null>(null)
   const [serverTierError, setServerTierError] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -307,10 +334,15 @@ export function PostComposer({ viewerId, saved }: Props) {
                 </p>
               ) : null}
             </div>
+            {saved?.bodyFormat === 'plain' && saved.text.trim() ? (
+              <p className="rounded-md bg-muted px-3 py-2 text-label text-muted-foreground">
+                {t('plainConversionNote')}
+              </p>
+            ) : null}
             <PostBodyEditor
-              before={draft.before}
-              after={draft.after}
+              initial={initialBody}
               isPublic={draft.access === 'free'}
+              editable={created === null}
               onChange={(parts) => setDraft(parts)}
             />
             {draft.media === null ? (

@@ -1,4 +1,8 @@
-import { codePointLength, splitAtCodePoint } from '@/features/posts/lib/paywall'
+import {
+  blockCount,
+  plainPostToHtmlParts,
+  splitAtBlock,
+} from '@/features/posts/lib/rich-body'
 import type {
   MediaUploadKind,
   PostFile,
@@ -44,9 +48,13 @@ export const MIN_POLL_OPTIONS = 2
 
 export type PostDraft = {
   title: string
-  /** The body, or the part before the paywall divider. */
+  /**
+   * The body as HTML, or the part before the paywall divider (FE-POST-03).
+   * Written by the rich editor (or, at the start, the stored body); sent to
+   * the server to sanitise, never rendered as HTML from here.
+   */
   before: string
-  /** The part after the divider; `null` when there is no divider. */
+  /** The part after the divider, as HTML; `null` when there is no divider. */
   after: string | null
   access: 'free' | 'tiers'
   tiers: TierSelection
@@ -122,11 +130,22 @@ export function emptyPostDraft(): PostDraft {
   }
 }
 
+/**
+ * The body in the editor's two parts. An `html` body splits at its block
+ * index (Q-83). A `plain` one is converted in memory: split at its code-point
+ * offset (Q-19) and made into paragraphs; it is stored as `html` only when
+ * the owner saves (Q-83 option a), never on open.
+ */
+function bodyParts(post: OwnerPost): { before: string; after: string | null } {
+  if (post.bodyFormat === 'plain')
+    return plainPostToHtmlParts(post.text, post.paywallPosition)
+  return post.paywallPosition === null
+    ? { before: post.text, after: null }
+    : splitAtBlock(post.text, post.paywallPosition)
+}
+
 export function draftFromPost(post: OwnerPost): PostDraft {
-  const parts =
-    post.paywallPosition === null
-      ? { before: post.text, after: null }
-      : splitAtCodePoint(post.text, post.paywallPosition)
+  const parts = bodyParts(post)
   return {
     title: post.title,
     before: parts.before,
@@ -175,13 +194,14 @@ export function postText(draft: PostDraft): string {
 }
 
 /**
- * No paywall when nothing but white space follows the divider: a position at
- * the end gates nothing, yet would still mark a public post as paywalled
- * (it then leaves the landing lists, api.md → Q-31).
+ * The index of the first gated top-level block (Q-83), counted as the server
+ * counts it. No paywall when no block follows the divider: a position at the
+ * end gates nothing, yet would still mark a public post as paywalled (it then
+ * leaves the landing lists, api.md → Q-31).
  */
 export function paywallPositionOf(draft: PostDraft): number | null {
-  if (draft.after === null || draft.after.trim() === '') return null
-  return codePointLength(draft.before)
+  if (draft.after === null || blockCount(draft.after) === 0) return null
+  return blockCount(draft.before)
 }
 
 /**
@@ -268,6 +288,8 @@ export function saveInputFromDraft(
     payload: {
       title: draft.title.trim(),
       text: postText(draft),
+      // Explicit: left out, an update would keep a plain post plain.
+      bodyFormat: 'html',
       paywallPosition: paywallPositionOf(draft),
       ...(tireIds ? { tireIds } : {}),
       visibility: visibilityFor(draft.access === 'free', intent, saved),
