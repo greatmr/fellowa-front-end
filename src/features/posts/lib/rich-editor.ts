@@ -22,8 +22,8 @@ import { isAllowedHref } from '@/features/posts/lib/rich-body'
  *
  * | HTML | from |
  * |---|---|
- * | `p` (`dir="auto"`), `br` | Paragraph, HardBreak |
- * | `h2`, `h3` (`dir="auto"`) | Heading, levels 2 and 3 only |
+ * | `p`, `br` | Paragraph, HardBreak |
+ * | `h2`, `h3` | Heading, levels 2 and 3 only |
  * | `ul`, `ol`, `li` | BulletList, OrderedList, ListItem (an `li` holds `p`s) |
  * | `blockquote` | Blockquote |
  * | `strong`, `em` | Bold, Italic |
@@ -54,30 +54,30 @@ function dirOf(element: HTMLElement): string | null {
 }
 
 /**
- * `dir` as the server allows it. Text blocks get `auto`, so a Persian line
- * and an English line each run their own way. Containers keep a stored value
- * but get none by default: `dir="auto"` on a list would look only at text
- * outside its `dir="auto"` paragraphs, find none, and turn the list LTR.
+ * `dir` as the server allows it (FE-I18N-02). A stored value is parsed and
+ * kept on every block, but the editor never adds one: typing direction
+ * follows the page (owner, 2026-11-22), so a new block inherits the editor's
+ * direction, which inherits the page's `<html dir>`. No `dir="auto"`, which
+ * would flip a Latin-first line, and an empty one, to LTR.
  */
 const BlockDirection = Extension.create({
   name: 'blockDirection',
   addGlobalAttributes() {
     return [
       {
-        types: ['paragraph', 'heading'],
-        attributes: {
-          dir: {
-            default: 'auto',
-            parseHTML: (element) => dirOf(element) ?? 'auto',
-            renderHTML: (attributes) => ({ dir: attributes.dir }),
-          },
-        },
-      },
-      {
-        types: ['bulletList', 'orderedList', 'listItem', 'blockquote'],
+        types: [
+          'paragraph',
+          'heading',
+          'bulletList',
+          'orderedList',
+          'listItem',
+          'blockquote',
+        ],
         attributes: {
           dir: {
             default: null,
+            // A new block from Enter starts clean rather than copying it.
+            keepOnSplit: false,
             parseHTML: (element) => dirOf(element),
             renderHTML: (attributes) =>
               attributes.dir ? { dir: attributes.dir } : {},

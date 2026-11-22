@@ -383,7 +383,6 @@ export function PostComposer({ viewerId, saved }: Props) {
               <input
                 id={`${ids}-title`}
                 type="text"
-                dir="auto"
                 value={draft.title}
                 maxLength={MAX_POST_TITLE}
                 placeholder={t('titlePlaceholder')}

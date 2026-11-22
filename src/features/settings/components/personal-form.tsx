@@ -75,7 +75,7 @@ export function PersonalForm({
               <FormItem>
                 <FormLabel>{t('personal.firstName')}</FormLabel>
                 <FormControl>
-                  <Input {...field} autoComplete="given-name" dir="auto" />
+                  <Input {...field} autoComplete="given-name" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -88,7 +88,7 @@ export function PersonalForm({
               <FormItem>
                 <FormLabel>{t('personal.lastName')}</FormLabel>
                 <FormControl>
-                  <Input {...field} autoComplete="family-name" dir="auto" />
+                  <Input {...field} autoComplete="family-name" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

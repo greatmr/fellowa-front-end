@@ -165,7 +165,6 @@ export function PostCollectionsField({
         <div className="mt-2.5 grid gap-1.5">
           <div className="flex items-center gap-1.5">
             <Input
-              dir="auto"
               value={title}
               maxLength={MAX_COLLECTION_TITLE}
               aria-label={t('newLabel')}

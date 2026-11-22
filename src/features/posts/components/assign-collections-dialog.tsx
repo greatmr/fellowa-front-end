@@ -253,7 +253,6 @@ export function AssignCollectionsDialog({
         <div className="grid gap-1.5">
           <div className="flex items-center gap-2">
             <Input
-              dir="auto"
               value={newTitle}
               maxLength={MAX_COLLECTION_TITLE}
               aria-label={t('newLabel')}
