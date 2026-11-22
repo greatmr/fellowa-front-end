@@ -24,13 +24,22 @@ import { publicPageTitle } from '@/lib/page-name'
  * under a public name stands in for the prototype's `fellowa.ir/<handle>`,
  * since public routes are numeric (C-9).
  */
+const creatorPageTabs = ['posts', 'tiers', 'about'] as const
+export type CreatorPageTab = (typeof creatorPageTabs)[number]
+
+/** `?tab=` from the URL as one of the tabs; anything else opens Posts. */
+export function creatorPageTab(value: unknown): CreatorPageTab {
+  return creatorPageTabs.find((tab) => tab === value) ?? 'posts'
+}
+
 export function CreatorPageView({
   profile,
   tiers,
   posts,
   categoryTitle,
   viewer,
-}: CreatorPageData) {
+  initialTab = 'posts',
+}: CreatorPageData & { initialTab?: CreatorPageTab }) {
   const t = useTranslations('creatorPage')
   const format = useFormatter()
   const title = publicPageTitle(profile)
@@ -100,7 +109,7 @@ export function CreatorPageView({
         </p>
       ) : null}
 
-      <Tabs defaultValue="posts" className="mt-8">
+      <Tabs defaultValue={initialTab} className="mt-8">
         <TabsList>
           <TabsTrigger value="posts">
             {t('tabs.posts', { count: format.number(posts.length) })}
@@ -122,7 +131,12 @@ export function CreatorPageView({
                 <li key={post.id}>
                   <Card className="gap-2 px-5 py-4">
                     <h2 dir="auto" className="text-subtitle font-bold">
-                      {post.title}
+                      <Link
+                        href={`/creators/${profile.id}/posts/${post.id}`}
+                        className="rounded-md hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                      >
+                        {post.title}
+                      </Link>
                     </h2>
                     <p className="text-label text-muted-foreground">
                       <time dateTime={post.createdAt}>

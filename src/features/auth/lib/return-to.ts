@@ -14,10 +14,13 @@ const privatePaths = new Set([
 ])
 
 /**
- * A public creator page (FE-PAGE-01): signing in from a profile returns to
- * it. Exactly `/creators/<positive integer>` — no query, fragment or segment.
+ * A public creator page (FE-PAGE-01) or one of its posts (FE-CONT-01):
+ * signing in from either returns to it. Exactly `/creators/<positive
+ * integer>`, optionally `/posts/<positive integer>` — no query, fragment or
+ * other segment.
  */
-const creatorPagePath = /^\/creators\/[1-9][0-9]{0,9}$/
+const creatorPagePath =
+  /^\/creators\/[1-9][0-9]{0,9}(?:\/posts\/[1-9][0-9]{0,9})?$/
 
 export type AuthHref =
   string | { pathname: string; query: Record<string, string> }

@@ -1115,5 +1115,24 @@
       "unsupportedTitle": "This kind of post cannot be edited yet",
       "unsupportedBody": "Editing video, audio, link and poll posts comes later. From the posts list you can publish it, move it to drafts or delete it."
     }
+  },
+  "postReader": {
+    "backToPage": "Back to the creator's page",
+    "membersBadge": "Members only",
+    "dividerLabel": "The rest of this post is open to members only",
+    "imageAlt": "Image {index, number}",
+    "videoUnavailable": "{count, plural, one {This post has a video. Playback here opens soon.} other {This post has # videos. Playback here opens soon.}}",
+    "audioUnavailable": "{count, plural, one {This post has an audio track. Playback here opens soon.} other {This post has # audio tracks. Playback here opens soon.}}",
+    "audioProcessing": "This post's audio is still being processed.",
+    "pollTitle": "Poll",
+    "pollVotingSoon": "Voting here opens soon.",
+    "attachmentsTitle": "Attachments",
+    "attachment": "Attachment {index, number}",
+    "gate": {
+      "title": "This post is for the creator's members",
+      "body": "Join one of the creator's tiers to read the whole post.",
+      "seeTiers": "See the tiers",
+      "signIn": "Already a member? Sign in"
+    }
   }
 }

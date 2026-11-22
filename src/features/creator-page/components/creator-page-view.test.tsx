@@ -20,7 +20,7 @@ import type {
   CreatorTier,
 } from '@/features/creator-page/types/creator-page'
 import { renderWithIntl } from '../../../../test/render'
-import { CreatorPageView } from './creator-page-view'
+import { CreatorPageView, creatorPageTab } from './creator-page-view'
 
 const profile: CreatorProfile = {
   id: 4,
@@ -259,5 +259,44 @@ describe('CreatorPageView (FE-PAGE-01)', () => {
       within(panel).getByRole('button', { name: 'Join this tier' })
     ).toBeDisabled()
     expect(within(panel).getByText('Joining a tier opens soon.')).toBeVisible()
+  })
+
+  it('links each post to its reader (FE-CONT-01)', () => {
+    renderPage('anonymous')
+
+    expect(
+      screen.getByRole('link', { name: 'Hello world' }).getAttribute('href')
+    ).toMatch(/\/creators\/4\/posts\/9$/)
+  })
+
+  it('opens the Tiers tab from ?tab=tiers, the post gate (FE-CONT-01)', () => {
+    renderWithIntl(
+      <CreatorPageView
+        profile={profile}
+        tiers={tiers}
+        posts={posts}
+        categoryTitle="Music"
+        viewer="anonymous"
+        initialTab="tiers"
+      />,
+      { locale: 'en' }
+    )
+
+    expect(screen.getByRole('tab', { name: /Tiers/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.getByText('Supporter')).toBeVisible()
+  })
+
+  it.each([
+    ['tiers', 'tiers'],
+    ['about', 'about'],
+    ['posts', 'posts'],
+    [undefined, 'posts'],
+    ['TIERS', 'posts'],
+    [['tiers', 'about'], 'posts'],
+  ])('reads ?tab=%j as the %s tab', (value, tab) => {
+    expect(creatorPageTab(value)).toBe(tab)
   })
 })
